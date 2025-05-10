@@ -1,0 +1,101 @@
+Build “Submitra” — AI-Powered Filing & Compliance Platform for UK Companies
+
+Project Name:
+Submitra – Intelligent automation for company filings, accounts, and Corporation Tax returns in the UK.
+
+⸻
+
+Mission:
+
+Build an AI-powered web application that helps UK-based companies file their Confirmation Statements, Annual Accounts, and Corporation Tax returns (CT600) in a seamless, fast-tracked, and compliant manner. The application should support automated drafting from documents, trial balances, and transaction templates, support user review and accountant sign-off, and ensure compliance with UK GAAP, IFRS, Companies House, and HMRC standards.
+
+⸻
+
+Core Features and Automations Required
+
+1. Intelligent Document Parsing and Filing Preparation
+	•	Accept uploads of:
+	•	Trial Balances (TBs)
+	•	Source documents (e.g. bank feeds, invoices)
+	•	Exported CSVs from accounting tools (Xero, QuickBooks, FreeAgent)
+	•	Agent workflow should:
+	•	Categorize transactions and map to a UK-compliant chart of accounts.
+	•	Generate draft accounts compliant with UK GAAP or IFRS.
+	•	Prepare confirmation statement using Companies House API.
+	•	Produce CT600 Corporation Tax return with automated computations.
+	•	Users can:
+	•	Review and edit drafts.
+	•	Approve filings.
+	•	Assign to their accountant for approval and submission.
+
+2. Conversational AI Assistant
+	•	Integrate a friendly and intelligent assistant (“Submitra Assistant”) that:
+	•	Guides users through each step of the filing.
+	•	Answers questions on UK GAAP, IFRS, CT600, and compliance rules.
+	•	Flags inconsistencies and suggests corrections.
+	•	Translates financial jargon into plain English.
+
+3. Agent Automations
+
+Submitra should use Replit Agents for the following daily automations:
+
+A. Company Monitoring & Triggering Outreach
+	•	Agent checks the Companies House API daily for:
+	•	Companies with filings due within the next 3 months.
+	•	Identifies status: active/dormant, deadlines, overdue filings.
+	•	For each company:
+	•	Conduct an internet search and LinkedIn scan to find director or secretary contact details.
+	•	Send initial email or LinkedIn message with an invitation to file using Submitra.
+	•	Trigger a follow-up sequence if no response after 5–7 days.
+
+B. Outreach Management
+	•	Maintain a pipeline of:
+	•	Contacted companies
+	•	Communication status (e.g. contacted, opened, responded, booked)
+	•	Filing urgency levels
+	•	Enable human override and enrichment of outreach details if required.
+
+⸻
+
+Filing Modes
+	•	Standard (Fast-Track): Users upload documents → AI prepares draft → User/Accountant reviews → Submit.
+	•	Custom: User can edit, add notes/disclosures, and tailor filings for bespoke compliance.
+
+⸻
+
+Credit-Based Pricing
+	•	Introduce a credit system where users:
+	•	Pay per document type (confirmation statement, accounts, CT600).
+	•	Bundle filings at a discounted rate.
+	•	Pricing reflects filing complexity and company size.
+
+⸻
+
+Technical Stack Guidance
+	•	Frontend: React.js with TailwindCSS.
+	•	Backend: Python (FastAPI) or Node.js for APIs.
+	•	AI Assistant: OpenAI/GPT-4 Turbo with LangChain orchestration.
+	•	Automations: Replit Agents for daily checks, outreach, and follow-up.
+	•	Databases: PostgreSQL for user/company data; Firebase for auth if needed.
+	•	Integrations:
+	•	Companies House API (monitoring and confirmation statements)
+	•	HMRC MTD API (CT600 submission)
+	•	LinkedIn Search + messaging automation (via proxy or integration)
+	•	Email service (e.g. Mailgun, SendGrid)
+
+⸻
+
+Compliance Scope
+	•	Filing output and workflows must comply with:
+	•	Companies House statutory reporting
+	•	HMRC CT600 Corporation Tax requirements
+	•	UK GAAP, and optionally IFRS
+	•	Support for small, medium, and micro entity account formats
+
+⸻
+
+Security and User Access
+	•	Secure document uploads and storage.
+	•	Role-based access: Company Director, Accountant, Admin.
+	•	Digital signature feature for filing approval.
+	•	Filing history and audit trail per company.
