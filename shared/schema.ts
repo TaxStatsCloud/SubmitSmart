@@ -265,6 +265,75 @@ export const insertAgentRunSchema = createInsertSchema(agentRuns).pick({
   metadata: true
 });
 
+// Credit packages
+export const creditPackages = pgTable("credit_packages", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  price: integer("price").notNull(), // in pence/cents
+  creditAmount: integer("credit_amount").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  isPopular: boolean("is_popular").default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertCreditPackageSchema = createInsertSchema(creditPackages).pick({
+  name: true,
+  description: true,
+  price: true,
+  creditAmount: true,
+  isActive: true,
+  isPopular: true,
+});
+
+// Filing costs
+export const filingCosts = pgTable("filing_costs", {
+  id: serial("id").primaryKey(),
+  filingType: text("filing_type").notNull().unique(), // confirmation_statement, annual_accounts, corporation_tax
+  creditCost: integer("credit_cost").notNull(),
+  actualCost: integer("actual_cost").notNull(), // in pence/cents (e.g. £34 = 3400)
+  description: text("description"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertFilingCostSchema = createInsertSchema(filingCosts).pick({
+  filingType: true,
+  creditCost: true,
+  actualCost: true,
+  description: true,
+  isActive: true,
+});
+
+// Credit transactions
+export const creditTransactions = pgTable("credit_transactions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  type: text("type").notNull(), // purchase, usage, refund, adjustment
+  amount: integer("amount").notNull(), // positive for additions, negative for deductions
+  balance: integer("balance").notNull(), // user balance after transaction
+  description: text("description").notNull(),
+  metadata: jsonb("metadata"),
+  filingId: integer("filing_id").references(() => filings.id),
+  packageId: integer("package_id").references(() => creditPackages.id),
+  stripePaymentId: text("stripe_payment_id"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertCreditTransactionSchema = createInsertSchema(creditTransactions).pick({
+  userId: true,
+  type: true,
+  amount: true,
+  balance: true,
+  description: true,
+  metadata: true,
+  filingId: true,
+  packageId: true,
+  stripePaymentId: true,
+});
+
 // Export additional types
 export type FilingReminder = typeof filingReminders.$inferSelect;
 export type InsertFilingReminder = z.infer<typeof insertFilingReminderSchema>;
@@ -281,13 +350,23 @@ export type InsertDocumentTemplate = z.infer<typeof insertDocumentTemplateSchema
 export type AgentRun = typeof agentRuns.$inferSelect;
 export type InsertAgentRun = z.infer<typeof insertAgentRunSchema>;
 
+export type CreditPackage = typeof creditPackages.$inferSelect;
+export type InsertCreditPackage = z.infer<typeof insertCreditPackageSchema>;
+
+export type FilingCost = typeof filingCosts.$inferSelect;
+export type InsertFilingCost = z.infer<typeof insertFilingCostSchema>;
+
+export type CreditTransaction = typeof creditTransactions.$inferSelect;
+export type InsertCreditTransaction = z.infer<typeof insertCreditTransactionSchema>;
+
 // Define relationships between tables for better querying
 export const usersRelations = relations(users, ({ one, many }) => ({
   company: one(companies, { fields: [users.companyId], references: [companies.id] }),
   documents: many(documents),
   filings: many(filings),
   activities: many(activities),
-  assistantMessages: many(assistantMessages)
+  assistantMessages: many(assistantMessages),
+  transactions: many(creditTransactions)
 }));
 
 export const companiesRelations = relations(companies, ({ many }) => ({
@@ -337,3 +416,17 @@ export const outreachCampaignsRelations = relations(outreachCampaigns, ({ one })
     references: [companyContacts.id]
   })
 }));
+
+// Credit packages relations
+export const creditPackagesRelations = relations(creditPackages, ({ many }) => ({
+  transactions: many(creditTransactions)
+}));
+
+// Credit transactions relations
+export const creditTransactionsRelations = relations(creditTransactions, ({ one }) => ({
+  user: one(users, { fields: [creditTransactions.userId], references: [users.id] }),
+  filing: one(filings, { fields: [creditTransactions.filingId], references: [filings.id] }),
+  package: one(creditPackages, { fields: [creditTransactions.packageId], references: [creditPackages.id] })
+}));
+
+

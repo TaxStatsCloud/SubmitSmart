@@ -4,7 +4,10 @@ import {
   documents, type Document, type InsertDocument,
   filings, type Filing, type InsertFiling,
   activities, type Activity, type InsertActivity,
-  assistantMessages, type AssistantMessage, type InsertAssistantMessage
+  assistantMessages, type AssistantMessage, type InsertAssistantMessage,
+  creditPackages, type CreditPackage, type InsertCreditPackage,
+  filingCosts, type FilingCost, type InsertFilingCost,
+  creditTransactions, type CreditTransaction, type InsertCreditTransaction
 } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { db } from "./db";
@@ -53,6 +56,31 @@ export interface IStorage {
   getAssistantMessagesByUser(userId: number): Promise<AssistantMessage[]>;
   createAssistantMessage(message: InsertAssistantMessage): Promise<AssistantMessage>;
   deleteAssistantMessagesByUser(userId: number): Promise<void>;
+  
+  // Credit package methods
+  getCreditPackage(id: number): Promise<CreditPackage | undefined>;
+  getAllCreditPackages(): Promise<CreditPackage[]>;
+  getActiveCreditPackages(): Promise<CreditPackage[]>;
+  createCreditPackage(packageData: InsertCreditPackage): Promise<CreditPackage>;
+  updateCreditPackage(id: number, packageData: Partial<CreditPackage>): Promise<CreditPackage>;
+  deleteCreditPackage(id: number): Promise<void>;
+  
+  // Filing cost methods
+  getFilingCost(id: number): Promise<FilingCost | undefined>;
+  getFilingCostByType(filingType: string): Promise<FilingCost | undefined>;
+  getAllFilingCosts(): Promise<FilingCost[]>;
+  createFilingCost(costData: InsertFilingCost): Promise<FilingCost>;
+  updateFilingCost(id: number, costData: Partial<FilingCost>): Promise<FilingCost>;
+  
+  // Credit transaction methods
+  getCreditTransaction(id: number): Promise<CreditTransaction | undefined>;
+  getCreditTransactionsByUser(userId: number): Promise<CreditTransaction[]>;
+  createCreditTransaction(transaction: InsertCreditTransaction): Promise<CreditTransaction>;
+  
+  // User credit methods
+  getUserCredits(userId: number): Promise<number>;
+  updateUserCredits(userId: number, amount: number): Promise<User>;
+  deductCreditsForFiling(userId: number, filingType: string, filingId: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
