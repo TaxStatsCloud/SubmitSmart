@@ -1,6 +1,7 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, date, varchar, uniqueIndex, foreignKey, primaryKey, pgEnum } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from "drizzle-orm";
 
 // Users
 export const users = pgTable("users", {
@@ -151,3 +152,188 @@ export type InsertActivity = z.infer<typeof insertActivitySchema>;
 
 export type AssistantMessage = typeof assistantMessages.$inferSelect;
 export type InsertAssistantMessage = z.infer<typeof insertAssistantMessageSchema>;
+
+// Filing reminders - Used to track companies with upcoming filing requirements
+export const filingReminders = pgTable("filing_reminders", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull().references(() => companies.id),
+  filingType: text("filing_type").notNull(), // confirmation_statement, annual_accounts, corporation_tax
+  dueDate: timestamp("due_date").notNull(),
+  status: text("status").notNull().default("pending"), // pending, reminded, completed, overdue
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  lastReminderSent: timestamp("last_reminder_sent"),
+});
+
+export const insertFilingReminderSchema = createInsertSchema(filingReminders).pick({
+  companyId: true,
+  filingType: true,
+  dueDate: true,
+  status: true
+});
+
+// Company contacts - Stores contact information for outreach purposes
+export const companyContacts = pgTable("company_contacts", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull().references(() => companies.id),
+  email: text("email"),
+  name: text("name"),
+  position: text("position"),
+  phone: text("phone"),
+  isPrimary: boolean("is_primary").default(false),
+  source: text("source").notNull(), // manual, ai_research, companies_house, etc.
+  verificationStatus: text("verification_status").notNull().default("pending"), // pending, verified, bounce, unsubscribed
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertCompanyContactSchema = createInsertSchema(companyContacts).pick({
+  companyId: true,
+  email: true,
+  name: true,
+  position: true,
+  phone: true,
+  isPrimary: true,
+  source: true,
+  verificationStatus: true
+});
+
+// Outreach campaigns - Tracks marketing and outreach activities
+export const outreachCampaigns = pgTable("outreach_campaigns", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull().references(() => companies.id),
+  contactId: integer("contact_id").references(() => companyContacts.id),
+  campaignType: text("campaign_type").notNull(), // filing_reminder, welcome, feedback, etc.
+  emailSent: boolean("email_sent").notNull().default(false),
+  emailSubject: text("email_subject"),
+  sentAt: timestamp("sent_at"),
+  openedAt: timestamp("opened_at"),
+  clickedAt: timestamp("clicked_at"),
+  respondedAt: timestamp("responded_at"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertOutreachCampaignSchema = createInsertSchema(outreachCampaigns).pick({
+  companyId: true,
+  contactId: true,
+  campaignType: true,
+  emailSent: true,
+  emailSubject: true,
+  metadata: true
+});
+
+// Document templates - Provides templates for users to download and fill
+export const documentTemplates = pgTable("document_templates", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  filingType: text("filing_type").notNull(), // confirmation_statement, annual_accounts, corporation_tax
+  templateType: text("template_type").notNull(), // excel, csv, pdf, word
+  path: text("path").notNull(),
+  version: text("version").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertDocumentTemplateSchema = createInsertSchema(documentTemplates).pick({
+  name: true,
+  description: true,
+  filingType: true,
+  templateType: true,
+  path: true,
+  version: true,
+  isActive: true
+});
+
+// Agent runs - Tracks execution of automated agents
+export const agentRuns = pgTable("agent_runs", {
+  id: serial("id").primaryKey(),
+  agentType: text("agent_type").notNull(), // companies_house, contact_research, outreach_email, onboarding
+  status: text("status").notNull(), // scheduled, running, completed, failed
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  error: text("error"),
+  metrics: jsonb("metrics"), // Performance metrics like items processed, success rate, etc.
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertAgentRunSchema = createInsertSchema(agentRuns).pick({
+  agentType: true,
+  status: true,
+  metadata: true
+});
+
+// Export additional types
+export type FilingReminder = typeof filingReminders.$inferSelect;
+export type InsertFilingReminder = z.infer<typeof insertFilingReminderSchema>;
+
+export type CompanyContact = typeof companyContacts.$inferSelect;
+export type InsertCompanyContact = z.infer<typeof insertCompanyContactSchema>;
+
+export type OutreachCampaign = typeof outreachCampaigns.$inferSelect;
+export type InsertOutreachCampaign = z.infer<typeof insertOutreachCampaignSchema>;
+
+export type DocumentTemplate = typeof documentTemplates.$inferSelect;
+export type InsertDocumentTemplate = z.infer<typeof insertDocumentTemplateSchema>;
+
+export type AgentRun = typeof agentRuns.$inferSelect;
+export type InsertAgentRun = z.infer<typeof insertAgentRunSchema>;
+
+// Define relationships between tables for better querying
+export const usersRelations = relations(users, ({ one, many }) => ({
+  company: one(companies, { fields: [users.companyId], references: [companies.id] }),
+  documents: many(documents),
+  filings: many(filings),
+  activities: many(activities),
+  assistantMessages: many(assistantMessages)
+}));
+
+export const companiesRelations = relations(companies, ({ many }) => ({
+  users: many(users),
+  documents: many(documents),
+  filings: many(filings),
+  filingReminders: many(filingReminders),
+  contacts: many(companyContacts),
+  outreachCampaigns: many(outreachCampaigns)
+}));
+
+export const documentsRelations = relations(documents, ({ one }) => ({
+  company: one(companies, { fields: [documents.companyId], references: [companies.id] }),
+  user: one(users, { fields: [documents.userId], references: [users.id] })
+}));
+
+export const filingsRelations = relations(filings, ({ one }) => ({
+  company: one(companies, { fields: [filings.companyId], references: [companies.id] }),
+  user: one(users, { fields: [filings.userId], references: [users.id] })
+}));
+
+export const activitiesRelations = relations(activities, ({ one }) => ({
+  user: one(users, { fields: [activities.userId], references: [users.id] }),
+  company: one(companies, { 
+    fields: [activities.companyId], 
+    references: [companies.id]
+  })
+}));
+
+export const assistantMessagesRelations = relations(assistantMessages, ({ one }) => ({
+  user: one(users, { fields: [assistantMessages.userId], references: [users.id] })
+}));
+
+export const filingRemindersRelations = relations(filingReminders, ({ one }) => ({
+  company: one(companies, { fields: [filingReminders.companyId], references: [companies.id] })
+}));
+
+export const companyContactsRelations = relations(companyContacts, ({ one, many }) => ({
+  company: one(companies, { fields: [companyContacts.companyId], references: [companies.id] }),
+  outreachCampaigns: many(outreachCampaigns)
+}));
+
+export const outreachCampaignsRelations = relations(outreachCampaigns, ({ one }) => ({
+  company: one(companies, { fields: [outreachCampaigns.companyId], references: [companies.id] }),
+  contact: one(companyContacts, { 
+    fields: [outreachCampaigns.contactId], 
+    references: [companyContacts.id]
+  })
+}));

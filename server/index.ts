@@ -1,6 +1,9 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { initializeAgents } from "./services/agents/agentOrchestrator";
+import { initializeSchedules } from "./services/agents/scheduler";
+import { logger } from "./utils/logger";
 
 const app = express();
 app.use(express.json());
@@ -67,5 +70,20 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    
+    // Initialize the agent system
+    try {
+      logger.info('Initializing agent system');
+      
+      // Initialize agents
+      initializeAgents();
+      
+      // Initialize agent scheduling
+      initializeSchedules();
+      
+      logger.info('Agent system initialized successfully');
+    } catch (error) {
+      logger.error('Failed to initialize agent system:', error);
+    }
   });
 })();

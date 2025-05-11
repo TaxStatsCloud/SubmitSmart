@@ -1,188 +1,349 @@
+/**
+ * OpenAI Service
+ * 
+ * This service handles interactions with the OpenAI API for:
+ * - Document analysis
+ * - Filing draft generation
+ * - Compliance checking
+ * - Assistant conversations
+ */
+
 import OpenAI from "openai";
+import { logger } from "../utils/logger";
 
-// Initialize the OpenAI client with more debugging
-console.log("Initializing OpenAI client");
-console.log("API Key available:", process.env.OPENAI_API_KEY ? "Yes (not showing for security)" : "No");
+// Create logger instance for this service
+const aiLogger = logger.withContext('OpenAIService');
 
-// Initialize with API key
+// Check for API key
+if (!process.env.OPENAI_API_KEY) {
+  aiLogger.warn('OPENAI_API_KEY is not set. OpenAI functionality will be disabled.');
+}
+
+// Log status about API key (for debugging)
+const hasApiKey = !!process.env.OPENAI_API_KEY;
+console.log('Initializing OpenAI client');
+console.log(`API Key available: ${hasApiKey ? 'Yes (not showing for security)' : 'No'}`);
+
+// Initialize OpenAI client
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true, // Allow browser usage if needed
+  apiKey: process.env.OPENAI_API_KEY
 });
 
 /**
  * Generate a text completion response using OpenAI
- * @param prompt The prompt to send to the AI
- * @param systemPrompt Optional system prompt to provide context
- * @returns The AI generated response
+ * 
+ * @param prompt User prompt
+ * @param systemPrompt Optional system prompt for context
+ * @returns Generated text response
  */
 export async function generateCompletion(
   prompt: string,
-  systemPrompt: string = "You are a helpful assistant for UK companies filing compliance documents."
+  systemPrompt?: string
 ): Promise<string> {
-  console.log("Generating completion for prompt:", prompt.substring(0, 50) + "...");
-  
   try {
-    // Use a reliable model instead of the newest one for testing
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OpenAI API key is not configured');
+    }
+
+    const messages = [
+      ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),
+      { role: "user", content: prompt }
+    ];
+
     const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo", // Using a more widely available model for testing
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: prompt }
-      ],
-      temperature: 0.5,
+      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      messages,
+      temperature: 0.7,
+      max_tokens: 1000
     });
 
-    console.log("OpenAI response received");
-    return response.choices[0].message.content || "I apologize, but I couldn't generate a response.";
-  } catch (error: any) {
-    console.error("OpenAI API error:", error);
-    if (error.response) {
-      console.error("Response status:", error.response.status);
-      console.error("Response data:", error.response.data);
-    }
-    throw new Error(`Failed to generate response: ${error.message}`);
+    return response.choices[0].message.content || '';
+  } catch (error) {
+    aiLogger.error('Error generating completion:', error);
+    throw error;
   }
 }
 
 /**
  * Generate a structured JSON response using OpenAI
- * @param prompt The prompt to send to the AI
- * @param systemPrompt Optional system prompt to provide context
- * @returns The AI generated JSON response
+ * 
+ * @param prompt User prompt
+ * @param systemPrompt Optional system prompt for context
+ * @returns Structured response as a typed object
  */
 export async function generateStructuredResponse<T>(
   prompt: string,
-  systemPrompt: string = "You are a helpful assistant. Provide responses in JSON format following the specified structure."
+  systemPrompt?: string
 ): Promise<T> {
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: prompt }
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.3,
-    });
-
-    const content = response.choices[0].message.content;
-    if (!content) {
-      throw new Error("No response content generated");
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OpenAI API key is not configured');
     }
 
+    const enhancedSystemPrompt = `${systemPrompt || 'You are a helpful assistant.'} 
+    You must respond with valid JSON that can be parsed directly. Do not include any explanations, markdown formatting, or surrounding backticks. 
+    The response should be a valid JSON object that matches the expected schema.`;
+
+    const messages = [
+      { role: "system", content: enhancedSystemPrompt },
+      { role: "user", content: prompt }
+    ];
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      messages,
+      temperature: 0.3,
+      max_tokens: 2000,
+      response_format: { type: "json_object" }
+    });
+
+    const content = response.choices[0].message.content || '{}';
     return JSON.parse(content) as T;
-  } catch (error: any) {
-    console.error("OpenAI API error:", error.message);
-    throw new Error(`Failed to generate structured response: ${error.message}`);
+  } catch (error) {
+    aiLogger.error('Error generating structured response:', error);
+    throw error;
   }
 }
 
 /**
  * Analyze a document using OpenAI
- * @param documentContent The text content of the document to analyze
- * @param documentType The type of document (e.g., 'trial_balance', 'invoice', etc.)
- * @returns Analysis results as a structured object
+ * 
+ * @param documentContent Document content to analyze
+ * @param documentType Type of document (e.g., trial_balance, invoice)
+ * @returns Analysis results
  */
 export async function analyzeDocument<T>(
   documentContent: string,
   documentType: string
 ): Promise<T> {
-  // Create a prompt based on document type
-  let prompt = `Please analyze the following ${documentType} document and extract the relevant information:\n\n${documentContent}\n\n`;
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OpenAI API key is not configured');
+    }
 
-  // Add specific instructions based on document type
-  if (documentType === 'trial_balance') {
-    prompt += "Extract account names, codes, balances, and categorize them into assets, liabilities, equity, revenue, and expenses. Calculate totals for each category.";
-  } else if (documentType === 'invoice') {
-    prompt += "Extract invoice number, date, vendor/client details, line items with quantities and prices, subtotal, tax, and total amount.";
-  } else if (documentType === 'bank_statement') {
-    prompt += "Extract account details, period dates, opening/closing balances, and list all transactions with dates, descriptions, and amounts.";
-  } else if (documentType === 'accounting_export') {
-    prompt += "Identify the accounting software, extract period information, and summarize the financial data into balance sheet and profit & loss categories.";
+    // Create system prompt based on document type
+    let systemPrompt = `You are an expert financial document analyzer specializing in ${documentType} analysis. 
+                       Extract key information from the document and provide a structured analysis.`;
+
+    // Customize prompt based on document type
+    let prompt = '';
+    switch (documentType) {
+      case 'trial_balance':
+        prompt = `Analyze this trial balance document and extract:
+                 - Period end date
+                 - Total debits and credits
+                 - Major account categories with their values
+                 - Any significant observations or potential issues
+                 
+                 Document content:
+                 ${documentContent}
+                 
+                 Respond with a JSON structure that includes these extracted fields.`;
+        break;
+      case 'invoice':
+        prompt = `Analyze this invoice document and extract:
+                 - Invoice number
+                 - Issue date
+                 - Due date
+                 - Vendor/supplier information
+                 - Line items with descriptions, quantities, and amounts
+                 - Total amount (excluding tax)
+                 - VAT/tax amount
+                 - Total amount (including tax)
+                 
+                 Document content:
+                 ${documentContent}
+                 
+                 Respond with a JSON structure that includes these extracted fields.`;
+        break;
+      case 'bank_statement':
+        prompt = `Analyze this bank statement document and extract:
+                 - Bank name
+                 - Account number (masked if present)
+                 - Statement period (start and end dates)
+                 - Opening balance
+                 - Closing balance
+                 - Significant transactions (deposits and withdrawals)
+                 - Any bank fees or charges
+                 
+                 Document content:
+                 ${documentContent}
+                 
+                 Respond with a JSON structure that includes these extracted fields.`;
+        break;
+      default:
+        prompt = `Analyze this ${documentType} document and extract key information relevant for financial reporting and compliance.
+                 
+                 Document content:
+                 ${documentContent}
+                 
+                 Respond with a JSON structure that includes all extracted fields.`;
+    }
+
+    return await generateStructuredResponse<T>(prompt, systemPrompt);
+  } catch (error) {
+    aiLogger.error(`Error analyzing ${documentType} document:`, error);
+    throw error;
   }
-
-  // Request structured output
-  prompt += "\nProvide the analysis as a JSON object with appropriate categories and structure.";
-
-  const systemPrompt = `You are a financial document analysis expert specializing in ${documentType} documents for UK companies. 
-Extract information accurately and organize it in a structured JSON format suitable for compliance filings.`;
-
-  return await generateStructuredResponse<T>(prompt, systemPrompt);
 }
 
 /**
  * Generate a draft filing based on provided data
- * @param filingType The type of filing to generate (e.g., 'confirmation_statement', 'annual_accounts', 'corporation_tax')
+ * 
+ * @param filingType Type of filing to generate
  * @param companyData Company information
  * @param documentData Data extracted from analyzed documents
- * @returns Generated filing draft as a structured object
+ * @returns Generated filing draft
  */
 export async function generateFilingDraft<T>(
   filingType: string,
   companyData: any,
   documentData: any[]
 ): Promise<T> {
-  // Create context information about the company and documents
-  const companyContext = JSON.stringify(companyData);
-  const documentsContext = JSON.stringify(documentData);
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OpenAI API key is not configured');
+    }
 
-  // Create appropriate prompt based on filing type
-  let prompt = `Generate a draft ${filingType} filing for the following UK company:\n\n${companyContext}\n\n`;
-  prompt += `Based on these analyzed documents:\n\n${documentsContext}\n\n`;
+    // Create system prompt based on filing type
+    const systemPrompt = `You are an expert in UK corporate filings and compliance, specializing in ${filingType} preparation. 
+                         Generate a complete draft filing based on the provided company and document data.`;
 
-  // Add specific instructions based on filing type
-  if (filingType === 'confirmation_statement') {
-    prompt += "Include company details, registered office address, SIC codes, statement of capital, shareholders, officers, and PSCs.";
-  } else if (filingType === 'annual_accounts') {
-    prompt += "Generate a complete set of UK GAAP compliant accounts including balance sheet, profit and loss account, notes, and directors' report.";
-  } else if (filingType === 'corporation_tax') {
-    prompt += "Create a CT600 draft with tax calculations, adjustments, and computations based on the financial data provided.";
+    // Create a detailed prompt with all available data
+    const prompt = `Generate a detailed draft for a ${filingType} filing for the following company and document data:
+                   
+                   Company Data:
+                   ${JSON.stringify(companyData, null, 2)}
+                   
+                   Document Data:
+                   ${JSON.stringify(documentData, null, 2)}
+                   
+                   For a ${filingType}, include all required sections and fields according to UK regulatory requirements.
+                   Ensure all calculations are accurate and consistent across the filing.
+                   Flag any potential issues or missing information that might need attention.
+                   
+                   Respond with a comprehensive JSON structure that represents the complete filing draft.`;
+
+    return await generateStructuredResponse<T>(prompt, systemPrompt);
+  } catch (error) {
+    aiLogger.error(`Error generating ${filingType} filing draft:`, error);
+    throw error;
   }
-
-  // Request structured output
-  prompt += "\nProvide the filing draft as a JSON object with all required sections and details for compliance.";
-
-  const systemPrompt = `You are an expert in UK regulatory filings specializing in ${filingType} submissions.
-Create a complete and compliant filing draft based on the provided information that adheres to Companies House and HMRC requirements.
-Format your response as a structured JSON object suitable for submission after human review.`;
-
-  return await generateStructuredResponse<T>(prompt, systemPrompt);
 }
 
 /**
  * Check a filing draft for compliance issues
- * @param filingType The type of filing being checked
- * @param filingData The draft filing data to analyze
- * @returns Compliance check results with any issues and recommendations
+ * 
+ * @param filingType Type of filing to check
+ * @param filingData Draft filing data to analyze
+ * @returns Compliance check results
  */
 export async function checkFilingCompliance(
   filingType: string,
   filingData: any
 ): Promise<{
-  isCompliant: boolean;
-  issues: { severity: string; message: string; recommendation: string }[];
+  compliant: boolean;
+  issues: Array<{
+    severity: 'critical' | 'warning' | 'info';
+    field: string;
+    message: string;
+    recommendation: string;
+  }>;
   recommendations: string[];
 }> {
-  const filingContext = JSON.stringify(filingData);
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OpenAI API key is not configured');
+    }
 
-  const prompt = `Perform a compliance check on the following ${filingType} filing for a UK company:\n\n${filingContext}\n\n
-  Analyze the filing for any compliance issues, missing information, or inconsistencies.
-  Identify any elements that might cause rejection by Companies House or HMRC.
-  Provide specific recommendations for addressing each issue.
-  
-  Return a JSON object with:
-  1. isCompliant: boolean indicating if the filing appears compliant
-  2. issues: array of objects with "severity" (high/medium/low), "message" describing the issue, and "recommendation" for fixing it
-  3. recommendations: array of general recommendations for improving the filing`;
+    // Create system prompt for compliance checking
+    const systemPrompt = `You are an expert compliance auditor for UK corporate filings, specializing in ${filingType} compliance.
+                         Review the provided filing data and identify any issues or non-compliance with UK regulatory requirements.
+                         Categorize issues by severity: critical (must fix), warning (should fix), and info (suggestions).`;
 
-  const systemPrompt = `You are a UK compliance expert with deep knowledge of ${filingType} requirements.
-Your task is to thoroughly analyze the filing for compliance issues and provide clear guidance on addressing any problems.
-Format your response as a structured JSON object.`;
+    // Create a detailed prompt for the compliance check
+    const prompt = `Review this ${filingType} filing for compliance with UK regulatory requirements:
+                   
+                   Filing Data:
+                   ${JSON.stringify(filingData, null, 2)}
+                   
+                   Check for:
+                   - Missing required fields
+                   - Data inconsistencies
+                   - Mathematical errors
+                   - Regulatory compliance issues
+                   - Format or structural problems
+                   
+                   For each issue found, provide:
+                   - Severity (critical, warning, or info)
+                   - The specific field or section with the issue
+                   - A clear description of the problem
+                   - A specific recommendation to resolve it
+                   
+                   Also provide a list of general recommendations for improving the filing.
+                   
+                   Respond with a JSON structure that includes:
+                   - A boolean 'compliant' field indicating if the filing has any critical issues
+                   - An array of issues with severity, field, message, and recommendation
+                   - An array of general recommendations`;
 
-  return await generateStructuredResponse<{
-    isCompliant: boolean;
-    issues: { severity: string; message: string; recommendation: string }[];
-    recommendations: string[];
-  }>(prompt, systemPrompt);
+    return await generateStructuredResponse(prompt, systemPrompt);
+  } catch (error) {
+    aiLogger.error(`Error checking ${filingType} filing compliance:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Generate a response for the AI assistant
+ * 
+ * @param userMessage User message
+ * @param conversationHistory Previous messages in the conversation
+ * @returns AI generated response
+ */
+export async function generateAssistantResponse(
+  userMessage: string,
+  conversationHistory: Array<{ role: 'user' | 'assistant', content: string }>
+): Promise<string> {
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OpenAI API key is not configured');
+    }
+
+    // System prompt for the assistant
+    const systemPrompt = `You are an AI assistant for PromptSubmissions, an AI-powered platform for UK corporate compliance,
+                         specializing in automated Confirmation Statements, Annual Accounts, and Corporation Tax return processing.
+                         
+                         You help users with:
+                         - Understanding UK regulatory requirements
+                         - Navigating the filing preparation process
+                         - Interpreting financial documents
+                         - Troubleshooting issues with their filings
+                         - Understanding data extracted from their documents
+                         
+                         Be helpful, clear, and concise. If you don't know something, admit it and offer to connect the user with support.
+                         Format your responses using Markdown for readability when appropriate.`;
+
+    // Prepare conversation messages
+    const messages = [
+      { role: "system", content: systemPrompt },
+      ...conversationHistory.map(msg => ({ 
+        role: msg.role as "user" | "assistant", 
+        content: msg.content 
+      })),
+      { role: "user", content: userMessage }
+    ];
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      messages,
+      temperature: 0.7,
+      max_tokens: 2000
+    });
+
+    return response.choices[0].message.content || '';
+  } catch (error) {
+    aiLogger.error('Error generating assistant response:', error);
+    throw error;
+  }
 }

@@ -6,6 +6,8 @@ import {
   activities, type Activity, type InsertActivity,
   assistantMessages, type AssistantMessage, type InsertAssistantMessage
 } from "@shared/schema";
+import { eq } from "drizzle-orm";
+import { db } from "./db";
 
 export interface IStorage {
   // User methods
@@ -489,4 +491,258 @@ export class MemStorage implements IStorage {
   }
 }
 
+// Database implementation of IStorage
+export class DatabaseStorage implements IStorage {
+  // User methods
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
+    return user;
+  }
+
+  async updateUser(id: number, userData: Partial<User>): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ ...userData, role: userData.role || undefined })
+      .where(eq(users.id, id))
+      .returning();
+    
+    if (!updatedUser) {
+      throw new Error(`User with ID ${id} not found`);
+    }
+    
+    return updatedUser;
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
+  }
+
+  // Company methods
+  async getCompany(id: number): Promise<Company | undefined> {
+    const [company] = await db.select().from(companies).where(eq(companies.id, id));
+    return company;
+  }
+
+  async getAllCompanies(): Promise<Company[]> {
+    return await db.select().from(companies);
+  }
+
+  async createCompany(insertCompany: InsertCompany): Promise<Company> {
+    const [company] = await db
+      .insert(companies)
+      .values(insertCompany)
+      .returning();
+    return company;
+  }
+
+  async updateCompany(id: number, companyData: Partial<Company>): Promise<Company> {
+    const [updatedCompany] = await db
+      .update(companies)
+      .set(companyData)
+      .where(eq(companies.id, id))
+      .returning();
+    
+    if (!updatedCompany) {
+      throw new Error(`Company with ID ${id} not found`);
+    }
+    
+    return updatedCompany;
+  }
+
+  async deleteCompany(id: number): Promise<void> {
+    await db.delete(companies).where(eq(companies.id, id));
+  }
+
+  // Document methods
+  async getDocument(id: number): Promise<Document | undefined> {
+    const [document] = await db.select().from(documents).where(eq(documents.id, id));
+    return document;
+  }
+
+  async getAllDocuments(): Promise<Document[]> {
+    return await db.select().from(documents);
+  }
+
+  async getDocumentsByCompany(companyId: number): Promise<Document[]> {
+    return await db
+      .select()
+      .from(documents)
+      .where(eq(documents.companyId, companyId));
+  }
+
+  async createDocument(insertDocument: InsertDocument): Promise<Document> {
+    const [document] = await db
+      .insert(documents)
+      .values({
+        ...insertDocument,
+        uploadedAt: new Date(),
+        processingStatus: 'pending'
+      })
+      .returning();
+    return document;
+  }
+
+  async updateDocument(id: number, documentData: Partial<Document>): Promise<Document> {
+    const [updatedDocument] = await db
+      .update(documents)
+      .set(documentData)
+      .where(eq(documents.id, id))
+      .returning();
+    
+    if (!updatedDocument) {
+      throw new Error(`Document with ID ${id} not found`);
+    }
+    
+    return updatedDocument;
+  }
+
+  async deleteDocument(id: number): Promise<void> {
+    await db.delete(documents).where(eq(documents.id, id));
+  }
+
+  // Filing methods
+  async getFiling(id: number): Promise<Filing | undefined> {
+    const [filing] = await db.select().from(filings).where(eq(filings.id, id));
+    return filing;
+  }
+
+  async getAllFilings(): Promise<Filing[]> {
+    return await db.select().from(filings);
+  }
+
+  async getFilingsByCompany(companyId: number): Promise<Filing[]> {
+    return await db
+      .select()
+      .from(filings)
+      .where(eq(filings.companyId, companyId));
+  }
+
+  async getFilingsByUser(userId: number): Promise<Filing[]> {
+    return await db
+      .select()
+      .from(filings)
+      .where(eq(filings.userId, userId));
+  }
+
+  async createFiling(insertFiling: InsertFiling): Promise<Filing> {
+    const now = new Date();
+    const [filing] = await db
+      .insert(filings)
+      .values({
+        ...insertFiling,
+        status: 'draft',
+        createdAt: now,
+        updatedAt: now,
+        progress: 0
+      })
+      .returning();
+    return filing;
+  }
+
+  async updateFiling(id: number, filingData: Partial<Filing>): Promise<Filing> {
+    const [updatedFiling] = await db
+      .update(filings)
+      .set({
+        ...filingData,
+        updatedAt: new Date()
+      })
+      .where(eq(filings.id, id))
+      .returning();
+    
+    if (!updatedFiling) {
+      throw new Error(`Filing with ID ${id} not found`);
+    }
+    
+    return updatedFiling;
+  }
+
+  async deleteFiling(id: number): Promise<void> {
+    await db.delete(filings).where(eq(filings.id, id));
+  }
+
+  // Activity methods
+  async getActivity(id: number): Promise<Activity | undefined> {
+    const [activity] = await db.select().from(activities).where(eq(activities.id, id));
+    return activity;
+  }
+
+  async getAllActivities(): Promise<Activity[]> {
+    return await db.select().from(activities);
+  }
+
+  async getActivitiesByCompany(companyId: number): Promise<Activity[]> {
+    return await db
+      .select()
+      .from(activities)
+      .where(eq(activities.companyId, companyId));
+  }
+
+  async getActivitiesByUser(userId: number): Promise<Activity[]> {
+    return await db
+      .select()
+      .from(activities)
+      .where(eq(activities.userId, userId));
+  }
+
+  async createActivity(insertActivity: InsertActivity): Promise<Activity> {
+    const [activity] = await db
+      .insert(activities)
+      .values({
+        ...insertActivity,
+        createdAt: new Date()
+      })
+      .returning();
+    return activity;
+  }
+
+  // Assistant message methods
+  async getAssistantMessage(id: number): Promise<AssistantMessage | undefined> {
+    const [message] = await db.select().from(assistantMessages).where(eq(assistantMessages.id, id));
+    return message;
+  }
+
+  async getAssistantMessagesByUser(userId: number): Promise<AssistantMessage[]> {
+    return await db
+      .select()
+      .from(assistantMessages)
+      .where(eq(assistantMessages.userId, userId))
+      .orderBy(assistantMessages.createdAt);
+  }
+
+  async createAssistantMessage(insertMessage: InsertAssistantMessage): Promise<AssistantMessage> {
+    const [message] = await db
+      .insert(assistantMessages)
+      .values({
+        ...insertMessage,
+        createdAt: new Date()
+      })
+      .returning();
+    return message;
+  }
+
+  async deleteAssistantMessagesByUser(userId: number): Promise<void> {
+    await db
+      .delete(assistantMessages)
+      .where(eq(assistantMessages.userId, userId));
+  }
+}
+
+// Decide which storage implementation to use
+// For now, use MemStorage for development until database is fully set up
 export const storage = new MemStorage();
+
+// Uncomment the following line when ready to switch to database storage
+// export const storage = new DatabaseStorage();

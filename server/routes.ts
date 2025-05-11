@@ -11,6 +11,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { WebSocketServer } from "ws";
+import agentRoutes from "./routes/agentRoutes";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -47,6 +48,9 @@ const upload = multer({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
+  
+  // Register agent routes
+  app.use('/api/agents', agentRoutes);
   
   // Setup WebSocket server for real-time updates
   const wss = new WebSocketServer({ server: httpServer });

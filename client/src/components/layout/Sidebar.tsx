@@ -105,6 +105,22 @@ const Sidebar = () => {
                 </a>
               </Link>
             </div>
+
+            {/* Admin & System */}
+            {user?.role === 'admin' && (
+              <div className="sidebar-section">
+                <h3 className="sidebar-heading">
+                  Administration
+                </h3>
+                
+                <Link href="/agents">
+                  <a className={`sidebar-link ${isActive("/agents") ? "active" : ""}`}>
+                    <span className="material-icons sidebar-icon">smart_toy</span>
+                    Agent Manager
+                  </a>
+                </Link>
+              </div>
+            )}
           </nav>
         </div>
 
