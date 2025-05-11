@@ -52,18 +52,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register agent routes
   app.use('/api/agents', agentRoutes);
   
-  // Setup WebSocket server for real-time updates
-  const wss = new WebSocketServer({ server: httpServer });
+  // Setup WebSocket server for real-time updates with a specific path
+  // to avoid conflicts with Vite's WebSocket server
+  const wss = new WebSocketServer({ 
+    server: httpServer,
+    path: '/api/ws'  // Use a specific path for our WebSocket
+  });
   
   wss.on('connection', (ws) => {
-    console.log('WebSocket client connected');
+    console.log('WebSocket client connected to /api/ws');
     
     ws.on('message', (message) => {
       console.log('Received message:', message);
     });
     
     ws.on('close', () => {
-      console.log('WebSocket client disconnected');
+      console.log('WebSocket client disconnected from /api/ws');
     });
   });
   

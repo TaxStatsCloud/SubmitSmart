@@ -13,6 +13,8 @@ import AgentDashboard from "@/pages/AgentDashboard";
 import AppLayout from "@/components/layout/AppLayout";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AiAssistantProvider } from "@/contexts/AiAssistantContext";
+import { useEffect } from "react";
+import { initWebSocket } from "@/lib/websocket";
 
 function Router() {
   return (
@@ -31,6 +33,22 @@ function Router() {
 }
 
 function App() {
+  // Initialize WebSocket connection when App loads
+  useEffect(() => {
+    // Wait until the page is fully loaded to avoid
+    // conflicts with Vite's WebSocket
+    const timer = setTimeout(() => {
+      try {
+        initWebSocket();
+        console.log("WebSocket connection initialized");
+      } catch (error) {
+        console.error("Failed to initialize WebSocket:", error);
+      }
+    }, 2000);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
