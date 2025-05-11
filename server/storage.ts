@@ -90,6 +90,9 @@ export class MemStorage implements IStorage {
   private filings: Map<number, Filing>;
   private activities: Map<number, Activity>;
   private assistantMessages: Map<number, AssistantMessage>;
+  private creditPackages: Map<number, CreditPackage>;
+  private filingCosts: Map<number, FilingCost>;
+  private creditTransactions: Map<number, CreditTransaction>;
   
   private userId: number;
   private companyId: number;
@@ -97,6 +100,9 @@ export class MemStorage implements IStorage {
   private filingId: number;
   private activityId: number;
   private messageId: number;
+  private packageId: number;
+  private costId: number;
+  private transactionId: number;
 
   constructor() {
     this.users = new Map();
@@ -105,6 +111,9 @@ export class MemStorage implements IStorage {
     this.filings = new Map();
     this.activities = new Map();
     this.assistantMessages = new Map();
+    this.creditPackages = new Map();
+    this.filingCosts = new Map();
+    this.creditTransactions = new Map();
     
     this.userId = 1;
     this.companyId = 1;
@@ -112,6 +121,9 @@ export class MemStorage implements IStorage {
     this.filingId = 1;
     this.activityId = 1;
     this.messageId = 1;
+    this.packageId = 1;
+    this.costId = 1;
+    this.transactionId = 1;
     
     // Add sample data
     this.initSampleData();
