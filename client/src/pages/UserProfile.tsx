@@ -70,7 +70,7 @@ const UserProfile = () => {
   return (
     <>
       <Helmet>
-        <title>User Profile | Submitra</title>
+        <title>User Profile | PromptSubmissions</title>
         <meta name="description" content="View and edit your user profile information." />
       </Helmet>
 
@@ -95,8 +95,8 @@ const UserProfile = () => {
                 <div className="flex flex-col md:flex-row gap-6">
                   <div className="flex flex-col items-center md:w-1/3">
                     <AvatarPlaceholder 
-                      src={user?.profileImage} 
-                      name={user?.fullName} 
+                      src={user?.profileImage || ""} 
+                      name={user?.fullName || ""} 
                       size="lg" 
                       className="w-24 h-24"
                     />
@@ -141,7 +141,7 @@ const UserProfile = () => {
                     <div>
                       <Label>Role</Label>
                       <div className="mt-1 px-3 py-2 border border-neutral-200 rounded-md bg-neutral-50 text-neutral-700">
-                        {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1) || "User"}
+                        {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "User"}
                       </div>
                     </div>
                     

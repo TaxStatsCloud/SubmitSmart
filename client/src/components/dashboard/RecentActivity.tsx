@@ -146,7 +146,7 @@ const RecentActivity = () => {
                 </div>
                 <div>
                   <p className="text-sm text-neutral-800">
-                    Submitra AI generated <span className="font-medium">Annual Accounts draft</span> for Bright Innovations Ltd
+                    PromptSubmissions AI generated <span className="font-medium">Annual Accounts draft</span> for Bright Innovations Ltd
                   </p>
                   <p className="text-xs text-neutral-500 mt-1">
                     2 days ago, 9:30 AM

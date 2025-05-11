@@ -477,7 +477,7 @@ export class MemStorage implements IStorage {
         userId: 1,
         companyId: 2,
         type: 'filing_generate',
-        description: 'Submitra AI generated <span class="font-medium">Annual Accounts draft</span> for Bright Innovations Ltd',
+        description: 'PromptSubmissions AI generated <span class="font-medium">Annual Accounts draft</span> for Bright Innovations Ltd',
         createdAt: new Date('2023-07-13T09:30:00'),
         metadata: { filingId: 2 }
       }

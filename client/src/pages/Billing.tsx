@@ -74,7 +74,7 @@ const Billing = () => {
   return (
     <>
       <Helmet>
-        <title>Billing & Credits | Submitra</title>
+        <title>Billing & Credits | PromptSubmissions</title>
         <meta name="description" content="Manage your billing information and purchase credits for filing preparation." />
       </Helmet>
 

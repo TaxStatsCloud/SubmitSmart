@@ -14,7 +14,7 @@ const Sidebar = () => {
         {/* Logo */}
         <div className="flex items-center justify-center h-16 px-4 border-b border-neutral-200 bg-[hsl(var(--primary-500))]">
           <h1 className="text-2xl font-semibold text-white">
-            Submitra
+            PromptSubmissions
           </h1>
         </div>
 
@@ -112,7 +112,7 @@ const Sidebar = () => {
         <div className="flex items-center p-4 border-t border-neutral-200">
           <div className="flex-shrink-0">
             <Avatar>
-              <AvatarImage src={user?.profileImage} alt={user?.fullName} />
+              <AvatarImage src={user?.profileImage || ""} alt={user?.fullName || ""} />
               <AvatarFallback>{user?.fullName?.charAt(0) || "U"}</AvatarFallback>
             </Avatar>
           </div>

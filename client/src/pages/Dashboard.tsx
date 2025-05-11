@@ -5,8 +5,8 @@ const Dashboard = () => {
   return (
     <>
       <Helmet>
-        <title>Dashboard | Submitra</title>
-        <meta name="description" content="View your filing deadlines, draft documents, and recent activity on the Submitra dashboard." />
+        <title>Dashboard | PromptSubmissions</title>
+        <meta name="description" content="View your filing deadlines, draft documents, and recent activity on the PromptSubmissions dashboard." />
       </Helmet>
       <DashboardView />
     </>

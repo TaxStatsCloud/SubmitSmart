@@ -26,7 +26,7 @@ const Header = () => {
           const type = location.split("/").pop();
           return type?.split("-").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ") || "Filings";
         }
-        return "Submitra";
+        return "PromptSubmissions";
     }
   };
 
@@ -63,7 +63,7 @@ const Header = () => {
             className="ml-3 text-sm font-medium text-white bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))]"
           >
             <span className="material-icons mr-1 text-sm">smart_toy</span>
-            <span>Submitra Assistant</span>
+            <span>PromptSubmissions Assistant</span>
           </Button>
         </div>
       </div>

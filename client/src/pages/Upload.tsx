@@ -15,7 +15,7 @@ const Upload = () => {
   return (
     <>
       <Helmet>
-        <title>Upload Documents | Submitra</title>
+        <title>Upload Documents | PromptSubmissions</title>
         <meta name="description" content="Upload your financial documents for AI-powered processing and filing preparation." />
       </Helmet>
 

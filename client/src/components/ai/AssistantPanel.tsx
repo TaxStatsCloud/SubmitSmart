@@ -46,7 +46,7 @@ const AssistantPanel = () => {
         <div className="bg-[hsl(var(--primary-500))] p-4 flex items-center justify-between">
           <div className="flex items-center">
             <span className="material-icons text-white mr-2">smart_toy</span>
-            <h3 className="text-white font-semibold">Submitra Assistant</h3>
+            <h3 className="text-white font-semibold">PromptSubmissions Assistant</h3>
           </div>
           <div>
             <button 
@@ -74,7 +74,7 @@ const AssistantPanel = () => {
               </div>
               <div className="bg-white rounded-lg p-3 shadow-sm border border-neutral-200 max-w-[80%]">
                 <p className="text-sm text-neutral-800">
-                  Hello {user?.fullName?.split(' ')[0] || 'there'}! I'm your Submitra Assistant. I can help you prepare your filings, answer compliance questions, or guide you through the platform. What would you like help with today?
+                  Hello {user?.fullName?.split(' ')[0] || 'there'}! I'm your PromptSubmissions Assistant. I can help you prepare your filings, answer compliance questions, or guide you through the platform. What would you like help with today?
                 </p>
               </div>
             </div>
@@ -103,7 +103,7 @@ const AssistantPanel = () => {
               {message.role === 'user' && (
                 <div className="w-8 h-8 rounded-full bg-neutral-200 flex items-center justify-center flex-shrink-0 ml-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user?.profileImage} alt={user?.fullName} />
+                    <AvatarImage src={user?.profileImage || ""} alt={user?.fullName || ""} />
                     <AvatarFallback>{user?.fullName?.charAt(0) || "U"}</AvatarFallback>
                   </Avatar>
                 </div>

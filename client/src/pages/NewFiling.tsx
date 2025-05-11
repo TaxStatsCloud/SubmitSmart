@@ -26,7 +26,7 @@ const NewFiling = () => {
   return (
     <>
       <Helmet>
-        <title>New Filing | Submitra</title>
+        <title>New Filing | PromptSubmissions</title>
         <meta name="description" content="Start a new filing for your company - Confirmation Statement, Annual Accounts, or Corporation Tax Return." />
       </Helmet>
 
