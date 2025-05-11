@@ -10,6 +10,8 @@ import NewFiling from "@/pages/NewFiling";
 import UserProfile from "@/pages/UserProfile";
 import Billing from "@/pages/Billing";
 import AgentDashboard from "@/pages/AgentDashboard";
+import Credits from "@/pages/Credits";
+import CreditTransactions from "@/pages/CreditTransactions";
 import AppLayout from "@/components/layout/AppLayout";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AiAssistantProvider } from "@/contexts/AiAssistantContext";
@@ -25,6 +27,8 @@ function Router() {
         <Route path="/new-filing" component={NewFiling} />
         <Route path="/profile" component={UserProfile} />
         <Route path="/billing" component={Billing} />
+        <Route path="/credits" component={Credits} />
+        <Route path="/transactions" component={CreditTransactions} />
         <Route path="/agents" component={AgentDashboard} />
         <Route component={NotFound} />
       </Switch>
