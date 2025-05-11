@@ -18,18 +18,45 @@ import { AiAssistantProvider } from "@/contexts/AiAssistantContext";
 import { useEffect } from "react";
 import { initWebSocket } from "@/lib/websocket";
 
+// Import the new page components
+import CompanyDetails from "@/pages/CompanyDetails";
+import UserManagement from "@/pages/UserManagement";
+import DocumentLibrary from "@/pages/DocumentLibrary";
+import ConfirmationStatement from "@/pages/ConfirmationStatement";
+import AnnualAccounts from "@/pages/AnnualAccounts";
+import CorporationTax from "@/pages/CorporationTax";
+
 function Router() {
   return (
     <AppLayout>
       <Switch>
+        {/* Dashboard */}
         <Route path="/" component={Dashboard} />
-        <Route path="/upload" component={Upload} />
+        
+        {/* Filing routes */}
         <Route path="/new-filing" component={NewFiling} />
+        <Route path="/filings/confirmation-statements" component={ConfirmationStatement} />
+        <Route path="/filings/annual-accounts" component={AnnualAccounts} />
+        <Route path="/filings/corporation-tax" component={CorporationTax} />
+        
+        {/* Document routes */}
+        <Route path="/upload" component={Upload} />
+        <Route path="/documents" component={DocumentLibrary} />
+        
+        {/* Account routes */}
         <Route path="/profile" component={UserProfile} />
+        <Route path="/company" component={CompanyDetails} />
+        <Route path="/users" component={UserManagement} />
+        
+        {/* Billing routes */}
         <Route path="/billing" component={Billing} />
         <Route path="/credits" component={Credits} />
         <Route path="/transactions" component={CreditTransactions} />
+        
+        {/* Admin routes */}
         <Route path="/agents" component={AgentDashboard} />
+        
+        {/* 404 route */}
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

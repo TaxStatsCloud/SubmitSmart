@@ -14,7 +14,11 @@ const CompanyDetails = () => {
   const { data: company, isLoading } = useQuery({
     queryKey: ['/api/companies', user?.companyId],
     enabled: !!user?.companyId,
-    onError: () => {
+    onSuccess: (data) => {
+      console.log("Company data loaded successfully", data);
+    },
+    onError: (error) => {
+      console.error("Error loading company details:", error);
       toast({
         title: "Error",
         description: "Failed to load company details",
