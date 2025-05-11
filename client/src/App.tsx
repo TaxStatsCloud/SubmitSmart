@@ -25,6 +25,8 @@ import DocumentLibrary from "@/pages/DocumentLibrary";
 import ConfirmationStatement from "@/pages/ConfirmationStatement";
 import AnnualAccounts from "@/pages/AnnualAccounts";
 import CorporationTax from "@/pages/CorporationTax";
+import AdminDashboard from "@/pages/AdminDashboard";
+import TaxEngine from "@/pages/TaxEngine";
 
 function Router() {
   return (
@@ -53,8 +55,12 @@ function Router() {
         <Route path="/credits" component={Credits} />
         <Route path="/transactions" component={CreditTransactions} />
         
+        {/* Advanced features */}
+        <Route path="/tax-engine" component={TaxEngine} />
+        
         {/* Admin routes */}
         <Route path="/agents" component={AgentDashboard} />
+        <Route path="/admin/dashboard" component={AdminDashboard} />
         
         {/* 404 route */}
         <Route component={NotFound} />

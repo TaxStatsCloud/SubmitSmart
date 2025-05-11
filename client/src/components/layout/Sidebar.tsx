@@ -120,6 +120,20 @@ const Sidebar = () => {
               </Link>
             </div>
 
+            {/* Advanced Features */}
+            <div className="sidebar-section">
+              <h3 className="sidebar-heading">
+                Advanced Tools
+              </h3>
+              
+              <Link href="/tax-engine">
+                <a className={`sidebar-link ${isActive("/tax-engine") ? "active" : ""}`}>
+                  <span className="material-icons sidebar-icon">calculate</span>
+                  Tax Preparation Engine
+                </a>
+              </Link>
+            </div>
+            
             {/* Admin & System */}
             {user?.role === 'admin' && (
               <div className="sidebar-section">
@@ -131,6 +145,13 @@ const Sidebar = () => {
                   <a className={`sidebar-link ${isActive("/agents") ? "active" : ""}`}>
                     <span className="material-icons sidebar-icon">smart_toy</span>
                     Agent Manager
+                  </a>
+                </Link>
+                
+                <Link href="/admin/dashboard">
+                  <a className={`sidebar-link ${isActive("/admin/dashboard") ? "active" : ""}`}>
+                    <span className="material-icons sidebar-icon">dashboard</span>
+                    Admin Dashboard
                   </a>
                 </Link>
               </div>
