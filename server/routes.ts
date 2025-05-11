@@ -12,6 +12,7 @@ import path from "path";
 import fs from "fs";
 import { WebSocketServer } from "ws";
 import agentRoutes from "./routes/agentRoutes";
+import billingRoutes from "./routes/billingRoutes";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -51,6 +52,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register agent routes
   app.use('/api/agents', agentRoutes);
+  
+  // Register billing routes
+  app.use('/api/billing', billingRoutes);
   
   // Setup WebSocket server for real-time updates with a specific path
   // to avoid conflicts with Vite's WebSocket server

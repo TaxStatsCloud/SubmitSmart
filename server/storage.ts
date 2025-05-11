@@ -367,6 +367,205 @@ export class MemStorage implements IStorage {
       this.assistantMessages.delete(message.id);
     }
   }
+  
+  // Credit package methods
+  async getCreditPackage(id: number): Promise<CreditPackage | undefined> {
+    return this.creditPackages.get(id);
+  }
+  
+  async getAllCreditPackages(): Promise<CreditPackage[]> {
+    return Array.from(this.creditPackages.values());
+  }
+  
+  async getActiveCreditPackages(): Promise<CreditPackage[]> {
+    return Array.from(this.creditPackages.values())
+      .filter(pkg => pkg.isActive);
+  }
+  
+  async createCreditPackage(packageData: InsertCreditPackage): Promise<CreditPackage> {
+    const id = this.packageId++;
+    
+    const creditPackage: CreditPackage = {
+      ...packageData,
+      id,
+      isActive: packageData.isActive ?? true,
+      isPopular: packageData.isPopular ?? false,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    this.creditPackages.set(id, creditPackage);
+    return creditPackage;
+  }
+  
+  async updateCreditPackage(id: number, packageData: Partial<CreditPackage>): Promise<CreditPackage> {
+    const existingPackage = this.creditPackages.get(id);
+    
+    if (!existingPackage) {
+      throw new Error(`Credit package with ID ${id} not found`);
+    }
+    
+    const updatedPackage: CreditPackage = {
+      ...existingPackage,
+      ...packageData,
+      updatedAt: new Date()
+    };
+    
+    this.creditPackages.set(id, updatedPackage);
+    return updatedPackage;
+  }
+  
+  async deleteCreditPackage(id: number): Promise<void> {
+    this.creditPackages.delete(id);
+  }
+  
+  // Filing cost methods
+  async getFilingCost(id: number): Promise<FilingCost | undefined> {
+    return this.filingCosts.get(id);
+  }
+  
+  async getFilingCostByType(filingType: string): Promise<FilingCost | undefined> {
+    return Array.from(this.filingCosts.values())
+      .find(cost => cost.filingType === filingType && cost.isActive);
+  }
+  
+  async getAllFilingCosts(): Promise<FilingCost[]> {
+    return Array.from(this.filingCosts.values());
+  }
+  
+  async createFilingCost(costData: InsertFilingCost): Promise<FilingCost> {
+    const id = this.costId++;
+    
+    const filingCost: FilingCost = {
+      ...costData,
+      id,
+      isActive: costData.isActive ?? true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    this.filingCosts.set(id, filingCost);
+    return filingCost;
+  }
+  
+  async updateFilingCost(id: number, costData: Partial<FilingCost>): Promise<FilingCost> {
+    const existingCost = this.filingCosts.get(id);
+    
+    if (!existingCost) {
+      throw new Error(`Filing cost with ID ${id} not found`);
+    }
+    
+    const updatedCost: FilingCost = {
+      ...existingCost,
+      ...costData,
+      updatedAt: new Date()
+    };
+    
+    this.filingCosts.set(id, updatedCost);
+    return updatedCost;
+  }
+  
+  // Credit transaction methods
+  async getCreditTransaction(id: number): Promise<CreditTransaction | undefined> {
+    return this.creditTransactions.get(id);
+  }
+  
+  async getCreditTransactionsByUser(userId: number): Promise<CreditTransaction[]> {
+    return Array.from(this.creditTransactions.values())
+      .filter(transaction => transaction.userId === userId);
+  }
+  
+  async createCreditTransaction(transaction: InsertCreditTransaction): Promise<CreditTransaction> {
+    const id = this.transactionId++;
+    
+    const creditTransaction: CreditTransaction = {
+      ...transaction,
+      id,
+      createdAt: new Date()
+    };
+    
+    this.creditTransactions.set(id, creditTransaction);
+    return creditTransaction;
+  }
+  
+  // User credit methods
+  async getUserCredits(userId: number): Promise<number> {
+    const user = await this.getUser(userId);
+    
+    if (!user) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+    
+    return user.credits;
+  }
+  
+  async updateUserCredits(userId: number, amount: number): Promise<User> {
+    const user = await this.getUser(userId);
+    
+    if (!user) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+    
+    const updatedCredits = user.credits + amount;
+    
+    if (updatedCredits < 0) {
+      throw new Error(`User ${userId} does not have enough credits`);
+    }
+    
+    const updatedUser = await this.updateUser(userId, { credits: updatedCredits });
+    
+    // Create a transaction record
+    await this.createCreditTransaction({
+      userId,
+      type: amount > 0 ? 'purchase' : 'usage',
+      amount,
+      balance: updatedCredits,
+      description: amount > 0 
+        ? `Added ${amount} credits to account` 
+        : `Used ${Math.abs(amount)} credits for service`,
+      metadata: {}
+    });
+    
+    return updatedUser;
+  }
+  
+  async deductCreditsForFiling(userId: number, filingType: string, filingId: number): Promise<boolean> {
+    // Get the filing cost
+    const filingCost = await this.getFilingCostByType(filingType);
+    
+    if (!filingCost) {
+      throw new Error(`Filing cost for type ${filingType} not found`);
+    }
+    
+    const user = await this.getUser(userId);
+    
+    if (!user) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+    
+    if (user.credits < filingCost.creditCost) {
+      return false; // Not enough credits
+    }
+    
+    // Deduct credits and create transaction
+    await this.updateUserCredits(userId, -filingCost.creditCost);
+    
+    // Create transaction with filing reference
+    await this.createCreditTransaction({
+      userId,
+      type: 'usage',
+      amount: -filingCost.creditCost,
+      balance: user.credits - filingCost.creditCost,
+      description: `Used ${filingCost.creditCost} credits for ${filingType} filing`,
+      filingId,
+      metadata: { 
+        filingType,
+        actualCost: filingCost.actualCost
+      }
+    });
+    
+    return true;
+  }
 
   // Initialize sample data for demonstration
   private initSampleData() {
@@ -527,6 +726,85 @@ export class MemStorage implements IStorage {
 
     for (const activity of activities) {
       this.activities.set(activity.id, activity);
+    }
+    
+    // Sample credit packages
+    const creditPackages = [
+      {
+        id: this.packageId++,
+        name: 'Basic Package',
+        description: 'Suitable for small businesses with minimal filing requirements',
+        price: 4999, // £49.99 in pence
+        creditAmount: 50,
+        isActive: true,
+        isPopular: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.packageId++,
+        name: 'Standard Package',
+        description: 'Best value for growing businesses with regular filing needs',
+        price: 12999, // £129.99 in pence
+        creditAmount: 150,
+        isActive: true,
+        isPopular: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.packageId++,
+        name: 'Premium Package',
+        description: 'For established businesses with complex filing requirements',
+        price: 24999, // £249.99 in pence
+        creditAmount: 350,
+        isActive: true,
+        isPopular: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+    
+    for (const packageData of creditPackages) {
+      this.creditPackages.set(packageData.id, packageData);
+    }
+    
+    // Sample filing costs
+    const filingCosts = [
+      {
+        id: this.costId++,
+        filingType: 'confirmation_statement',
+        creditCost: 10,
+        actualCost: 3400, // £34.00 in pence (Companies House fee)
+        description: 'Annual confirmation statement submission to Companies House',
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.costId++,
+        filingType: 'annual_accounts',
+        creditCost: 25,
+        actualCost: 0, // No direct Companies House fee for most small companies
+        description: 'Annual accounts preparation and submission',
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.costId++,
+        filingType: 'corporation_tax',
+        creditCost: 30,
+        actualCost: 0, // No direct HMRC fee for filing
+        description: 'Corporation tax return (CT600) preparation and submission',
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+    
+    for (const costData of filingCosts) {
+      this.filingCosts.set(costData.id, costData);
     }
   }
 }
