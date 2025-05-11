@@ -102,6 +102,11 @@ const Billing = () => {
                 <p className="text-sm text-neutral-600 mt-2">
                   Available for new filings and document processing
                 </p>
+                <div className="mt-4">
+                  <Button asChild variant="outline" size="sm">
+                    <Link href="/transactions">View Transaction History</Link>
+                  </Button>
+                </div>
               </div>
               
               <div className="bg-neutral-50 rounded-lg p-6 flex-1">
@@ -186,7 +191,13 @@ const Billing = () => {
               ))}
             </div>
           </CardContent>
-          <CardFooter className="flex justify-end">
+          <CardFooter className="flex justify-between">
+            <Button asChild variant="outline">
+              <Link href="/credits">
+                <span className="material-icons mr-2">credit_card</span>
+                Pay with Stripe
+              </Link>
+            </Button>
             <Button 
               onClick={handlePurchase}
               disabled={!selectedPackage || isProcessing}
@@ -205,11 +216,19 @@ const Billing = () => {
         </Card>
 
         <Card className="shadow-sm border-neutral-200">
-          <CardHeader>
-            <CardTitle>Transaction History</CardTitle>
-            <CardDescription>
-              Your recent credit purchases and usage.
-            </CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Transaction History</CardTitle>
+              <CardDescription>
+                Your recent credit purchases and usage.
+              </CardDescription>
+            </div>
+            <Button asChild variant="outline">
+              <Link href="/transactions">
+                <span className="material-icons mr-2">receipt_long</span>
+                View All Transactions
+              </Link>
+            </Button>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">

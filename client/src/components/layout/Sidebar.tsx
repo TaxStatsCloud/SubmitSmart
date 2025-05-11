@@ -104,6 +104,20 @@ const Sidebar = () => {
                   Billing & Credits
                 </a>
               </Link>
+              
+              <Link href="/credits">
+                <a className={`sidebar-link sidebar-sublink ${isActive("/credits") ? "active" : ""}`}>
+                  <span className="material-icons sidebar-icon">add_card</span>
+                  Purchase Credits
+                </a>
+              </Link>
+              
+              <Link href="/transactions">
+                <a className={`sidebar-link sidebar-sublink ${isActive("/transactions") ? "active" : ""}`}>
+                  <span className="material-icons sidebar-icon">receipt_long</span>
+                  Transaction History
+                </a>
+              </Link>
             </div>
 
             {/* Admin & System */}
