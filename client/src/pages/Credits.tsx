@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { Check, CreditCard, Zap } from 'lucide-react';
+import { Link } from 'wouter';
 
 // Initialize Stripe 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
@@ -123,10 +124,11 @@ const PackageCard = ({
   setSelectedPackage: (id: number | null) => void;
 }) => {
   const isSelected = selectedPackage === pkg.id;
+  // Format price correctly based on whether it's already in pence or pounds
   const formattedPrice = new Intl.NumberFormat('en-GB', {
     style: 'currency',
     currency: 'GBP',
-  }).format(pkg.price / 100);
+  }).format(pkg.price > 1000 ? pkg.price / 100 : pkg.price);
 
   return (
     <Card 
@@ -234,7 +236,15 @@ const Credits = () => {
   return (
     <div className="container max-w-6xl py-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Credit Packages</h1>
+        <div>
+          <h1 className="text-3xl font-bold">Credit Packages</h1>
+          <Button variant="link" asChild className="p-0 mt-1">
+            <Link href="/billing">
+              <span className="material-icons text-sm mr-1">arrow_back</span>
+              Return to Billing Dashboard
+            </Link>
+          </Button>
+        </div>
         <CreditBalance />
       </div>
 

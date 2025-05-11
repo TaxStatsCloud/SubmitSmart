@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'wouter';
 import {
   Card,
   CardContent,
@@ -74,6 +75,12 @@ const CreditTransactions = () => {
               <CardDescription>
                 View your credit purchase and usage history
               </CardDescription>
+              <Button variant="link" asChild className="p-0 mt-1">
+                <Link href="/billing">
+                  <span className="material-icons text-sm mr-1">arrow_back</span>
+                  Return to Billing Dashboard
+                </Link>
+              </Button>
             </div>
             <div className="flex items-center">
               <Zap className="h-5 w-5 text-yellow-500 mr-2" />
