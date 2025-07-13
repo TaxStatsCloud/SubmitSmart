@@ -53,6 +53,217 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register agent routes
   app.use('/api/agents', agentRoutes);
   
+  // Admin routes for Companies House agent monitoring
+  app.get('/api/admin/agent-stats', async (req, res) => {
+    try {
+      const { dateRange } = req.query;
+      const { companiesHouseAgent } = await import('./services/companiesHouseAgent');
+      const stats = await companiesHouseAgent.getAgentStats(dateRange as string);
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch agent stats' });
+    }
+  });
+  
+  app.get('/api/admin/prospects', async (req, res) => {
+    try {
+      const { companiesHouseAgent } = await import('./services/companiesHouseAgent');
+      const prospects = await companiesHouseAgent.getProspects(req.query);
+      res.json(prospects);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch prospects' });
+    }
+  });
+  
+  app.get('/api/admin/outreach', async (req, res) => {
+    try {
+      const { companiesHouseAgent } = await import('./services/companiesHouseAgent');
+      const outreach = await companiesHouseAgent.getOutreachActivity(req.query);
+      res.json(outreach);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch outreach data' });
+    }
+  });
+  
+  app.get('/api/admin/user-usage', async (req, res) => {
+    try {
+      // Get user activity from storage
+      const activities = await storage.getAllActivities();
+      const users = await storage.getAllUsers ? await storage.getAllUsers() : [];
+      
+      const userUsage = {
+        totalUsers: users.length,
+        activeUsers: users.filter(u => u.credits > 0).length,
+        recentActivities: activities.slice(0, 20),
+        featureUsage: {
+          documentUpload: activities.filter(a => a.type === 'document_upload').length,
+          confirmationStatements: activities.filter(a => a.type === 'confirmation_statement').length,
+          annualAccounts: activities.filter(a => a.type === 'annual_accounts').length,
+          corporationTax: activities.filter(a => a.type === 'corporation_tax').length,
+          aiAssistant: activities.filter(a => a.type === 'ai_chat').length,
+        }
+      };
+      
+      res.json(userUsage);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch user usage data' });
+    }
+  });
+  
+  // Tax Engine API endpoints
+  app.get('/api/tax-filings/:companyId/:period', async (req, res) => {
+    try {
+      const { companyId, period } = req.params;
+      
+      // Get or create tax filing record
+      const existingFiling = await storage.getFilingsByCompany(Number(companyId));
+      const taxFiling = existingFiling.find(f => f.type === 'corporation_tax' && f.data?.period === period);
+      
+      if (taxFiling) {
+        res.json(taxFiling);
+      } else {
+        // Create new tax filing
+        const newFiling = await storage.createFiling({
+          type: 'corporation_tax',
+          companyId: Number(companyId),
+          userId: req.user?.id || 1,
+          data: { period, sections: {}, progress: 0 },
+          status: 'draft',
+          progress: 0
+        });
+        res.json(newFiling);
+      }
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch tax filing data' });
+    }
+  });
+  
+  app.post('/api/tax-filings/:companyId/:period/section', async (req, res) => {
+    try {
+      const { companyId, period } = req.params;
+      const { sectionId, data } = req.body;
+      
+      // Get existing filing
+      const existingFilings = await storage.getFilingsByCompany(Number(companyId));
+      const taxFiling = existingFilings.find(f => f.type === 'corporation_tax' && f.data?.period === period);
+      
+      if (taxFiling) {
+        // Update section data
+        const updatedData = {
+          ...taxFiling.data,
+          sections: {
+            ...taxFiling.data.sections,
+            [sectionId]: data
+          }
+        };
+        
+        // Calculate progress
+        const totalSections = 7; // company-info, income-statement, balance-sheet, etc.
+        const completedSections = Object.keys(updatedData.sections).length;
+        const progress = Math.round((completedSections / totalSections) * 100);
+        
+        const updatedFiling = await storage.updateFiling(taxFiling.id, {
+          data: updatedData,
+          progress
+        });
+        
+        res.json(updatedFiling);
+      } else {
+        res.status(404).json({ error: 'Tax filing not found' });
+      }
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to save tax filing section' });
+    }
+  });
+  
+  app.post('/api/tax-filings/:companyId/:period/calculate', async (req, res) => {
+    try {
+      const { companyId, period } = req.params;
+      
+      // Get existing filing
+      const existingFilings = await storage.getFilingsByCompany(Number(companyId));
+      const taxFiling = existingFilings.find(f => f.type === 'corporation_tax' && f.data?.period === period);
+      
+      if (taxFiling && taxFiling.data?.sections) {
+        // Use AI to calculate tax liability
+        const { generateCompletion } = await import('./services/openai');
+        
+        const calculationPrompt = `
+          Calculate UK Corporation Tax for this company based on the following data:
+          
+          Company Data: ${JSON.stringify(taxFiling.data.sections)}
+          
+          Please calculate:
+          1. Taxable profit/loss
+          2. Corporation tax liability
+          3. Any adjustments needed
+          4. Final tax due/refund
+          
+          Respond in JSON format with: {
+            "taxableProfit": number,
+            "corporationTax": number,
+            "adjustments": number,
+            "finalTaxDue": number,
+            "calculation": "detailed explanation"
+          }
+        `;
+        
+        const calculation = await generateCompletion(calculationPrompt);
+        
+        // Update filing with calculation results
+        const updatedFiling = await storage.updateFiling(taxFiling.id, {
+          data: {
+            ...taxFiling.data,
+            calculation: JSON.parse(calculation)
+          }
+        });
+        
+        res.json(updatedFiling);
+      } else {
+        res.status(404).json({ error: 'Tax filing not found or incomplete' });
+      }
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to calculate tax liability' });
+    }
+  });
+  
+  app.post('/api/tax-filings/:companyId/:period/submit', async (req, res) => {
+    try {
+      const { companyId, period } = req.params;
+      
+      // Get existing filing
+      const existingFilings = await storage.getFilingsByCompany(Number(companyId));
+      const taxFiling = existingFilings.find(f => f.type === 'corporation_tax' && f.data?.period === period);
+      
+      if (taxFiling) {
+        // Update filing status to submitted
+        const updatedFiling = await storage.updateFiling(taxFiling.id, {
+          status: 'submitted',
+          progress: 100
+        });
+        
+        // Create activity record
+        await storage.createActivity({
+          type: 'tax_filing_submitted',
+          description: `Corporation Tax return submitted for ${period}`,
+          userId: req.user?.id || 1,
+          companyId: Number(companyId),
+          metadata: {
+            filingId: taxFiling.id,
+            period: period,
+            submittedAt: new Date().toISOString()
+          }
+        });
+        
+        res.json(updatedFiling);
+      } else {
+        res.status(404).json({ error: 'Tax filing not found' });
+      }
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to submit tax filing' });
+    }
+  });
+  
   // Register billing routes
   app.use('/api/billing', billingRoutes);
   
