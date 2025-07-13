@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Upload, FileText, Calculator, CheckCircle2, AlertTriangle, Building, Receipt, FileSpreadsheet, Calendar, DollarSign } from "lucide-react";
+import { Upload, FileText, Calculator, CheckCircle2, AlertTriangle, Building, Receipt, FileSpreadsheet, Calendar, DollarSign, TrendingUp, Send } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -29,7 +29,7 @@ const RealWorldFiling = () => {
     tradingCeased: "2025-04-22",
     sections: {
       companyInfo: {},
-      incomeStatement: {},
+      profitAndLoss: {},
       balanceSheet: {},
       taxCalculation: {}
     }
@@ -37,7 +37,19 @@ const RealWorldFiling = () => {
 
   const saveSectionMutation = useMutation({
     mutationFn: async (sectionData: any) => {
-      return apiRequest('POST', '/api/tax-filings/1/2024-25/section', sectionData);
+      const response = await fetch('/api/tax-filings/1/2024-25/section', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(sectionData)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save section');
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -182,7 +194,7 @@ const RealWorldFiling = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="h-4 w-4 border-2 border-dashed border-gray-300 rounded-full" />
-                  <span className="text-sm text-muted-foreground">Income Statement</span>
+                  <span className="text-sm text-muted-foreground">Profit and Loss Account</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="h-4 w-4 border-2 border-dashed border-gray-300 rounded-full" />
@@ -413,8 +425,8 @@ const RealWorldFiling = () => {
                   <Alert>
                     <FileText className="h-4 w-4" />
                     <AlertDescription>
-                      <strong>AI Processing:</strong> Once uploaded, our AI will analyze your documents and automatically 
-                      extract financial data for the income statement and balance sheet.
+                      <strong>AI Processing:</strong> Once uploaded, our AI will analyse your documents and automatically 
+                      extract financial data for the profit and loss account and balance sheet.
                     </AlertDescription>
                   </Alert>
 
@@ -438,20 +450,20 @@ const RealWorldFiling = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <DollarSign className="h-5 w-5" />
-                    Income Statement (P&L)
+                    <TrendingUp className="h-5 w-5" />
+                    Profit and Loss (P&L)
                   </CardTitle>
                   <CardDescription>
-                    Review and confirm income and expenses for the final trading period
+                    Review and confirm turnover and expenses for the final trading period
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
-                      <h3 className="font-medium text-green-600">Income</h3>
+                      <h3 className="font-medium text-green-600">Turnover</h3>
                       <div className="space-y-3">
                         <div className="flex justify-between">
-                          <span>Sales Revenue</span>
+                          <span>Sales Turnover</span>
                           <Input className="w-32 text-right" placeholder="0.00" />
                         </div>
                         <div className="flex justify-between">
@@ -460,7 +472,7 @@ const RealWorldFiling = () => {
                         </div>
                         <Separator />
                         <div className="flex justify-between font-medium">
-                          <span>Total Income</span>
+                          <span>Total Turnover</span>
                           <span className="text-green-600">£0.00</span>
                         </div>
                       </div>
@@ -506,12 +518,12 @@ const RealWorldFiling = () => {
                   <div className="pt-4">
                     <Button 
                       onClick={() => {
-                        handleSaveSection('incomeStatement', { netProfit: 0 });
+                        handleSaveSection('profitAndLoss', { netProfit: 0 });
                         setActiveTab('balance');
                       }}
                       className="w-full"
                     >
-                      Save Income Statement & Continue
+                      Save Profit & Loss & Continue
                     </Button>
                   </div>
                 </CardContent>
@@ -527,7 +539,7 @@ const RealWorldFiling = () => {
                     Balance Sheet
                   </CardTitle>
                   <CardDescription>
-                    Final balance sheet as at dissolution date
+                    Final balance sheet as at the dissolution date
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">

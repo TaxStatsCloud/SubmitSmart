@@ -231,35 +231,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { companyId, period } = req.params;
       const { sectionId, data } = req.body;
       
+      console.log('Received tax filing save request:', { companyId, period, sectionId, data });
+      
       // Get existing filing
       const existingFilings = await storage.getFilingsByCompany(Number(companyId));
-      const taxFiling = existingFilings.find(f => f.type === 'corporation_tax' && f.data?.period === period);
+      let taxFiling = existingFilings.find(f => f.type === 'corporation_tax' && f.data?.period === period);
       
-      if (taxFiling) {
-        // Update section data
-        const updatedData = {
-          ...taxFiling.data,
-          sections: {
-            ...taxFiling.data.sections,
-            [sectionId]: data
-          }
-        };
-        
-        // Calculate progress
-        const totalSections = 7; // company-info, income-statement, balance-sheet, etc.
-        const completedSections = Object.keys(updatedData.sections).length;
-        const progress = Math.round((completedSections / totalSections) * 100);
-        
-        const updatedFiling = await storage.updateFiling(taxFiling.id, {
-          data: updatedData,
-          progress
+      if (!taxFiling) {
+        // Create a new filing if it doesn't exist
+        taxFiling = await storage.createFiling({
+          companyId: Number(companyId),
+          userId: 1, // Default user for demo
+          type: 'corporation_tax',
+          status: 'in_progress',
+          data: {
+            period: period,
+            sections: {}
+          },
+          progress: 0
         });
-        
-        res.json(updatedFiling);
-      } else {
-        res.status(404).json({ error: 'Tax filing not found' });
       }
+      
+      // Update section data
+      const updatedData = {
+        ...taxFiling.data,
+        sections: {
+          ...taxFiling.data.sections,
+          [sectionId]: data
+        }
+      };
+      
+      // Calculate progress
+      const totalSections = 7; // company-info, income-statement, balance-sheet, etc.
+      const completedSections = Object.keys(updatedData.sections).length;
+      const progress = Math.round((completedSections / totalSections) * 100);
+      
+      const updatedFiling = await storage.updateFiling(taxFiling.id, {
+        data: updatedData,
+        progress
+      });
+      
+      console.log('Successfully saved tax filing section:', updatedFiling);
+      
+      res.json({ 
+        success: true, 
+        message: 'Section saved successfully',
+        data: updatedFiling
+      });
     } catch (error) {
+      console.error('Tax filing section save error:', error);
       res.status(500).json({ error: 'Failed to save tax filing section' });
     }
   });
@@ -519,46 +539,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Tax filing routes - for real-world filing demo
-  app.post('/api/tax-filings/:companyId/:period/section', async (req, res) => {
-    try {
-      const { companyId, period } = req.params;
-      const { sectionId, data } = req.body;
-      
-      // For now, just store in memory (in production, this would use database)
-      const filingKey = `${companyId}-${period}`;
-      
-      // Simple in-memory storage for demo
-      if (!global.taxFilings) {
-        global.taxFilings = {};
-      }
-      
-      if (!global.taxFilings[filingKey]) {
-        global.taxFilings[filingKey] = {};
-      }
-      
-      global.taxFilings[filingKey][sectionId] = {
-        ...data,
-        updatedAt: new Date().toISOString()
-      };
-      
-      res.json({ 
-        success: true, 
-        message: 'Section saved successfully',
-        data: global.taxFilings[filingKey][sectionId]
-      });
-    } catch (error) {
-      console.error('Tax filing section save error:', error);
-      res.status(500).json({ error: 'Failed to save section data' });
-    }
-  });
+  // Remove duplicate tax filing routes (handled above)
 
   app.get('/api/tax-filings/:companyId/:period', async (req, res) => {
     try {
       const { companyId, period } = req.params;
       const filingKey = `${companyId}-${period}`;
       
-      const filingData = global.taxFilings?.[filingKey] || {};
+      const filingData = (global as any).taxFilings?.[filingKey] || {};
       
       res.json({
         companyId,
@@ -578,14 +566,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const filingKey = `${companyId}-${period}`;
       
       // In production, this would submit to HMRC
-      const filingData = global.taxFilings?.[filingKey] || {};
+      const filingData = (global as any).taxFilings?.[filingKey] || {};
       
       // Mark as submitted
-      if (!global.taxFilings) {
-        global.taxFilings = {};
+      if (!(global as any).taxFilings) {
+        (global as any).taxFilings = {};
       }
       
-      global.taxFilings[filingKey] = {
+      (global as any).taxFilings[filingKey] = {
         ...filingData,
         status: 'submitted',
         submittedAt: new Date().toISOString()
