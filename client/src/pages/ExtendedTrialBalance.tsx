@@ -9,9 +9,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Edit, Trash2, FileSpreadsheet, CheckCircle2, Calculator, AlertTriangle, ChevronRight, Eye, Upload, X, FileText, Paperclip } from 'lucide-react';
+import { Plus, Edit, Trash2, FileSpreadsheet, CheckCircle2, Calculator, AlertTriangle, ChevronRight, Eye, Upload, X, FileText, Paperclip, Shield, Users } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
+import DocumentationGuidance from '@/components/audit/DocumentationGuidance';
+import AccuracyValidation from '@/components/audit/AccuracyValidation';
+import ContextualHelp from '@/components/help/ContextualHelp';
 
 interface TrialBalanceEntry {
   id: string;
@@ -158,6 +161,9 @@ export default function ExtendedTrialBalance() {
   const [trialBalance, setTrialBalance] = useState<TrialBalanceEntry[]>([]);
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
   const [showJournalDialog, setShowJournalDialog] = useState(false);
+  const [showAuditSupport, setShowAuditSupport] = useState(false);
+  const [showValidation, setShowValidation] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [editingJournal, setEditingJournal] = useState<JournalEntry | null>(null);
   const [aiProcessedData, setAiProcessedData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -559,13 +565,14 @@ export default function ExtendedTrialBalance() {
           <h1 className="text-3xl font-bold">Extended Trial Balance</h1>
           <p className="text-muted-foreground">Review AI-processed transactions and make adjustments</p>
         </div>
-        <Dialog open={showJournalDialog} onOpenChange={setShowJournalDialog}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Journal Entry
-            </Button>
-          </DialogTrigger>
+        <div className="flex flex-wrap gap-2">
+          <Dialog open={showJournalDialog} onOpenChange={setShowJournalDialog}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Journal Entry
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
             <DialogHeader className="flex-shrink-0">
               <DialogTitle>Add Journal Entry</DialogTitle>
@@ -832,6 +839,110 @@ export default function ExtendedTrialBalance() {
             </div>
           </DialogContent>
         </Dialog>
+        
+        <Button variant="outline" onClick={() => setShowAuditSupport(true)}>
+          <Shield className="h-4 w-4 mr-2" />
+          Audit Support
+        </Button>
+        
+        <Button variant="outline" onClick={() => setShowValidation(true)}>
+          <CheckCircle2 className="h-4 w-4 mr-2" />
+          Validate Accuracy
+        </Button>
+        
+        <Button variant="outline" onClick={() => setShowHelp(true)}>
+          <Users className="h-4 w-4 mr-2" />
+          Expert Guidance
+        </Button>
+        
+        <Button onClick={() => window.location.href = '/financial-reporting'}>
+          <FileSpreadsheet className="h-4 w-4 mr-2" />
+          Generate Reports
+        </Button>
+      </div>
+
+      {/* Audit Support Dialog */}
+      <Dialog open={showAuditSupport} onOpenChange={setShowAuditSupport}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-blue-600" />
+              Audit Support & Documentation Guidance
+            </DialogTitle>
+            <DialogDescription>
+              Ensure maximum accuracy and build auditor confidence with proper documentation
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto">
+            <DocumentationGuidance 
+              filingType="corporation_tax"
+              companyType="small"
+              onDocumentUpload={(requirement, files) => {
+                console.log('Uploading documents for:', requirement.name, files);
+                // Handle document upload logic here
+                toast({
+                  title: "Documents Uploaded",
+                  description: `${files.length} document(s) uploaded for ${requirement.name}`,
+                });
+              }}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Accuracy Validation Dialog */}
+      <Dialog open={showValidation} onOpenChange={setShowValidation}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              Accuracy Validation & Quality Assurance
+            </DialogTitle>
+            <DialogDescription>
+              Run comprehensive checks to ensure filing accuracy and compliance
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto">
+            <AccuracyValidation 
+              filingData={{
+                trialBalance,
+                journalEntries,
+                totalDebits,
+                totalCredits
+              }}
+              documents={[]}
+              onValidationComplete={(results) => {
+                const failedChecks = results.filter(r => r.status === 'failed').length;
+                toast({
+                  title: "Validation Complete",
+                  description: failedChecks > 0 
+                    ? `${failedChecks} issues found that need attention`
+                    : "All validation checks passed successfully",
+                  variant: failedChecks > 0 ? "destructive" : "default"
+                });
+              }}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Expert Guidance Dialog */}
+      <Dialog open={showHelp} onOpenChange={setShowHelp}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-blue-600" />
+              Expert Guidance & Best Practices
+            </DialogTitle>
+            <DialogDescription>
+              Professional guidance to ensure accuracy and build auditor confidence
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto">
+            <ContextualHelp context="trial_balance" position="modal" />
+          </div>
+        </DialogContent>
+      </Dialog>
       </div>
 
       {loading ? (
