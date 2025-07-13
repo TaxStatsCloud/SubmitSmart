@@ -13,6 +13,8 @@ import AgentDashboard from "@/pages/AgentDashboard";
 import Credits from "@/pages/Credits";
 import CreditTransactions from "@/pages/CreditTransactions";
 import AppLayout from "@/components/layout/AppLayout";
+import Login from "@/pages/Login";
+import Subscription from "@/pages/Subscription";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AiAssistantProvider } from "@/contexts/AiAssistantContext";
 import { useEffect } from "react";
@@ -35,6 +37,9 @@ function Router() {
   return (
     <AppLayout>
       <Switch>
+        {/* Authentication */}
+        <Route path="/login" component={Login} />
+        
         {/* Dashboard */}
         <Route path="/" component={Dashboard} />
         
@@ -66,6 +71,7 @@ function Router() {
         <Route path="/billing" component={Billing} />
         <Route path="/credits" component={Credits} />
         <Route path="/transactions" component={CreditTransactions} />
+        <Route path="/subscription" component={Subscription} />
         
         {/* Advanced features */}
         <Route path="/tax-engine" component={TaxEngine} />

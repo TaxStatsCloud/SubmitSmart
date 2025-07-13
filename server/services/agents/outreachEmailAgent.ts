@@ -11,7 +11,7 @@ import { db } from "../../db";
 import { companies, companyContacts, filingReminders, outreachCampaigns, agentRuns } from "@shared/schema";
 import { eq, and, gte, lte, not, inArray } from "drizzle-orm";
 import { logger } from "../../utils/logger";
-import { sendEmail } from "../emailService";
+import { emailService } from "../emailService";
 
 // Creating a specialized logger for this agent
 const agentLogger = logger.withContext('OutreachEmailAgent');

@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
@@ -8,12 +9,14 @@ import { generateResponse } from "./services/aiService";
 import { generateCompletion } from "./services/openai";
 import OpenAI from "openai";
 import { companiesHouseService } from "./services/companiesHouseService";
+import { emailService } from "./services/emailService";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { WebSocketServer } from "ws";
 import agentRoutes from "./routes/agentRoutes";
 import billingRoutes from "./routes/billingRoutes";
+import Stripe from "stripe";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -55,9 +58,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
+
+  // Initialize Stripe
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
+  }
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: "2023-10-16",
+  });
   
   // Register agent routes
   app.use('/api/agents', agentRoutes);
+  
+  // Enhanced Stripe payment routes
+  app.post("/api/create-payment-intent", async (req, res) => {
+    try {
+      const { amount, credits, planId } = req.body;
+      
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(amount * 100), // Convert to pence
+        currency: "gbp",
+        metadata: {
+          credits: credits.toString(),
+          planId: planId,
+          userId: req.user?.id?.toString() || 'anonymous'
+        }
+      });
+      
+      res.json({ clientSecret: paymentIntent.client_secret });
+    } catch (error: any) {
+      console.error('Stripe payment intent error:', error);
+      res.status(500).json({ 
+        message: "Error creating payment intent: " + error.message 
+      });
+    }
+  });
+
+  // Webhook for Stripe payment confirmations
+  app.post("/api/stripe-webhook", express.raw({type: 'application/json'}), async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    let event;
+
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    } catch (err) {
+      console.log(`Webhook signature verification failed.`, err);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    if (event.type === 'payment_intent.succeeded') {
+      const paymentIntent = event.data.object;
+      const { credits, planId, userId } = paymentIntent.metadata;
+      
+      // Add credits to user account (implement in storage)
+      if (userId && userId !== 'anonymous') {
+        try {
+          // Send confirmation email
+          await emailService.sendPaymentConfirmation(
+            paymentIntent.receipt_email || 'user@example.com',
+            paymentIntent.amount / 100, // Convert back to pounds
+            parseInt(credits)
+          );
+        } catch (error) {
+          console.error('Error sending payment confirmation:', error);
+        }
+      }
+    }
+
+    res.json({received: true});
+  });
 
   // ETB data endpoint for debugging
   app.get('/api/etb/data', (req, res) => {

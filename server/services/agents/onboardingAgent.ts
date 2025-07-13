@@ -11,7 +11,7 @@ import { db } from "../../db";
 import { users, companies, documents, filings, agentRuns, activities } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 import { logger } from "../../utils/logger";
-import { sendEmail } from "../emailService";
+import { emailService } from "../emailService";
 import { analyzeDocument } from "../openai";
 
 // Creating a specialized logger for this agent
@@ -61,7 +61,7 @@ export async function onboardNewUser(userId: number): Promise<{
     }
     
     // Send welcome email
-    await sendWelcomeEmail(user, company);
+    await emailService.sendWelcomeEmail(user.email, user.fullName);
     
     // Create activity record for user signup
     await db
