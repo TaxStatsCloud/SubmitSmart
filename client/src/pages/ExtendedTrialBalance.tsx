@@ -98,86 +98,113 @@ export default function ExtendedTrialBalance() {
   const loadAiProcessedData = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/tax-filings/1/2024-25/processed-data');
+      // Fetch trial balance data from the new API endpoint
+      const response = await fetch('/api/trial-balance/2/2024-25');
       const data = await response.json();
-      setAiProcessedData(data);
       
-      // Generate trial balance from AI processed data
-      const entries: TrialBalanceEntry[] = [];
-      
-      if (data.turnover > 0) {
+      if (data.trialBalance && data.trialBalance.length > 0) {
+        // Use the trial balance entries directly from the API
+        setTrialBalance(data.trialBalance);
+        setAiProcessedData(data.finalBalances);
+      } else {
+        // Fallback to processed data aggregation
+        const fallbackResponse = await fetch('/api/tax-filings/1/2024-25/processed-data');
+        const fallbackData = await fallbackResponse.json();
+        setAiProcessedData(fallbackData);
+        
+        // Generate trial balance from AI processed data
+        const entries: TrialBalanceEntry[] = [];
+        
+        if (fallbackData.turnover > 0) {
+          entries.push({
+            id: 'tb_4000',
+            accountCode: '4000',
+            accountName: 'Sales Revenue',
+            debit: 0,
+            credit: fallbackData.turnover,
+            source: 'ai_processed',
+            documentRef: 'AI processed sales invoices'
+          });
+        }
+        
+        if (fallbackData.otherIncome > 0) {
+          entries.push({
+            id: 'tb_4900',
+            accountCode: '4900',
+            accountName: 'Other Income',
+            debit: 0,
+            credit: fallbackData.otherIncome,
+            source: 'ai_processed',
+            documentRef: 'AI processed other income'
+          });
+        }
+        
+        if (fallbackData.costOfSales > 0) {
+          entries.push({
+            id: 'tb_5000',
+            accountCode: '5000',
+            accountName: 'Cost of Sales',
+            debit: fallbackData.costOfSales,
+            credit: 0,
+            source: 'ai_processed',
+            documentRef: 'AI processed purchase invoices'
+          });
+        }
+        
+        if (fallbackData.administrativeExpenses > 0) {
+          entries.push({
+            id: 'tb_6000',
+            accountCode: '6000',
+            accountName: 'Administrative Expenses',
+            debit: fallbackData.administrativeExpenses,
+            credit: 0,
+            source: 'ai_processed',
+            documentRef: 'AI processed expense receipts'
+          });
+        }
+        
+        if (fallbackData.professionalFees > 0) {
+          entries.push({
+            id: 'tb_6100',
+            accountCode: '6100',
+            accountName: 'Professional Fees',
+            debit: fallbackData.professionalFees,
+            credit: 0,
+            source: 'ai_processed',
+            documentRef: 'AI processed professional fees'
+          });
+        }
+        
+        // Add opening balances for demo
         entries.push({
-          id: 'tb_4000',
-          accountCode: '4000',
-          accountName: 'Sales Revenue',
+          id: 'tb_1200',
+          accountCode: '1200',
+          accountName: 'Cash at Bank',
+          debit: 25000,
+          credit: 0,
+          source: 'opening_balance'
+        });
+        
+        entries.push({
+          id: 'tb_3000',
+          accountCode: '3000',
+          accountName: 'Share Capital',
           debit: 0,
-          credit: data.turnover,
-          source: 'ai_processed',
-          documentRef: 'AI processed sales invoices'
+          credit: 10000,
+          source: 'opening_balance'
         });
-      }
-      
-      if (data.otherIncome > 0) {
+        
         entries.push({
-          id: 'tb_4900',
-          accountCode: '4900',
-          accountName: 'Other Income',
+          id: 'tb_3100',
+          accountCode: '3100',
+          accountName: 'Retained Earnings',
           debit: 0,
-          credit: data.otherIncome,
-          source: 'ai_processed',
-          documentRef: 'AI processed other income'
+          credit: 15000,
+          source: 'opening_balance'
         });
+        
+        setTrialBalance(entries);
       }
-      
-      if (data.costOfSales > 0) {
-        entries.push({
-          id: 'tb_5000',
-          accountCode: '5000',
-          accountName: 'Cost of Sales',
-          debit: data.costOfSales,
-          credit: 0,
-          source: 'ai_processed',
-          documentRef: 'AI processed purchase invoices'
-        });
-      }
-      
-      if (data.administrativeExpenses > 0) {
-        entries.push({
-          id: 'tb_6000',
-          accountCode: '6000',
-          accountName: 'Administrative Expenses',
-          debit: data.administrativeExpenses,
-          credit: 0,
-          source: 'ai_processed',
-          documentRef: 'AI processed expense receipts'
-        });
-      }
-      
-      if (data.professionalFees > 0) {
-        entries.push({
-          id: 'tb_6100',
-          accountCode: '6100',
-          accountName: 'Professional Fees',
-          debit: data.professionalFees,
-          credit: 0,
-          source: 'ai_processed',
-          documentRef: 'AI processed professional fees'
-        });
-      }
-      
-      if (data.otherExpenses > 0) {
-        entries.push({
-          id: 'tb_6900',
-          accountCode: '6900',
-          accountName: 'Other Expenses',
-          debit: data.otherExpenses,
-          credit: 0,
-          source: 'ai_processed',
-          documentRef: 'AI processed other expenses'
-        });
-      }
-      
-      setTrialBalance(entries);
     } catch (error) {
       console.error('Error loading processed data:', error);
       toast({
