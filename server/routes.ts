@@ -740,7 +740,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const salesRevenue = 55.81 + 13.95 + 9.95 + 11.95 + 11.95 + 9.95; // £113.56
         const vatOnSales = 8.91; // VAT from order #3355744244
         const netSales = salesRevenue - vatOnSales; // £104.65
-        const totalExpenses = 65.17 + 35.62; // £100.79
+        const expenseAmount = 65.17 + 35.62; // £100.79
         
         // Sample data based on the uploaded documents with detailed breakdowns
         const sampleData = [
@@ -838,7 +838,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         trialBalanceEntries.push(...sampleData);
         totalRevenue = netSales;
-        totalExpenses = totalExpenses;
+        totalExpenses = expenseAmount;
       }
       
       // Calculate final balances

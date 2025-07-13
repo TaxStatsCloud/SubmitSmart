@@ -84,71 +84,70 @@ function TrialBalanceRow({ entry, onEditBreakdown }: { entry: TrialBalanceEntry;
   const [isOpen, setIsOpen] = useState(false);
   
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <CollapsibleTrigger asChild>
-        <tr className="border-b hover:bg-muted/50 cursor-pointer">
-          <td className="p-2 font-mono">{entry.accountCode}</td>
-          <td className="p-2">
-            <div className="flex items-center gap-2">
-              {entry.breakdown && entry.breakdown.length > 0 && (
-                <ChevronRight className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
-              )}
-              {entry.accountName}
+    <>
+      <tr 
+        className="border-b hover:bg-muted/50 cursor-pointer"
+        onClick={() => entry.breakdown && entry.breakdown.length > 0 && setIsOpen(!isOpen)}
+      >
+        <td className="p-2 font-mono">{entry.accountCode}</td>
+        <td className="p-2">
+          <div className="flex items-center gap-2">
+            {entry.breakdown && entry.breakdown.length > 0 && (
+              <ChevronRight className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
+            )}
+            {entry.accountName}
+          </div>
+        </td>
+        <td className="p-2 text-right">
+          {entry.debit > 0 ? `£${entry.debit.toFixed(2)}` : '-'}
+        </td>
+        <td className="p-2 text-right">
+          {entry.credit > 0 ? `£${entry.credit.toFixed(2)}` : '-'}
+        </td>
+        <td className="p-2">
+          <Badge variant={entry.source === 'ai_processed' ? 'default' : 'secondary'}>
+            {entry.source === 'ai_processed' ? 'AI Processed' : 'Manual Journal'}
+          </Badge>
+        </td>
+      </tr>
+      {isOpen && entry.breakdown && entry.breakdown.length > 0 && (
+        <tr>
+          <td colSpan={5} className="p-2 bg-gray-50">
+            <div className="ml-6 space-y-2">
+              <div className="text-sm font-semibold text-gray-700 mb-3">
+                Breakdown for {entry.accountName}:
+              </div>
+              <div className="space-y-1">
+                {entry.breakdown.map((item, idx) => (
+                  <div key={idx} className="flex justify-between items-center py-2 px-4 bg-white rounded border">
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">{item.documentName}</div>
+                      <div className="text-gray-600 text-xs">{item.description}</div>
+                    </div>
+                    <div className="font-mono text-right ml-4 font-medium">
+                      £{item.amount.toFixed(2)}
+                    </div>
+                    <div className="ml-4">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditBreakdown(entry.id, item);
+                        }}
+                        className="h-6 w-6 p-0"
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </td>
-          <td className="p-2 text-right">
-            {entry.debit > 0 ? `£${entry.debit.toFixed(2)}` : '-'}
-          </td>
-          <td className="p-2 text-right">
-            {entry.credit > 0 ? `£${entry.credit.toFixed(2)}` : '-'}
-          </td>
-          <td className="p-2">
-            <Badge variant={entry.source === 'ai_processed' ? 'default' : 'secondary'}>
-              {entry.source === 'ai_processed' ? 'AI Processed' : 'Manual Journal'}
-            </Badge>
-          </td>
         </tr>
-      </CollapsibleTrigger>
-      {entry.breakdown && entry.breakdown.length > 0 && (
-        <CollapsibleContent asChild>
-          <tr>
-            <td colSpan={5} className="p-2 bg-gray-50">
-              <div className="ml-6 space-y-2">
-                <div className="text-sm font-semibold text-gray-700 mb-3">
-                  Breakdown for {entry.accountName}:
-                </div>
-                <div className="space-y-1">
-                  {entry.breakdown.map((item, idx) => (
-                    <div key={idx} className="flex justify-between items-center py-2 px-4 bg-white rounded border">
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">{item.documentName}</div>
-                        <div className="text-gray-600 text-xs">{item.description}</div>
-                      </div>
-                      <div className="font-mono text-right ml-4 font-medium">
-                        £{item.amount.toFixed(2)}
-                      </div>
-                      <div className="ml-4">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onEditBreakdown(entry.id, item);
-                          }}
-                          className="h-6 w-6 p-0"
-                        >
-                          <Edit className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </td>
-          </tr>
-        </CollapsibleContent>
       )}
-    </Collapsible>
+    </>
   );
 }
 
