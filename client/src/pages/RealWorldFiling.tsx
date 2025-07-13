@@ -35,8 +35,58 @@ const RealWorldFiling = () => {
     }
   });
 
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+
+  const handleBulkUpload = async (files: File[], documentType: string) => {
+    const uploadPromises = files.map(async (file) => {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('documentType', documentType);
+        formData.append('companyId', '1');
+        formData.append('filingPeriod', '2024-25');
+        
+        const response = await fetch('/api/documents/upload', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          return { success: true, file: file.name, result };
+        } else {
+          throw new Error(`Upload failed for ${file.name}`);
+        }
+      } catch (error) {
+        return { success: false, file: file.name, error: error.message };
+      }
+    });
+
+    const results = await Promise.all(uploadPromises);
+    const successful = results.filter(r => r.success);
+    const failed = results.filter(r => !r.success);
+
+    if (successful.length > 0) {
+      toast({
+        title: "Bulk Upload Complete",
+        description: `Successfully uploaded ${successful.length} files${failed.length > 0 ? `, ${failed.length} failed` : ''}`,
+      });
+    }
+
+    if (failed.length > 0) {
+      toast({
+        title: "Some uploads failed",
+        description: `Failed to upload: ${failed.map(f => f.file).join(', ')}`,
+        variant: "destructive",
+      });
+    }
+
+    return results;
+  };
+
   const saveSectionMutation = useMutation({
     mutationFn: async (sectionData: any) => {
+      console.log('Saving section data:', sectionData);
       const response = await fetch('/api/tax-filings/1/2024-25/section', {
         method: 'POST',
         headers: {
@@ -45,13 +95,17 @@ const RealWorldFiling = () => {
         body: JSON.stringify(sectionData)
       });
       
+      const result = await response.json();
+      console.log('Save response:', result);
+      
       if (!response.ok) {
-        throw new Error('Failed to save section');
+        throw new Error(result.error || 'Failed to save section');
       }
       
-      return response.json();
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Save successful:', data);
       toast({
         title: "Section saved",
         description: "Your progress has been saved successfully",
@@ -59,9 +113,10 @@ const RealWorldFiling = () => {
       queryClient.invalidateQueries({ queryKey: ['tax-filings'] });
     },
     onError: (error) => {
+      console.error('Save error:', error);
       toast({
         title: "Save failed",
-        description: "Failed to save section data",
+        description: error.message || "Failed to save section data",
         variant: "destructive"
       });
     }
@@ -382,16 +437,17 @@ const RealWorldFiling = () => {
                           const input = document.createElement('input');
                           input.type = 'file';
                           input.accept = '.pdf,.jpg,.jpeg,.png';
+                          input.multiple = true;
                           input.onchange = (e) => {
-                            const file = (e.target as HTMLInputElement).files?.[0];
-                            if (file) {
-                              handleFileUpload(file, 'invoices');
+                            const files = Array.from((e.target as HTMLInputElement).files || []);
+                            if (files.length > 0) {
+                              handleBulkUpload(files, 'invoices');
                             }
                           };
                           input.click();
                         }}>
                           <Upload className="h-4 w-4 mr-2" />
-                          Upload
+                          Upload (Multiple)
                         </Button>
                       </CardContent>
                     </Card>
@@ -407,16 +463,17 @@ const RealWorldFiling = () => {
                           const input = document.createElement('input');
                           input.type = 'file';
                           input.accept = '.pdf,.jpg,.jpeg,.png';
+                          input.multiple = true;
                           input.onchange = (e) => {
-                            const file = (e.target as HTMLInputElement).files?.[0];
-                            if (file) {
-                              handleFileUpload(file, 'receipts');
+                            const files = Array.from((e.target as HTMLInputElement).files || []);
+                            if (files.length > 0) {
+                              handleBulkUpload(files, 'receipts');
                             }
                           };
                           input.click();
                         }}>
                           <Upload className="h-4 w-4 mr-2" />
-                          Upload
+                          Upload (Multiple)
                         </Button>
                       </CardContent>
                     </Card>
