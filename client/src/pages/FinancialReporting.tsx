@@ -173,6 +173,60 @@ export default function FinancialReporting() {
                 return item;
             }
           }));
+
+          // Update Balance Sheet from ETB final balances
+          // Distribute assets based on account codes from trial balance
+          const trialBalanceData = parsedData.trialBalance || [];
+          const assetsTotalFromTB = trialBalanceData
+            .filter(entry => entry.accountCode.startsWith('1'))
+            .reduce((sum, entry) => sum + (entry.debit - entry.credit), 0);
+          const liabilitiesTotalFromTB = trialBalanceData
+            .filter(entry => entry.accountCode.startsWith('2'))
+            .reduce((sum, entry) => sum + (entry.credit - entry.debit), 0);
+          const equityTotalFromTB = trialBalanceData
+            .filter(entry => entry.accountCode.startsWith('3'))
+            .reduce((sum, entry) => sum + (entry.credit - entry.debit), 0);
+
+          setBalanceSheetData(prev => ({
+            ...prev,
+            currentAssets: prev.currentAssets.map(item => {
+              if (item.id === 'debtors') {
+                const debtorsBalance = trialBalanceData
+                  .filter(entry => entry.accountCode === '1100')
+                  .reduce((sum, entry) => sum + (entry.debit - entry.credit), 0);
+                return { ...item, amount: Math.max(0, debtorsBalance) };
+              }
+              if (item.id === 'cash_bank') {
+                const cashBalance = trialBalanceData
+                  .filter(entry => entry.accountCode === '1200')
+                  .reduce((sum, entry) => sum + (entry.debit - entry.credit), 0);
+                return { ...item, amount: Math.max(0, cashBalance) };
+              }
+              return item;
+            }),
+            currentLiabilities: prev.currentLiabilities.map(item => {
+              if (item.id === 'vat_liability') {
+                const vatBalance = trialBalanceData
+                  .filter(entry => entry.accountCode === '2200')
+                  .reduce((sum, entry) => sum + (entry.credit - entry.debit), 0);
+                return { ...item, amount: Math.max(0, vatBalance) };
+              }
+              if (item.id === 'trade_creditors') {
+                const creditorsBalance = trialBalanceData
+                  .filter(entry => entry.accountCode === '2100')
+                  .reduce((sum, entry) => sum + (entry.credit - entry.debit), 0);
+                return { ...item, amount: Math.max(0, creditorsBalance) };
+              }
+              return item;
+            }),
+            equity: prev.equity.map(item => {
+              if (item.id === 'retained_earnings') {
+                const profitLoss = (parsedData.finalBalances.revenue || 0) - (parsedData.finalBalances.expenses || 0);
+                return { ...item, amount: profitLoss };
+              }
+              return item;
+            })
+          }));
         }
       }
     };
