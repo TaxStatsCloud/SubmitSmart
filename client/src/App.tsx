@@ -28,6 +28,7 @@ import CorporationTax from "@/pages/CorporationTax";
 import AdminDashboard from "@/pages/AdminDashboard";
 import TaxEngine from "@/pages/TaxEngine";
 import RealWorldFiling from "@/pages/RealWorldFiling";
+import ExtendedTrialBalance from "@/pages/ExtendedTrialBalance";
 
 function Router() {
   return (
@@ -44,6 +45,9 @@ function Router() {
         
         {/* Real-world filing demo */}
         <Route path="/real-world-filing" component={RealWorldFiling} />
+        
+        {/* Trial balance and accounting */}
+        <Route path="/trial-balance" component={ExtendedTrialBalance} />
         
         {/* Document routes */}
         <Route path="/upload" component={Upload} />

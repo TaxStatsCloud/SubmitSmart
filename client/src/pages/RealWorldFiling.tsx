@@ -50,6 +50,34 @@ const RealWorldFiling = () => {
     totalDocuments: 0
   });
 
+  const [etbData, setEtbData] = useState<any>(null);
+
+  // Load ETB data when component mounts
+  useEffect(() => {
+    const loadEtbData = () => {
+      if (typeof window !== 'undefined') {
+        const etbDataStored = localStorage.getItem('etbData');
+        if (etbDataStored) {
+          const parsedEtbData = JSON.parse(etbDataStored);
+          setEtbData(parsedEtbData);
+          
+          // Use ETB final balances to populate forms
+          if (parsedEtbData.finalBalances) {
+            setAiProcessedData(prev => ({
+              ...prev,
+              turnover: parsedEtbData.finalBalances.revenue || 0,
+              otherExpenses: parsedEtbData.finalBalances.expenses || 0,
+              processedDocuments: parsedEtbData.trialBalance?.length || 0,
+              totalDocuments: parsedEtbData.trialBalance?.length || 0
+            }));
+          }
+        }
+      }
+    };
+    
+    loadEtbData();
+  }, []);
+
   const checkForDuplicates = async (files: File[]) => {
     try {
       const response = await fetch('/api/documents');
@@ -631,11 +659,12 @@ const RealWorldFiling = () => {
                       onClick={() => {
                         handleSaveSection('documents', { uploaded: true });
                         fetchAiProcessedData();
-                        setActiveTab('income');
+                        // Navigate to ETB instead of income tab
+                        window.location.href = '/trial-balance';
                       }}
                       className="w-full"
                     >
-                      Process Documents & Continue
+                      Process Documents & Continue to Trial Balance
                     </Button>
                   </div>
                 </CardContent>
@@ -748,7 +777,11 @@ const RealWorldFiling = () => {
                     <Alert>
                       <CheckCircle2 className="h-4 w-4" />
                       <AlertDescription>
-                        <strong>AI Processing Complete:</strong> We've analysed {aiProcessedData.processedDocuments} of your {aiProcessedData.totalDocuments} uploaded documents and automatically populated the financial data above. You can review and adjust the figures if needed.
+                        <strong>{etbData ? 'Extended Trial Balance Complete' : 'AI Processing Complete'}:</strong> 
+                        {etbData 
+                          ? `Trial balance with ${etbData.trialBalance?.length || 0} account entries and ${etbData.journalEntries?.length || 0} journal adjustments has been processed.`
+                          : `We've analysed ${aiProcessedData.processedDocuments} of your {aiProcessedData.totalDocuments} uploaded documents and automatically populated the financial data above.`
+                        } You can review and adjust the figures if needed.
                       </AlertDescription>
                     </Alert>
                   )}
