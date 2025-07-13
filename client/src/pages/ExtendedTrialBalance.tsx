@@ -566,14 +566,14 @@ export default function ExtendedTrialBalance() {
               Add Journal Entry
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl">
-            <DialogHeader>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogHeader className="flex-shrink-0">
               <DialogTitle>Add Journal Entry</DialogTitle>
               <DialogDescription>
                 Create manual adjustments to the trial balance or use AI to generate entries
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-6">
+            <div className="flex-1 overflow-y-auto space-y-6 pr-2 pb-4">
               {/* AI Journal Entry Section */}
               <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4">
                 <h3 className="font-semibold text-lg mb-3 text-blue-800">AI Journal Entry Generator</h3>
@@ -656,7 +656,7 @@ export default function ExtendedTrialBalance() {
               {/* Manual Journal Entry Section */}
               <div className="border-t pt-4">
                 <h3 className="font-semibold text-lg mb-3">Manual Journal Entry</h3>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="date">Date</Label>
                   <Input
@@ -744,14 +744,15 @@ export default function ExtendedTrialBalance() {
                 
                 <div className="space-y-2">
                   {newJournal.entries.map((entry, index) => (
-                    <div key={index} className="grid grid-cols-12 gap-2 items-center">
-                      <div className="col-span-2">
+                    <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center bg-gray-50 p-3 rounded-lg">
+                      <div className="md:col-span-2 space-y-1">
+                        <Label className="text-xs text-gray-600">Account Code</Label>
                         <Select 
                           value={entry.accountCode} 
                           onValueChange={(value) => updateJournalLine(index, 'accountCode', value)}
                         >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Account" />
+                          <SelectTrigger className="h-10">
+                            <SelectValue placeholder="Select Account" />
                           </SelectTrigger>
                           <SelectContent>
                             {Object.entries(ACCOUNT_CODES).map(([code, name]) => (
@@ -760,39 +761,48 @@ export default function ExtendedTrialBalance() {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="col-span-4">
+                      <div className="md:col-span-4 space-y-1">
+                        <Label className="text-xs text-gray-600">Account Name</Label>
                         <Input
                           placeholder="Account Name"
                           value={entry.accountName}
                           onChange={(e) => updateJournalLine(index, 'accountName', e.target.value)}
+                          className="h-10"
                         />
                       </div>
-                      <div className="col-span-2">
+                      <div className="md:col-span-2 space-y-1">
+                        <Label className="text-xs text-gray-600">Debit (£)</Label>
                         <Input
                           type="number"
                           step="0.01"
-                          placeholder="Debit"
+                          placeholder="0.00"
                           value={entry.debit || ''}
                           onChange={(e) => updateJournalLine(index, 'debit', parseFloat(e.target.value) || 0)}
+                          className="h-10"
                         />
                       </div>
-                      <div className="col-span-2">
+                      <div className="md:col-span-2 space-y-1">
+                        <Label className="text-xs text-gray-600">Credit (£)</Label>
                         <Input
                           type="number"
                           step="0.01"
-                          placeholder="Credit"
+                          placeholder="0.00"
                           value={entry.credit || ''}
                           onChange={(e) => updateJournalLine(index, 'credit', parseFloat(e.target.value) || 0)}
+                          className="h-10"
                         />
                       </div>
-                      <div className="col-span-2">
+                      <div className="md:col-span-2 space-y-1">
+                        <Label className="text-xs text-gray-600">Actions</Label>
                         <Button 
-                          variant="ghost" 
+                          variant="outline" 
                           size="sm" 
                           onClick={() => removeJournalLine(index)}
                           disabled={newJournal.entries.length <= 2}
+                          className="w-full h-10"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Remove
                         </Button>
                       </div>
                     </div>
@@ -800,21 +810,21 @@ export default function ExtendedTrialBalance() {
                 </div>
                 
                 <div className="mt-4 p-3 bg-muted rounded-lg">
-                  <div className="flex justify-between">
-                    <span>Total Debits: £{journalDebits.toFixed(2)}</span>
-                    <span>Total Credits: £{journalCredits.toFixed(2)}</span>
-                    <span className={`font-medium ${Math.abs(journalDebits - journalCredits) < 0.01 ? 'text-green-600' : 'text-red-600'}`}>
+                  <div className="flex flex-col sm:flex-row justify-between gap-2">
+                    <span className="font-medium">Total Debits: £{journalDebits.toFixed(2)}</span>
+                    <span className="font-medium">Total Credits: £{journalCredits.toFixed(2)}</span>
+                    <span className={`font-semibold ${Math.abs(journalDebits - journalCredits) < 0.01 ? 'text-green-600' : 'text-red-600'}`}>
                       Difference: £{Math.abs(journalDebits - journalCredits).toFixed(2)}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setShowJournalDialog(false)}>
+              <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t mt-6">
+                <Button variant="outline" onClick={() => setShowJournalDialog(false)} className="w-full sm:w-auto">
                   Cancel
                 </Button>
-                <Button onClick={handleAddJournal}>
+                <Button onClick={handleAddJournal} className="w-full sm:w-auto">
                   Save Journal Entry
                 </Button>
               </div>
