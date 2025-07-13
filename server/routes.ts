@@ -761,7 +761,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const domainCosts = 22.57; // Domain registration costs
         
         // Sample data based on the uploaded documents with detailed breakdowns
+        // Using proper double-entry bookkeeping - every credit must have a corresponding debit
         const sampleData = [
+          // Sales transaction: Dr Trade Debtors, Cr Sales Revenue, Cr VAT Liability
           { 
             id: 'etsy_sales', 
             accountCode: '4000', 
@@ -780,20 +782,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ]
           },
           { 
-            id: 'bank_balance', 
-            accountCode: '1200', 
-            accountName: 'Cash at Bank', 
-            debit: bankBalance, 
-            credit: 0, 
-            source: 'ai_processed', 
-            documentRef: 'Monzo bank statement',
-            breakdown: [
-              { documentName: 'Monzo Bank Statement', amount: bankBalance, description: 'Final balance as of 23/09/2024', documentId: 'monzo_statement_2024' },
-              { documentName: 'Etsy Payments Received', amount: 82.01, description: 'Payments from Stichting Custodia (Etsy)', documentId: 'etsy_payments_2024' },
-              { documentName: 'Expenses Paid', amount: -82.01, description: 'Printify, software, domain costs paid', documentId: 'expenses_paid_2024' }
-            ]
-          },
-          { 
             id: 'vat_liability', 
             accountCode: '2200', 
             accountName: 'VAT Liability', 
@@ -806,17 +794,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ]
           },
           { 
-            id: 'debtors', 
+            id: 'debtors_original', 
             accountCode: '1100', 
             accountName: 'Trade Debtors', 
-            debit: salesRevenue - etsyReceived, 
+            debit: salesRevenue, 
             credit: 0, 
             source: 'ai_processed', 
-            documentRef: 'Outstanding receivables after Etsy payments',
+            documentRef: 'Sales invoices raised (debit side)',
             breakdown: [
-              { documentName: 'Outstanding Orders', amount: salesRevenue - etsyReceived, description: 'Orders not yet paid via Etsy (£113.56 - £82.01)', documentId: 'outstanding_orders' }
+              { documentName: 'Order #3355744244', amount: 55.81, description: 'German customer order', documentId: 'order_3355744244' },
+              { documentName: 'Order #3276887608', amount: 13.95, description: 'UK customer order', documentId: 'order_3276887608' },
+              { documentName: 'Order #3311826278', amount: 9.95, description: 'UK customer order', documentId: 'order_3311826278' },
+              { documentName: 'Order #3282549690', amount: 11.95, description: 'UK customer order', documentId: 'order_3282549690' },
+              { documentName: 'Order #3278636927', amount: 11.95, description: 'UK customer order', documentId: 'order_3278636927' },
+              { documentName: 'Order #3278594603', amount: 9.95, description: 'UK customer order', documentId: 'order_3278594603' }
             ]
           },
+          // Bank receipt: Dr Cash at Bank, Cr Trade Debtors (for payments received)
+          { 
+            id: 'bank_balance', 
+            accountCode: '1200', 
+            accountName: 'Cash at Bank', 
+            debit: etsyReceived, 
+            credit: 0, 
+            source: 'ai_processed', 
+            documentRef: 'Etsy payments received',
+            breakdown: [
+              { documentName: 'Stichting Custodia Payment', amount: 39.55, description: 'Etsy payment 11/07/2024', documentId: 'etsy_payment_1' },
+              { documentName: 'Stichting Custodia Payment', amount: 8.22, description: 'Etsy payment 27/05/2024', documentId: 'etsy_payment_2' },
+              { documentName: 'Stichting Custodia Payment', amount: 35.18, description: 'Etsy payment 03/05/2024', documentId: 'etsy_payment_3' },
+              { documentName: 'Stichting Custodia Payment', amount: 0.06, description: 'Etsy payment 29/04/2024 + 23/04/2024', documentId: 'etsy_payment_4' }
+            ]
+          },
+          // Credit entry for payments received: Dr Cash at Bank, Cr Trade Debtors
+          { 
+            id: 'debtors_payment', 
+            accountCode: '1100', 
+            accountName: 'Trade Debtors', 
+            debit: 0, 
+            credit: etsyReceived, 
+            source: 'ai_processed', 
+            documentRef: 'Etsy payments received (contra)',
+            breakdown: [
+              { documentName: 'Etsy Payments Received', amount: etsyReceived, description: 'Payments from customers via Etsy', documentId: 'etsy_payments_contra' }
+            ]
+          },
+          // Purchase transactions: Dr Cost of Sales, Cr Cash at Bank (for payments made)
           { 
             id: 'printify_costs', 
             accountCode: '5000', 
@@ -829,9 +852,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               { documentName: 'Invoice #2024.4348402', amount: 27.16, description: 'Olympic Hearts T-Shirt production', documentId: 'printify_2024_4348402' },
               { documentName: 'Invoice #2024.3234076', amount: 8.95, description: 'Sloth Mug production', documentId: 'printify_2024_3234076' },
               { documentName: 'Invoice #2024.2580143', amount: 9.72, description: 'Sloth T-Shirt production', documentId: 'printify_2024_2580143' },
-              { documentName: 'Invoice #2024.2572395', amount: 9.72, description: 'Cat T-Shirt production (paid)', documentId: 'printify_2024_2572395' },
-              { documentName: 'Invoice #2024.2572333', amount: 9.72, description: 'Kawaii Cat T-Shirt production (paid)', documentId: 'printify_2024_2572333' },
-              { documentName: 'Invoice #2024.2473473', amount: 9.72, description: 'Custom T-Shirt production (paid)', documentId: 'printify_2024_2473473' }
+              { documentName: 'Invoice #2024.2572395', amount: 9.72, description: 'Cat T-Shirt production', documentId: 'printify_2024_2572395' },
+              { documentName: 'Invoice #2024.2572333', amount: 9.72, description: 'Kawaii Cat T-Shirt production', documentId: 'printify_2024_2572333' },
+              { documentName: 'Invoice #2024.2473473', amount: 9.72, description: 'Custom T-Shirt production', documentId: 'printify_2024_2473473' }
             ]
           },
           { 
@@ -843,23 +866,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             source: 'ai_processed', 
             documentRef: 'Software subscriptions',
             breakdown: [
-              { documentName: 'Canva Pro Subscription', amount: 12.99, description: 'Monthly design subscription (paid)', documentId: 'canva_may_2024' },
-              { documentName: 'Placeit Subscription', amount: 14.06, description: 'Monthly mockup subscription (paid)', documentId: 'placeit_may_2024' },
-              { documentName: 'Erank Tool', amount: 4.69, description: 'SEO optimization tool (paid)', documentId: 'erank_may_2024' },
-              { documentName: 'Domain Registration', amount: 4.88, description: 'Namesco domain costs (paid)', documentId: 'namesco_2024' }
+              { documentName: 'Canva Pro Subscription', amount: 12.99, description: 'Monthly design subscription', documentId: 'canva_may_2024' },
+              { documentName: 'Placeit Subscription', amount: 14.06, description: 'Monthly mockup subscription', documentId: 'placeit_may_2024' },
+              { documentName: 'Erank Tool', amount: 4.69, description: 'SEO optimization tool', documentId: 'erank_may_2024' },
+              { documentName: 'Domain Registration', amount: 4.88, description: 'Namesco domain costs', documentId: 'namesco_2024' }
             ]
           },
+          // Payment transactions: Dr Expenses, Cr Cash at Bank
           { 
-            id: 'trade_creditors', 
-            accountCode: '2100', 
-            accountName: 'Trade Creditors', 
+            id: 'cash_payments', 
+            accountCode: '1200', 
+            accountName: 'Cash at Bank', 
             debit: 0, 
-            credit: 0.00, 
+            credit: 82.01, // Total expenses paid equals cash received
             source: 'ai_processed', 
-            documentRef: 'Outstanding supplier invoices',
+            documentRef: 'Expenses paid from bank account',
             breakdown: [
-              { documentName: 'Unpaid Printify invoices', amount: 0.00, description: 'All production costs paid per bank statement', documentId: 'printify_total' },
-              { documentName: 'Unpaid Software subscriptions', amount: 0.00, description: 'All software costs paid per bank statement', documentId: 'software_total' }
+              { documentName: 'Expenses Paid', amount: 82.01, description: 'Total expenses paid from bank account', documentId: 'expenses_paid' }
             ]
           }
         ];
