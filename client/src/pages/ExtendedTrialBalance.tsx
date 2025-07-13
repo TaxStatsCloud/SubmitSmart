@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Edit, Trash2, FileSpreadsheet, CheckCircle2, Calculator, AlertTriangle, ChevronRight, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, FileSpreadsheet, CheckCircle2, Calculator, AlertTriangle, ChevronRight, Eye, Upload, X, FileText, Paperclip } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
 
@@ -41,6 +41,9 @@ interface JournalEntry {
     debit: number;
     credit: number;
   }[];
+  source?: 'ai_generated' | 'manual_entry';
+  supportingDocuments?: File[];
+  aiExplanation?: string;
 }
 
 const ACCOUNT_CODES = {
@@ -161,7 +164,8 @@ export default function ExtendedTrialBalance() {
   const [aiJournalEntry, setAiJournalEntry] = useState({
     description: '',
     explanation: '',
-    isGenerating: false
+    isGenerating: false,
+    supportingDocuments: [] as File[]
   });
   const { toast } = useToast();
 
@@ -218,7 +222,8 @@ export default function ExtendedTrialBalance() {
     entries: [
       { accountCode: '', accountName: '', debit: 0, credit: 0 },
       { accountCode: '', accountName: '', debit: 0, credit: 0 }
-    ]
+    ],
+    supportingDocuments: [] as File[]
   });
 
   useEffect(() => {
@@ -367,7 +372,9 @@ export default function ExtendedTrialBalance() {
       date: newJournal.date,
       description: newJournal.description,
       reference: newJournal.reference,
-      entries: newJournal.entries.filter(entry => entry.accountCode && (entry.debit > 0 || entry.credit > 0))
+      entries: newJournal.entries.filter(entry => entry.accountCode && (entry.debit > 0 || entry.credit > 0)),
+      source: 'manual_entry',
+      supportingDocuments: newJournal.supportingDocuments || []
     };
     
     setJournalEntries([...journalEntries, journal]);
@@ -402,7 +409,8 @@ export default function ExtendedTrialBalance() {
       entries: [
         { accountCode: '', accountName: '', debit: 0, credit: 0 },
         { accountCode: '', accountName: '', debit: 0, credit: 0 }
-      ]
+      ],
+      supportingDocuments: []
     });
     
     toast({
@@ -472,21 +480,23 @@ export default function ExtendedTrialBalance() {
         // Auto-fill the manual journal form with AI-generated entries
         setNewJournal({
           date: new Date().toISOString().split('T')[0],
-          description: aiJournalEntry.description,
+          description: `${aiJournalEntry.description}\n\nDetailed Explanation: ${aiJournalEntry.explanation}\n\nAI Analysis: ${data.journalEntry.explanation}`,
           reference: 'AI Generated',
           entries: data.journalEntry.entries.map(entry => ({
             accountCode: entry.accountCode,
             accountName: entry.accountName,
             debit: entry.debit || 0,
             credit: entry.credit || 0
-          }))
+          })),
+          supportingDocuments: aiJournalEntry.supportingDocuments || []
         });
         
         // Reset AI form
         setAiJournalEntry({
           description: '',
           explanation: '',
-          isGenerating: false
+          isGenerating: false,
+          supportingDocuments: []
         });
       } else {
         toast({
@@ -578,16 +588,60 @@ export default function ExtendedTrialBalance() {
                       value={aiJournalEntry.description}
                       onChange={(e) => setAiJournalEntry({...aiJournalEntry, description: e.target.value})}
                       placeholder="e.g., Paid £500 rent for office space"
+                      className="h-12"
                     />
                   </div>
                   <div>
                     <Label htmlFor="ai-explanation">Detailed Explanation</Label>
-                    <Input
+                    <textarea
                       id="ai-explanation"
                       value={aiJournalEntry.explanation}
                       onChange={(e) => setAiJournalEntry({...aiJournalEntry, explanation: e.target.value})}
-                      placeholder="e.g., Monthly rent payment for office premises at 123 Main St, paid via bank transfer"
+                      placeholder="e.g., Monthly rent payment for office premises at 123 Main St, paid via bank transfer on 13th July 2024. This is a recurring monthly expense for our main office location. Receipt attached for audit purposes."
+                      className="w-full min-h-24 px-3 py-2 border border-input rounded-md bg-background text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
+                      rows={4}
                     />
+                  </div>
+                  <div>
+                    <Label htmlFor="ai-documents">Supporting Documents (Optional)</Label>
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                      <input
+                        type="file"
+                        id="ai-documents"
+                        multiple
+                        accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.csv"
+                        className="hidden"
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          setAiJournalEntry({...aiJournalEntry, supportingDocuments: files});
+                        }}
+                      />
+                      <label htmlFor="ai-documents" className="cursor-pointer">
+                        <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                        <p className="text-sm text-gray-600">Click to upload supporting documents</p>
+                        <p className="text-xs text-gray-500 mt-1">PDF, images, or spreadsheets</p>
+                      </label>
+                      {aiJournalEntry.supportingDocuments && aiJournalEntry.supportingDocuments.length > 0 && (
+                        <div className="mt-3 text-left">
+                          <p className="text-sm font-medium mb-2">Selected files:</p>
+                          {aiJournalEntry.supportingDocuments.map((file, idx) => (
+                            <div key={idx} className="flex items-center justify-between bg-gray-50 p-2 rounded text-sm">
+                              <span>{file.name}</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  const newFiles = aiJournalEntry.supportingDocuments.filter((_, i) => i !== idx);
+                                  setAiJournalEntry({...aiJournalEntry, supportingDocuments: newFiles});
+                                }}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <Button 
                     onClick={generateAiJournalEntry}
@@ -623,12 +677,59 @@ export default function ExtendedTrialBalance() {
                 </div>
                 <div>
                   <Label htmlFor="description">Description</Label>
-                  <Input
+                  <textarea
                     id="description"
-                    placeholder="Adjustment for..."
                     value={newJournal.description}
                     onChange={(e) => setNewJournal({...newJournal, description: e.target.value})}
+                    placeholder="e.g., Capital contributions by the two owners of £50 each. This represents initial capital investment into the business to fund startup costs and working capital requirements."
+                    className="w-full min-h-16 px-3 py-2 border border-input rounded-md bg-background text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
+                    rows={3}
                   />
+                </div>
+                
+                <div className="mt-4">
+                  <Label htmlFor="manual-documents">Supporting Documents (Optional)</Label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
+                    <input
+                      type="file"
+                      id="manual-documents"
+                      multiple
+                      accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.csv"
+                      className="hidden"
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files || []);
+                        setNewJournal({...newJournal, supportingDocuments: files});
+                      }}
+                    />
+                    <label htmlFor="manual-documents" className="cursor-pointer">
+                      <Paperclip className="h-6 w-6 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-600">Attach supporting documents</p>
+                      <p className="text-xs text-gray-500 mt-1">Receipts, invoices, bank statements</p>
+                    </label>
+                    {newJournal.supportingDocuments && newJournal.supportingDocuments.length > 0 && (
+                      <div className="mt-3 text-left">
+                        <p className="text-sm font-medium mb-2">Attached files:</p>
+                        {newJournal.supportingDocuments.map((file, idx) => (
+                          <div key={idx} className="flex items-center justify-between bg-gray-50 p-2 rounded text-sm">
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-gray-500" />
+                              <span>{file.name}</span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const newFiles = newJournal.supportingDocuments.filter((_, i) => i !== idx);
+                                setNewJournal({...newJournal, supportingDocuments: newFiles});
+                              }}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -795,22 +896,50 @@ export default function ExtendedTrialBalance() {
                 <div className="space-y-4">
                   {journalEntries.map((journal) => (
                     <div key={journal.id} className="border rounded-lg p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <h4 className="font-medium">{journal.reference}</h4>
-                          <p className="text-sm text-muted-foreground">{journal.description}</p>
-                        </div>
-                        <div className="text-sm text-muted-foreground">{journal.date}</div>
-                      </div>
-                      <div className="grid grid-cols-4 gap-2 text-sm">
-                        {journal.entries.map((entry, index) => (
-                          <div key={index} className="flex justify-between">
-                            <span>{entry.accountCode} - {entry.accountName}</span>
-                            <span>
-                              {entry.debit > 0 ? `Dr £${entry.debit.toFixed(2)}` : `Cr £${entry.credit.toFixed(2)}`}
-                            </span>
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-medium">{journal.reference}</h4>
+                            <Badge variant="secondary" className="text-xs">
+                              {journal.source === 'ai_generated' ? 'AI Generated' : 'Manual Entry'}
+                            </Badge>
                           </div>
-                        ))}
+                          <div className="bg-gray-50 p-3 rounded-md mb-3">
+                            <p className="text-sm text-gray-700 leading-relaxed">{journal.description}</p>
+                          </div>
+                          {journal.supportingDocuments && journal.supportingDocuments.length > 0 && (
+                            <div className="mb-3">
+                              <p className="text-xs text-gray-500 mb-1">Supporting Documents:</p>
+                              <div className="flex flex-wrap gap-1">
+                                {journal.supportingDocuments.map((doc, idx) => (
+                                  <span key={idx} className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">
+                                    <FileText className="h-3 w-3" />
+                                    {doc.name}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {journal.aiExplanation && (
+                            <div className="mb-3">
+                              <p className="text-xs text-gray-500 mb-1">AI Explanation:</p>
+                              <p className="text-xs text-gray-600 italic">{journal.aiExplanation}</p>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-sm text-muted-foreground ml-4">{journal.date}</div>
+                      </div>
+                      <div className="border-t pt-3">
+                        <div className="grid grid-cols-1 gap-2">
+                          {journal.entries.map((entry, index) => (
+                            <div key={index} className="flex justify-between items-center bg-gray-50 p-2 rounded">
+                              <span className="font-medium text-sm">{entry.accountCode} - {entry.accountName}</span>
+                              <span className="font-mono text-sm">
+                                {entry.debit > 0 ? `Dr £${entry.debit.toFixed(2)}` : `Cr £${entry.credit.toFixed(2)}`}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   ))}
