@@ -6,6 +6,7 @@ import { insertUserSchema, insertCompanySchema, insertDocumentSchema, insertFili
 import { processDocument } from "./services/documentService";
 import { generateResponse } from "./services/aiService";
 import { generateCompletion } from "./services/openai";
+import OpenAI from "openai";
 import { companiesHouseService } from "./services/companiesHouseService";
 import multer from "multer";
 import path from "path";
@@ -49,6 +50,11 @@ const upload = multer({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
+  
+  // Initialize OpenAI client
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
   
   // Register agent routes
   app.use('/api/agents', agentRoutes);
@@ -1001,7 +1007,7 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
 - 6xxx: Expenses (6000: Administrative Expenses, 6100: Marketing, 6200: Professional Fees)`;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
         messages: [
           { role: "system", content: journalPrompt },
           { role: "user", content: `Create journal entries for: ${description}\n\nExplanation: ${explanation}` }
@@ -1010,7 +1016,7 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
         temperature: 0.1
       });
 
-      const journalEntry = JSON.parse(response.choices[0].message.content);
+      const journalEntry = JSON.parse(response.choices[0].message.content || '{}');
       
       // Validate the journal entry
       if (!journalEntry.entries || !Array.isArray(journalEntry.entries)) {

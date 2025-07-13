@@ -158,6 +158,11 @@ export default function ExtendedTrialBalance() {
   const [editingJournal, setEditingJournal] = useState<JournalEntry | null>(null);
   const [aiProcessedData, setAiProcessedData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [aiJournalEntry, setAiJournalEntry] = useState({
+    description: '',
+    explanation: '',
+    isGenerating: false
+  });
   const { toast } = useToast();
 
   const handleEditBreakdownItem = (entryId: string, item: any) => {
@@ -214,12 +219,6 @@ export default function ExtendedTrialBalance() {
       { accountCode: '', accountName: '', debit: 0, credit: 0 },
       { accountCode: '', accountName: '', debit: 0, credit: 0 }
     ]
-  });
-
-  const [aiJournalEntry, setAiJournalEntry] = useState({
-    description: '',
-    explanation: '',
-    isGenerating: false
   });
 
   useEffect(() => {
