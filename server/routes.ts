@@ -610,6 +610,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI-processed financial data aggregation endpoint
+  app.get('/api/tax-filings/:companyId/:period/processed-data', async (req, res) => {
+    try {
+      const { companyId, period } = req.params;
+      const documents = await storage.getDocumentsByCompany(parseInt(companyId));
+      
+      const processedDocuments = documents.filter(doc => 
+        doc.metadata && 
+        ['sales_invoices', 'purchase_invoices', 'expense_receipts', 'bank_statements'].includes(doc.type)
+      );
+
+      if (processedDocuments.length === 0) {
+        return res.json({
+          turnover: 0,
+          otherIncome: 0,
+          costOfSales: 0,
+          administrativeExpenses: 0,
+          professionalFees: 0,
+          otherExpenses: 0,
+          processedDocuments: 0
+        });
+      }
+
+      const { aiDocumentProcessor } = await import('./services/aiDocumentProcessor');
+      const extractedDataArray = processedDocuments.map(doc => 
+        JSON.parse(doc.metadata || '{}')
+      );
+
+      const aggregatedData = await aiDocumentProcessor.aggregateFinancialData(extractedDataArray);
+      
+      res.json({
+        ...aggregatedData,
+        processedDocuments: processedDocuments.length,
+        totalDocuments: documents.length
+      });
+    } catch (error) {
+      console.error('Error aggregating financial data:', error);
+      res.status(500).json({ error: 'Failed to aggregate financial data' });
+    }
+  });
+
   app.post('/api/documents/upload', upload.single('file'), async (req, res) => {
     try {
       const file = req.file;
@@ -658,6 +699,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error('Error processing document:', error);
           broadcastUpdate('document_processing_failed', { documentId: document.id, error: error.message });
         });
+
+      // Process with AI if it's a financial document
+      const documentType = req.body.documentType || req.body.type;
+      if (['sales_invoices', 'purchase_invoices', 'expense_receipts', 'bank_statements'].includes(documentType)) {
+        try {
+          const { aiDocumentProcessor } = await import('./services/aiDocumentProcessor');
+          const extractedData = await aiDocumentProcessor.processDocument(file.path, documentType);
+          
+          // Store extracted data with the document using metadata field
+          await storage.updateDocument(document.id, {
+            metadata: JSON.stringify(extractedData),
+            processingStatus: 'completed'
+          });
+
+          console.log(`AI processing completed for ${document.name}:`, extractedData.summary);
+        } catch (aiError) {
+          console.error('AI processing failed:', aiError);
+          await storage.updateDocument(document.id, {
+            processingStatus: 'failed',
+            processingError: aiError.message
+          });
+        }
+      }
       
       res.status(201).json(document);
     } catch (error) {

@@ -13,11 +13,13 @@ PromptSubmissions is an AI-powered platform for UK corporate compliance, special
 - Agent-based outreach system
 
 ## Recent Changes
-- **July 13, 2025**: Implemented comprehensive Admin Dashboard for monitoring Companies House agent activities, outreach campaigns, response rates, and sign-up tracking
-- **July 13, 2025**: Built advanced Tax Preparation Engine similar to Xero Tax with accounts management, tax calculations, and filing workflows
-- **July 13, 2025**: Enhanced navigation system with proper routing for all features including admin monitoring and tax preparation tools
-- **July 13, 2025**: Fixed all 404 navigation errors by creating missing pages (Company Details, User Management, Document Library, and filing-specific pages)
-- **July 13, 2025**: Created reusable FilingTemplate component for different filing types
+- **July 13, 2025**: Implemented comprehensive AI Document Processing System with bulk upload capabilities, duplicate detection, and automatic P&L population
+- **July 13, 2025**: Built advanced document management with visual separation between sales/revenue and purchase/expense documents
+- **July 13, 2025**: Created intelligent duplicate file detection system that identifies files by name/size and provides user dialog for managing conflicts
+- **July 13, 2025**: Enhanced bulk upload system supporting multiple file types (.pdf, .jpg, .jpeg, .png) with proper error handling and progress tracking
+- **July 13, 2025**: Implemented AI-powered financial data extraction using OpenAI GPT-4o vision model to automatically populate corporation tax returns
+- **July 13, 2025**: Added real-time P&L calculations with automatic categorization of sales invoices, purchase invoices, and expense receipts
+- **July 13, 2025**: Created comprehensive API endpoints for document processing, aggregation, and financial data retrieval
 
 ## Major Market Opportunity - Companies House Digital Transformation
 **Critical Update (June 26, 2025)**: Companies House announced mandatory software filing for all company accounts from April 1, 2027. This creates a massive market opportunity for PromptSubmissions:

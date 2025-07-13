@@ -39,6 +39,16 @@ const RealWorldFiling = () => {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [duplicateFiles, setDuplicateFiles] = useState<{file: File, existingFile: string}[]>([]);
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [aiProcessedData, setAiProcessedData] = useState({
+    turnover: 0,
+    otherIncome: 0,
+    costOfSales: 0,
+    administrativeExpenses: 0,
+    professionalFees: 0,
+    otherExpenses: 0,
+    processedDocuments: 0,
+    totalDocuments: 0
+  });
 
   const checkForDuplicates = async (files: File[]) => {
     try {
@@ -58,6 +68,16 @@ const RealWorldFiling = () => {
     } catch (error) {
       console.error('Error checking duplicates:', error);
       return [];
+    }
+  };
+
+  const fetchAiProcessedData = async () => {
+    try {
+      const response = await fetch('/api/tax-filings/1/2024-25/processed-data');
+      const data = await response.json();
+      setAiProcessedData(data);
+    } catch (error) {
+      console.error('Error fetching AI processed data:', error);
     }
   };
 
@@ -610,6 +630,7 @@ const RealWorldFiling = () => {
                     <Button 
                       onClick={() => {
                         handleSaveSection('documents', { uploaded: true });
+                        fetchAiProcessedData();
                         setActiveTab('income');
                       }}
                       className="w-full"
@@ -640,16 +661,26 @@ const RealWorldFiling = () => {
                       <div className="space-y-3">
                         <div className="flex justify-between">
                           <span>Sales Turnover</span>
-                          <Input className="w-32 text-right" placeholder="0.00" />
+                          <Input 
+                            className="w-32 text-right" 
+                            placeholder="0.00" 
+                            value={aiProcessedData.turnover > 0 ? aiProcessedData.turnover.toFixed(2) : ''}
+                            onChange={(e) => setAiProcessedData({...aiProcessedData, turnover: parseFloat(e.target.value) || 0})}
+                          />
                         </div>
                         <div className="flex justify-between">
                           <span>Other Income</span>
-                          <Input className="w-32 text-right" placeholder="0.00" />
+                          <Input 
+                            className="w-32 text-right" 
+                            placeholder="0.00" 
+                            value={aiProcessedData.otherIncome > 0 ? aiProcessedData.otherIncome.toFixed(2) : ''}
+                            onChange={(e) => setAiProcessedData({...aiProcessedData, otherIncome: parseFloat(e.target.value) || 0})}
+                          />
                         </div>
                         <Separator />
                         <div className="flex justify-between font-medium">
                           <span>Total Turnover</span>
-                          <span className="text-green-600">£0.00</span>
+                          <span className="text-green-600">£{(aiProcessedData.turnover + aiProcessedData.otherIncome).toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
@@ -659,24 +690,44 @@ const RealWorldFiling = () => {
                       <div className="space-y-3">
                         <div className="flex justify-between">
                           <span>Cost of Sales</span>
-                          <Input className="w-32 text-right" placeholder="0.00" />
+                          <Input 
+                            className="w-32 text-right" 
+                            placeholder="0.00" 
+                            value={aiProcessedData.costOfSales > 0 ? aiProcessedData.costOfSales.toFixed(2) : ''}
+                            onChange={(e) => setAiProcessedData({...aiProcessedData, costOfSales: parseFloat(e.target.value) || 0})}
+                          />
                         </div>
                         <div className="flex justify-between">
                           <span>Administrative Expenses</span>
-                          <Input className="w-32 text-right" placeholder="0.00" />
+                          <Input 
+                            className="w-32 text-right" 
+                            placeholder="0.00" 
+                            value={aiProcessedData.administrativeExpenses > 0 ? aiProcessedData.administrativeExpenses.toFixed(2) : ''}
+                            onChange={(e) => setAiProcessedData({...aiProcessedData, administrativeExpenses: parseFloat(e.target.value) || 0})}
+                          />
                         </div>
                         <div className="flex justify-between">
                           <span>Professional Fees</span>
-                          <Input className="w-32 text-right" placeholder="0.00" />
+                          <Input 
+                            className="w-32 text-right" 
+                            placeholder="0.00" 
+                            value={aiProcessedData.professionalFees > 0 ? aiProcessedData.professionalFees.toFixed(2) : ''}
+                            onChange={(e) => setAiProcessedData({...aiProcessedData, professionalFees: parseFloat(e.target.value) || 0})}
+                          />
                         </div>
                         <div className="flex justify-between">
                           <span>Other Expenses</span>
-                          <Input className="w-32 text-right" placeholder="0.00" />
+                          <Input 
+                            className="w-32 text-right" 
+                            placeholder="0.00" 
+                            value={aiProcessedData.otherExpenses > 0 ? aiProcessedData.otherExpenses.toFixed(2) : ''}
+                            onChange={(e) => setAiProcessedData({...aiProcessedData, otherExpenses: parseFloat(e.target.value) || 0})}
+                          />
                         </div>
                         <Separator />
                         <div className="flex justify-between font-medium">
                           <span>Total Expenses</span>
-                          <span className="text-red-600">£0.00</span>
+                          <span className="text-red-600">£{(aiProcessedData.costOfSales + aiProcessedData.administrativeExpenses + aiProcessedData.professionalFees + aiProcessedData.otherExpenses).toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
@@ -686,10 +737,21 @@ const RealWorldFiling = () => {
                     <CardContent className="p-4">
                       <div className="flex justify-between items-center">
                         <span className="font-medium">Net Profit/(Loss)</span>
-                        <span className="text-lg font-bold">£0.00</span>
+                        <span className="text-lg font-bold">
+                          £{((aiProcessedData.turnover + aiProcessedData.otherIncome) - (aiProcessedData.costOfSales + aiProcessedData.administrativeExpenses + aiProcessedData.professionalFees + aiProcessedData.otherExpenses)).toFixed(2)}
+                        </span>
                       </div>
                     </CardContent>
                   </Card>
+
+                  {aiProcessedData.processedDocuments > 0 && (
+                    <Alert>
+                      <CheckCircle2 className="h-4 w-4" />
+                      <AlertDescription>
+                        <strong>AI Processing Complete:</strong> We've analysed {aiProcessedData.processedDocuments} of your {aiProcessedData.totalDocuments} uploaded documents and automatically populated the financial data above. You can review and adjust the figures if needed.
+                      </AlertDescription>
+                    </Alert>
+                  )}
 
                   <div className="pt-4">
                     <Button 
