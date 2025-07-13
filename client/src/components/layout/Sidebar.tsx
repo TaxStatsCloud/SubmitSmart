@@ -55,6 +55,13 @@ const Sidebar = () => {
                   Corporation Tax (CT600)
                 </a>
               </Link>
+              
+              <Link href="/real-world-filing">
+                <a className={`sidebar-link ${isActive("/real-world-filing") ? "active" : ""}`}>
+                  <span className="material-icons sidebar-icon">assignment</span>
+                  Real-World Filing Demo
+                </a>
+              </Link>
             </div>
 
             {/* Documents */}

@@ -27,6 +27,7 @@ import AnnualAccounts from "@/pages/AnnualAccounts";
 import CorporationTax from "@/pages/CorporationTax";
 import AdminDashboard from "@/pages/AdminDashboard";
 import TaxEngine from "@/pages/TaxEngine";
+import RealWorldFiling from "@/pages/RealWorldFiling";
 
 function Router() {
   return (
@@ -40,6 +41,9 @@ function Router() {
         <Route path="/filings/confirmation-statements" component={ConfirmationStatement} />
         <Route path="/filings/annual-accounts" component={AnnualAccounts} />
         <Route path="/filings/corporation-tax" component={CorporationTax} />
+        
+        {/* Real-world filing demo */}
+        <Route path="/real-world-filing" component={RealWorldFiling} />
         
         {/* Document routes */}
         <Route path="/upload" component={Upload} />
