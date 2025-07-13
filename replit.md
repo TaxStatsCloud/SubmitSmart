@@ -13,6 +13,11 @@ PromptSubmissions is an AI-powered platform for UK corporate compliance, special
 - Agent-based outreach system
 
 ## Recent Changes
+- **July 13, 2025**: Built comprehensive Financial Reporting module with detailed P&L, Balance Sheet, Cash Flow, Statement of Changes in Equity, and Statement of Comprehensive Income
+- **July 13, 2025**: Implemented AI-powered note generation system for customizable financial statement notes with UK GAAP compliance
+- **July 13, 2025**: Created proper accounting workflow: Documents → Extended Trial Balance → Financial Statements
+- **July 13, 2025**: Added customizable financial notes with AI generation options, templates, and company-specific details
+- **July 13, 2025**: Enhanced Extended Trial Balance system with journal entries and automatic calculation of final balances
 - **July 13, 2025**: Implemented comprehensive AI Document Processing System with bulk upload capabilities, duplicate detection, and automatic P&L population
 - **July 13, 2025**: Built advanced document management with visual separation between sales/revenue and purchase/expense documents
 - **July 13, 2025**: Created intelligent duplicate file detection system that identifies files by name/size and provides user dialog for managing conflicts

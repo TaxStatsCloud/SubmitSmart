@@ -637,11 +637,11 @@ export default function ExtendedTrialBalance() {
                 // Store in localStorage temporarily or save to API
                 localStorage.setItem('etbData', JSON.stringify(saveData));
                 
-                // Navigate back to the filing with the ETB data
-                window.location.href = '/real-world-filing';
+                // Navigate to financial reporting instead
+                window.location.href = '/financial-reporting';
               }}
             >
-              Generate Final Statements
+              Generate Financial Statements
             </Button>
           </div>
         </div>

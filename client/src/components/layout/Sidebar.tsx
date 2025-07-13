@@ -62,6 +62,20 @@ const Sidebar = () => {
                   Real-World Filing Demo
                 </a>
               </Link>
+              
+              <Link href="/trial-balance">
+                <a className={`sidebar-link ${isActive("/trial-balance") ? "active" : ""}`}>
+                  <span className="material-icons sidebar-icon">balance</span>
+                  Trial Balance
+                </a>
+              </Link>
+              
+              <Link href="/financial-reporting">
+                <a className={`sidebar-link ${isActive("/financial-reporting") ? "active" : ""}`}>
+                  <span className="material-icons sidebar-icon">analytics</span>
+                  Financial Reporting
+                </a>
+              </Link>
             </div>
 
             {/* Documents */}

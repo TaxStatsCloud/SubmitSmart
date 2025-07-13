@@ -1105,6 +1105,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       info: "The actual OpenAI integration is working based on standalone tests, but we're bypassing it here for debugging purposes."
     });
   });
+
+  // AI Note Generation endpoint
+  app.post("/api/ai/generate-note", async (req, res) => {
+    try {
+      const { title, template, companyDetails, existingNotes } = req.body;
+      
+      if (!title || !companyDetails) {
+        return res.status(400).json({ error: "Title and company details are required" });
+      }
+
+      // Import OpenAI service
+      const { OpenAI } = await import('openai');
+      
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(500).json({ error: "OpenAI API key not configured" });
+      }
+
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+      const prompt = `You are a UK accounting expert. Generate a professional financial note for UK statutory accounts.
+
+Title: ${title}
+Template: ${template || 'Custom'}
+Company Details: ${companyDetails}
+
+Requirements:
+- Follow UK GAAP (FRS 102) standards
+- Use proper British accounting terminology
+- Include relevant disclosure requirements
+- Format as professional financial statement note
+- Keep concise but comprehensive
+- Use currency format: £1,234.56
+
+Generate the note content:`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        messages: [
+          {
+            role: "system",
+            content: "You are a UK chartered accountant expert in preparing statutory financial statements according to UK GAAP (FRS 102)."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        max_tokens: 1000,
+        temperature: 0.7
+      });
+
+      const content = response.choices[0].message.content;
+
+      res.json({
+        success: true,
+        content,
+        metadata: {
+          model: "gpt-4o",
+          tokens: response.usage?.total_tokens || 0,
+          generated_at: new Date().toISOString()
+        }
+      });
+
+    } catch (error) {
+      console.error('AI note generation error:', error);
+      res.status(500).json({ 
+        error: "Failed to generate financial note", 
+        details: error.message 
+      });
+    }
+  });
   
   // Separate route for actual OpenAI testing
   app.get('/api/test/openai-actual', async (req, res) => {
