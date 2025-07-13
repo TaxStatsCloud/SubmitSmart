@@ -1,0 +1,59 @@
+What are the different types of accounts that can be filed with Companies House?
+What are the different types of accounts that can be filed with Companies House?
+Types of Accounts Filed with Companies House
+Companies House requires all registered companies in the UK to file annual accounts. The type of accounts you need to file depends on your company’s size and status. Below are the main types:
+
+1. Micro-Entity Accounts
+For very small companies.
+
+Must meet at least 2 of the following:
+
+Turnover: no more than £632,000
+
+Balance sheet total: no more than £316,000
+
+Average number of employees: no more than 10
+
+These accounts are highly simplified, requiring only a basic balance sheet and minimal notes.
+
+2. Small Company (Abridged) Accounts
+For companies that meet at least 2 of the following:
+
+Turnover: no more than £10.2 million
+
+Balance sheet total: no more than £5.1 million
+
+Average number of employees: no more than 50
+
+Abridged accounts are a simplified version of full accounts and do not require a full profit and loss account or a directors’ report to be filed with Companies House.
+
+3. Full (Statutory) Accounts
+Required for medium and large companies, or if a company chooses not to file abridged or micro-entity accounts.
+
+Must include:
+
+Balance sheet
+
+Profit and loss account
+
+Notes to the accounts
+
+Directors’ report
+
+Auditor’s report (unless exempt)
+
+These provide the most comprehensive financial picture of the company.
+
+4. Dormant Company Accounts
+For companies that have had no ‘significant’ transactions during the financial year.
+
+Only a balance sheet and limited notes are required.
+
+Dormant companies do not need to file a profit and loss account or directors’ report.
+
+Summary Table
+Account Type	Who Can File?	Key Features
+Micro-Entity Accounts	Very small companies	Simplified balance sheet, minimal notes
+Abridged Accounts	Small companies	Simplified, no full P&L or directors’ report
+Full Accounts	Medium/large companies, or by choice	Full financial statements, directors’ report
+Dormant Accounts	Dormant companies	Balance sheet and notes only

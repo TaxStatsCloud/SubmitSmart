@@ -63,12 +63,49 @@ PromptSubmissions is an AI-powered platform for UK corporate compliance, special
 - Maintain comprehensive documentation
 - Implement proper error handling and loading states
 
+## Strategic Staged Rollout Plan
+
+### Stage 1: Simple Filings (Immediate Launch)
+**Target**: Dormant companies and micro-entities (up to £632k turnover)
+**Complexity**: Low - balance sheet only or simplified accounts
+**Market Size**: ~2 million companies
+**Credit Costs**: 5-10 credits per filing
+**Key Benefits**: Easy onboarding, quick wins, foundation for growth
+
+### Stage 2: Moderate Complexity (6-12 months)
+**Target**: Small companies (up to £10.2m turnover) with new P&L requirements
+**Complexity**: Medium - full accounts with profit & loss preparation
+**Market Size**: ~2.5 million companies
+**Credit Costs**: 25-35 credits per filing
+**Key Benefits**: Higher value services, captures 2027 P&L mandate
+
+### Stage 3: Complex Filings (12+ months)
+**Target**: Medium/large companies requiring audited accounts
+**Complexity**: High - multi-team collaboration (auditors, finance, tax)
+**Market Size**: ~300k companies
+**Credit Costs**: 50-100 credits per filing
+**Key Benefits**: Premium pricing, accounting firm partnerships
+
+## Billing Strategy
+**Credit System Advantages**:
+- ✅ Flexible pricing for different account types
+- ✅ Pay-as-you-go suits seasonal filing patterns
+- ✅ Scales from simple to complex filings
+- ✅ No long-term commitments (reduces barrier to entry)
+
+**Tiered Pricing Structure**:
+- **Dormant Pack**: £19.99 for 25 credits (5 filings)
+- **Micro Business Pack**: £39.99 for 50 credits (5 filings)
+- **Small Business Pack**: £89.99 for 100 credits (4 filings)
+- **Professional Pack**: £179.99 for 200 credits (mixed filings)
+- **Enterprise Pack**: £499.99 for 500 credits (future)
+
 ## Next Steps
-1. Enhance agent system to target companies affected by 2027 changes
-2. Develop marketing strategy for mandatory software transition
-3. Expand tax preparation capabilities
-4. Implement advanced analytics for admin monitoring
-5. Consider partnerships with accounting firms
+1. Launch Stage 1 filings immediately to capture early market
+2. Enhance agent system to target companies affected by 2027 changes
+3. Develop Stage 2 capabilities for small company P&L requirements
+4. Build collaboration features for Stage 3 multi-team workflows
+5. Consider accounting firm partnerships for complex filings
 
 ## Market Position
-PromptSubmissions is uniquely positioned to capitalize on the mandatory digital transformation of UK corporate filing, with our AI-powered platform, existing infrastructure, and proactive agent system providing significant competitive advantages in a rapidly expanding market.
+PromptSubmissions is uniquely positioned to capitalize on the mandatory digital transformation of UK corporate filing through a staged rollout approach that builds from simple to complex filings, ensuring sustainable growth while maintaining quality and user experience across all complexity levels.

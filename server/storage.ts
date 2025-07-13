@@ -728,14 +728,15 @@ export class MemStorage implements IStorage {
       this.activities.set(activity.id, activity);
     }
     
-    // Sample credit packages
+    // Staged Rollout Credit Packages
     const creditPackages = [
+      // STAGE 1: Simple filings (Dormant & Micro-entity companies)
       {
         id: this.packageId++,
-        name: 'Basic Package',
-        description: 'Suitable for small businesses with minimal filing requirements',
-        price: 4999, // £49.99 in pence
-        creditAmount: 50,
+        name: 'Dormant Company Pack',
+        description: 'Perfect for dormant companies - balance sheet only filings',
+        price: 1999, // £19.99 in pence
+        creditAmount: 25, // 5 dormant filings
         isActive: true,
         isPopular: false,
         createdAt: new Date(),
@@ -743,22 +744,59 @@ export class MemStorage implements IStorage {
       },
       {
         id: this.packageId++,
-        name: 'Standard Package',
-        description: 'Best value for growing businesses with regular filing needs',
-        price: 12999, // £129.99 in pence
-        creditAmount: 150,
+        name: 'Micro Business Pack',
+        description: 'Ideal for micro-entities (up to £632k turnover) - simplified accounts',
+        price: 3999, // £39.99 in pence
+        creditAmount: 50, // 5 micro-entity filings
         isActive: true,
         isPopular: true,
         createdAt: new Date(),
         updatedAt: new Date()
       },
+      
+      // STAGE 2: Moderate complexity (Small companies with P&L)
       {
         id: this.packageId++,
-        name: 'Premium Package',
-        description: 'For established businesses with complex filing requirements',
-        price: 24999, // £249.99 in pence
-        creditAmount: 350,
+        name: 'Small Business Pack',
+        description: 'Small companies with P&L preparation (up to £10.2m turnover)',
+        price: 8999, // £89.99 in pence
+        creditAmount: 100, // 4 small company filings
         isActive: true,
+        isPopular: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.packageId++,
+        name: 'Professional Pack',
+        description: 'Growing businesses with regular filing needs including tax returns',
+        price: 17999, // £179.99 in pence
+        creditAmount: 200, // Mixed filing types
+        isActive: true,
+        isPopular: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      
+      // STAGE 3: Complex filings (Future - Full statutory & audited accounts)
+      {
+        id: this.packageId++,
+        name: 'Enterprise Pack',
+        description: 'Large companies with full statutory and audited accounts',
+        price: 49999, // £499.99 in pence
+        creditAmount: 500, // Full statutory filings
+        isActive: false, // Will be activated in Stage 3
+        isPopular: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.packageId++,
+        name: 'Accounting Firm Pack',
+        description: 'For accounting firms managing multiple clients across all filing types',
+        price: 99999, // £999.99 in pence
+        creditAmount: 1000, // High volume for accounting firms
+        isActive: false, // Will be activated in Stage 3
         isPopular: false,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -769,24 +807,57 @@ export class MemStorage implements IStorage {
       this.creditPackages.set(packageData.id, packageData);
     }
     
-    // Sample filing costs
+    // Staged Rollout Filing Costs
     const filingCosts = [
+      // STAGE 1: Simple filings (Launch immediately)
       {
         id: this.costId++,
-        filingType: 'confirmation_statement',
-        creditCost: 10,
-        actualCost: 3400, // £34.00 in pence (Companies House fee)
-        description: 'Annual confirmation statement submission to Companies House',
+        filingType: 'dormant_accounts',
+        creditCost: 5,
+        actualCost: 0,
+        description: 'Dormant company accounts - balance sheet only',
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
         id: this.costId++,
-        filingType: 'annual_accounts',
+        filingType: 'micro_entity_accounts',
+        creditCost: 10,
+        actualCost: 0,
+        description: 'Micro-entity accounts - simplified balance sheet (up to £632k turnover)',
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.costId++,
+        filingType: 'confirmation_statement',
+        creditCost: 8,
+        actualCost: 3400, // £34.00 in pence (Companies House fee)
+        description: 'Annual confirmation statement submission to Companies House',
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      
+      // STAGE 2: Moderate complexity (6-12 months later)
+      {
+        id: this.costId++,
+        filingType: 'small_company_accounts',
         creditCost: 25,
-        actualCost: 0, // No direct Companies House fee for most small companies
-        description: 'Annual accounts preparation and submission',
+        actualCost: 0,
+        description: 'Small company accounts with P&L preparation (up to £10.2m turnover)',
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.costId++,
+        filingType: 'small_company_accounts_with_pl',
+        creditCost: 35,
+        actualCost: 0,
+        description: 'Small company accounts with NEW P&L requirements (post-April 2027)',
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -795,9 +866,51 @@ export class MemStorage implements IStorage {
         id: this.costId++,
         filingType: 'corporation_tax',
         creditCost: 30,
-        actualCost: 0, // No direct HMRC fee for filing
+        actualCost: 0,
         description: 'Corporation tax return (CT600) preparation and submission',
         isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.costId++,
+        filingType: 'vat_filing',
+        creditCost: 15,
+        actualCost: 0,
+        description: 'VAT return filing',
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      
+      // STAGE 3: Complex filings (12+ months later)
+      {
+        id: this.costId++,
+        filingType: 'full_statutory_accounts',
+        creditCost: 50,
+        actualCost: 0,
+        description: 'Full statutory accounts with directors report (medium/large companies)',
+        isActive: false, // Will be activated in Stage 3
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.costId++,
+        filingType: 'audited_accounts',
+        creditCost: 75,
+        actualCost: 0,
+        description: 'Audited accounts requiring multi-team collaboration',
+        isActive: false, // Will be activated in Stage 3
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.costId++,
+        filingType: 'group_accounts',
+        creditCost: 100,
+        actualCost: 0,
+        description: 'Group accounts for parent companies',
+        isActive: false, // Will be activated in Stage 3
         createdAt: new Date(),
         updatedAt: new Date()
       }
