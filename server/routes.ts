@@ -5,8 +5,8 @@ import { z } from "zod";
 import { insertUserSchema, insertCompanySchema, insertDocumentSchema, insertFilingSchema, insertActivitySchema, insertAssistantMessageSchema } from "@shared/schema";
 import { processDocument } from "./services/documentService";
 import { generateResponse } from "./services/aiService";
-import { searchCompanies, getCompanyProfile, getFilingDeadlines } from "./services/companiesHouseService";
 import { generateCompletion } from "./services/openai";
+import { companiesHouseService } from "./services/companiesHouseService";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -52,6 +52,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register agent routes
   app.use('/api/agents', agentRoutes);
+  
+  // Companies House API routes
+  app.get('/api/companies-house/company/:companyNumber', async (req, res) => {
+    try {
+      const { companyNumber } = req.params;
+      const companyInfo = await companiesHouseService.getCompanyInfo(companyNumber);
+      res.json(companyInfo);
+    } catch (error: any) {
+      res.status(error.status || 500).json({ 
+        error: error.message || 'Failed to fetch company information' 
+      });
+    }
+  });
+
+  app.get('/api/companies-house/company/:companyNumber/filing-history', async (req, res) => {
+    try {
+      const { companyNumber } = req.params;
+      const { itemsPerPage = 35 } = req.query;
+      const filingHistory = await companiesHouseService.getFilingHistory(companyNumber, Number(itemsPerPage));
+      res.json(filingHistory);
+    } catch (error: any) {
+      res.status(error.status || 500).json({ 
+        error: error.message || 'Failed to fetch filing history' 
+      });
+    }
+  });
+
+  app.get('/api/companies-house/company/:companyNumber/officers', async (req, res) => {
+    try {
+      const { companyNumber } = req.params;
+      const officers = await companiesHouseService.getOfficers(companyNumber);
+      res.json(officers);
+    } catch (error: any) {
+      res.status(error.status || 500).json({ 
+        error: error.message || 'Failed to fetch officers' 
+      });
+    }
+  });
+
+  app.get('/api/companies-house/company/:companyNumber/eligibility', async (req, res) => {
+    try {
+      const { companyNumber } = req.params;
+      const eligibility = await companiesHouseService.checkFilingEligibility(companyNumber);
+      res.json(eligibility);
+    } catch (error: any) {
+      res.status(error.status || 500).json({ 
+        error: error.message || 'Failed to check filing eligibility' 
+      });
+    }
+  });
+
+  app.get('/api/companies-house/company/:companyNumber/deadlines', async (req, res) => {
+    try {
+      const { companyNumber } = req.params;
+      const deadlines = await companiesHouseService.getFilingDeadlines(companyNumber);
+      res.json(deadlines);
+    } catch (error: any) {
+      res.status(error.status || 500).json({ 
+        error: error.message || 'Failed to fetch filing deadlines' 
+      });
+    }
+  });
+
+  app.get('/api/companies-house/search', async (req, res) => {
+    try {
+      const { q: query, itemsPerPage = 20 } = req.query;
+      if (!query) {
+        return res.status(400).json({ error: 'Query parameter is required' });
+      }
+      const results = await companiesHouseService.searchCompanies(query as string, Number(itemsPerPage));
+      res.json(results);
+    } catch (error: any) {
+      res.status(error.status || 500).json({ 
+        error: error.message || 'Failed to search companies' 
+      });
+    }
+  });
+
+  app.get('/api/companies-house/rate-limit', async (req, res) => {
+    try {
+      const rateLimitInfo = companiesHouseService.getRateLimitInfo();
+      res.json(rateLimitInfo);
+    } catch (error: any) {
+      res.status(500).json({ 
+        error: error.message || 'Failed to get rate limit information' 
+      });
+    }
+  });
   
   // Admin routes for Companies House agent monitoring
   app.get('/api/admin/agent-stats', async (req, res) => {

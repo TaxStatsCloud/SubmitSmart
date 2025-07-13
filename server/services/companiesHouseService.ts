@@ -1,300 +1,243 @@
-/**
- * Companies House API service
- * Provides functions to interact with the Companies House API
- */
+import https from 'https';
 
-/**
- * Search for companies by name
- * @param query Search query
- * @param itemsPerPage Number of results per page
- * @param startIndex Starting index for pagination
- * @returns Search results
- */
-export async function searchCompanies(
-  query: string,
-  itemsPerPage: number = 20,
-  startIndex: number = 0
-) {
-  // In a real implementation, this would call the Companies House API
-  // For now, return sample data based on the query
-  
-  const sampleCompanies = [
-    {
-      companyNumber: '12345678',
-      companyName: 'Acme Trading Ltd',
-      companyStatus: 'active',
-      companyType: 'ltd',
-      incorporationDate: '2015-06-10',
-      address: {
-        addressLine1: '123 Business Street',
-        locality: 'London',
-        postalCode: 'EC1A 1BB',
-        country: 'United Kingdom'
-      }
-    },
-    {
-      companyNumber: '87654321',
-      companyName: 'Bright Innovations Ltd',
-      companyStatus: 'active',
-      companyType: 'ltd',
-      incorporationDate: '2018-03-22',
-      address: {
-        addressLine1: '456 Tech Avenue',
-        locality: 'Manchester',
-        postalCode: 'M1 1AA',
-        country: 'United Kingdom'
-      }
-    },
-    {
-      companyNumber: '11223344',
-      companyName: 'Global Services Ltd',
-      companyStatus: 'active',
-      companyType: 'ltd',
-      incorporationDate: '2017-09-15',
-      address: {
-        addressLine1: '789 Corporate Road',
-        locality: 'Birmingham',
-        postalCode: 'B1 1BB',
-        country: 'United Kingdom'
-      }
-    }
-  ];
-  
-  // Filter companies based on query
-  const filteredCompanies = sampleCompanies.filter(company => 
-    company.companyName.toLowerCase().includes(query.toLowerCase())
-  );
-  
-  // Apply pagination
-  const paginatedResults = filteredCompanies.slice(
-    startIndex,
-    startIndex + itemsPerPage
-  );
-  
-  return {
-    items: paginatedResults,
-    totalResults: filteredCompanies.length,
-    itemsPerPage,
-    startIndex
+export interface CompanyInfo {
+  company_name: string;
+  company_number: string;
+  company_status: string;
+  type: string;
+  date_of_creation: string;
+  date_of_cessation?: string;
+  registered_office_address: {
+    address_line_1?: string;
+    address_line_2?: string;
+    locality?: string;
+    region?: string;
+    postal_code?: string;
+    country?: string;
+  };
+  sic_codes?: string[];
+  accounts?: {
+    accounting_reference_date?: {
+      day: string;
+      month: string;
+    };
+    last_accounts?: {
+      made_up_to?: string;
+      type?: string;
+    };
+    next_due?: string;
+    next_made_up_to?: string;
+  };
+  confirmation_statement?: {
+    last_made_up_to?: string;
+    next_due?: string;
+    next_made_up_to?: string;
   };
 }
 
-/**
- * Get company profile by company number
- * @param companyNumber Companies House company number
- * @returns Company profile data
- */
-export async function getCompanyProfile(companyNumber: string) {
-  // In a real implementation, this would call the Companies House API
-  // For now, return sample data based on the company number
-  
-  const sampleCompanies = {
-    '12345678': {
-      companyNumber: '12345678',
-      companyName: 'Acme Trading Ltd',
-      type: 'private-limited-company',
-      status: 'active',
-      incorporationDate: '2015-06-10',
-      registeredOfficeAddress: {
-        addressLine1: '123 Business Street',
-        locality: 'London',
-        postalCode: 'EC1A 1BB',
-        country: 'United Kingdom'
-      },
-      sicCodes: ['62020', '62090'],
-      accounts: {
-        nextDue: '2023-09-30',
-        lastMadeUpTo: '2022-12-31',
-        accountingReferenceDate: {
-          day: '31',
-          month: '12'
-        }
-      },
-      confirmationStatement: {
-        nextDue: '2023-08-15',
-        lastMadeUpTo: '2022-08-01'
-      },
-      hasInsolvencyHistory: false,
-      hasCharges: false,
-      canFile: true
-    },
-    '87654321': {
-      companyNumber: '87654321',
-      companyName: 'Bright Innovations Ltd',
-      type: 'private-limited-company',
-      status: 'active',
-      incorporationDate: '2018-03-22',
-      registeredOfficeAddress: {
-        addressLine1: '456 Tech Avenue',
-        locality: 'Manchester',
-        postalCode: 'M1 1AA',
-        country: 'United Kingdom'
-      },
-      sicCodes: ['62020', '62012'],
-      accounts: {
-        nextDue: '2023-12-31',
-        lastMadeUpTo: '2022-03-31',
-        accountingReferenceDate: {
-          day: '31',
-          month: '3'
-        }
-      },
-      confirmationStatement: {
-        nextDue: '2023-09-30',
-        lastMadeUpTo: '2022-09-15'
-      },
-      hasInsolvencyHistory: false,
-      hasCharges: false,
-      canFile: true
-    },
-    '11223344': {
-      companyNumber: '11223344',
-      companyName: 'Global Services Ltd',
-      type: 'private-limited-company',
-      status: 'active',
-      incorporationDate: '2017-09-15',
-      registeredOfficeAddress: {
-        addressLine1: '789 Corporate Road',
-        locality: 'Birmingham',
-        postalCode: 'B1 1BB',
-        country: 'United Kingdom'
-      },
-      sicCodes: ['62020', '70229'],
-      accounts: {
-        nextDue: '2023-06-30',
-        lastMadeUpTo: '2022-09-30',
-        accountingReferenceDate: {
-          day: '30',
-          month: '9'
-        }
-      },
-      confirmationStatement: {
-        nextDue: '2023-11-12',
-        lastMadeUpTo: '2022-11-01'
-      },
-      hasInsolvencyHistory: false,
-      hasCharges: true,
-      canFile: true
+export interface FilingHistory {
+  items: Array<{
+    category: string;
+    description: string;
+    date: string;
+    transaction_id: string;
+    type: string;
+    links?: {
+      self: string;
+      document_metadata?: string;
+    };
+  }>;
+  total_count: number;
+}
+
+export interface CompaniesHouseError {
+  error: string;
+  type: string;
+}
+
+class CompaniesHouseService {
+  private apiKey: string;
+  private baseUrl = 'https://api.company-information.service.gov.uk';
+
+  constructor() {
+    this.apiKey = process.env.COMPANIES_HOUSE_API_KEY || '';
+    if (!this.apiKey) {
+      console.warn('COMPANIES_HOUSE_API_KEY environment variable not set - Companies House API features will be disabled');
+      this.apiKey = 'disabled'; // Allow service to instantiate but fail gracefully
     }
-  };
-  
-  const company = sampleCompanies[companyNumber as keyof typeof sampleCompanies];
-  
-  if (!company) {
-    throw new Error(`Company ${companyNumber} not found`);
   }
-  
-  return company;
-}
 
-/**
- * Get filing history for a company
- * @param companyNumber Companies House company number
- * @param itemsPerPage Number of results per page
- * @param startIndex Starting index for pagination
- * @returns Filing history items
- */
-export async function getFilingHistory(
-  companyNumber: string,
-  itemsPerPage: number = 20,
-  startIndex: number = 0
-) {
-  // In a real implementation, this would call the Companies House API
-  // For now, return sample data based on the company number
-  
-  const sampleFilingHistory = [
-    {
-      transactionId: 'MzMxMjM2NjgzOGFkaXF6a2N4',
-      category: 'accounts',
-      description: 'accounts-with-accounts-type-total-exemption-small',
-      date: '2022-05-15',
-      links: {
-        document_metadata: '/document/MzMxMjM2NjgzOGFkaXF6a2N4',
-        self: '/company/12345678/filing-history/MzMxMjM2NjgzOGFkaXF6a2N4'
-      },
-      filingType: 'AA',
-      status: 'accepted'
-    },
-    {
-      transactionId: 'MzMxMjM2YTNiOWVkaXF6a2N4',
-      category: 'confirmation-statement',
-      description: 'confirmation-statement-with-updates',
-      date: '2022-08-01',
-      links: {
-        document_metadata: '/document/MzMxMjM2YTNiOWVkaXF6a2N4',
-        self: '/company/12345678/filing-history/MzMxMjM2YTNiOWVkaXF6a2N4'
-      },
-      filingType: 'CS01',
-      status: 'accepted'
-    },
-    {
-      transactionId: 'MzMxMjM2Y2I1MmVkaXF6a2N4',
-      category: 'officers',
-      description: 'appoint-person-director',
-      date: '2021-09-10',
-      links: {
-        document_metadata: '/document/MzMxMjM2Y2I1MmVkaXF6a2N4',
-        self: '/company/12345678/filing-history/MzMxMjM2Y2I1MmVkaXF6a2N4'
-      },
-      filingType: 'AP01',
-      status: 'accepted'
+  private async makeRequest(path: string): Promise<any> {
+    if (this.apiKey === 'disabled') {
+      throw new Error('Companies House API is disabled - API key not provided');
     }
-  ];
-  
-  // Apply pagination
-  const paginatedResults = sampleFilingHistory.slice(
-    startIndex,
-    startIndex + itemsPerPage
-  );
-  
-  return {
-    items: paginatedResults,
-    totalCount: sampleFilingHistory.length,
-    itemsPerPage,
-    startIndex
-  };
-}
+    
+    return new Promise((resolve, reject) => {
+      const options = {
+        hostname: 'api.company-information.service.gov.uk',
+        port: 443,
+        path,
+        method: 'GET',
+        headers: {
+          'Authorization': `Basic ${Buffer.from(this.apiKey + ':').toString('base64')}`,
+          'Accept': 'application/json',
+          'User-Agent': 'PromptSubmissions/1.0'
+        }
+      };
 
-/**
- * Get filing deadlines for a company
- * @param companyNumber Companies House company number
- * @returns Filing deadlines for the company
- */
-export async function getFilingDeadlines(companyNumber: string) {
-  // In a real implementation, this would calculate deadlines based on
-  // company profile information from the Companies House API
-  
-  // Get company profile to use incorporation date and other details
-  const company = await getCompanyProfile(companyNumber);
-  
-  return {
-    confirmationStatement: {
-      dueDate: company.confirmationStatement.nextDue,
-      periodEndDate: company.confirmationStatement.lastMadeUpTo,
-      status: new Date(company.confirmationStatement.nextDue) < new Date() ? 'overdue' : 'upcoming'
-    },
-    accounts: {
-      dueDate: company.accounts.nextDue,
-      periodEndDate: company.accounts.lastMadeUpTo,
-      status: new Date(company.accounts.nextDue) < new Date() ? 'overdue' : 'upcoming'
-    },
-    corporationTax: {
-      // Corporation Tax is typically due 12 months after the end of the accounting period
-      dueDate: addMonths(new Date(company.accounts.lastMadeUpTo), 12).toISOString().split('T')[0],
-      periodEndDate: company.accounts.lastMadeUpTo,
-      status: 'upcoming'
+      const req = https.request(options, (res) => {
+        let data = '';
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+        
+        res.on('end', () => {
+          try {
+            const parsed = JSON.parse(data);
+            if (res.statusCode === 200) {
+              resolve(parsed);
+            } else {
+              reject({
+                status: res.statusCode,
+                error: parsed,
+                message: parsed.error || 'Unknown error'
+              });
+            }
+          } catch (error) {
+            reject({
+              status: res.statusCode,
+              error: 'Invalid JSON response',
+              message: data
+            });
+          }
+        });
+      });
+
+      req.on('error', (error) => {
+        reject({
+          status: 0,
+          error: 'Connection error',
+          message: error.message
+        });
+      });
+
+      req.setTimeout(10000, () => {
+        req.destroy();
+        reject({
+          status: 0,
+          error: 'Request timeout',
+          message: 'Request timed out after 10 seconds'
+        });
+      });
+
+      req.end();
+    });
+  }
+
+  async getCompanyInfo(companyNumber: string): Promise<CompanyInfo> {
+    const path = `/company/${companyNumber.padStart(8, '0')}`;
+    return this.makeRequest(path);
+  }
+
+  async getFilingHistory(companyNumber: string, itemsPerPage: number = 35): Promise<FilingHistory> {
+    const path = `/company/${companyNumber.padStart(8, '0')}/filing-history?items_per_page=${itemsPerPage}`;
+    return this.makeRequest(path);
+  }
+
+  async getOfficers(companyNumber: string): Promise<any> {
+    const path = `/company/${companyNumber.padStart(8, '0')}/officers`;
+    return this.makeRequest(path);
+  }
+
+  async searchCompanies(query: string, itemsPerPage: number = 20): Promise<any> {
+    const encodedQuery = encodeURIComponent(query);
+    const path = `/search/companies?q=${encodedQuery}&items_per_page=${itemsPerPage}`;
+    return this.makeRequest(path);
+  }
+
+  async getCompanyProfile(companyNumber: string): Promise<any> {
+    const path = `/company/${companyNumber.padStart(8, '0')}`;
+    return this.makeRequest(path);
+  }
+
+  // Check if company is eligible for specific filing types
+  async checkFilingEligibility(companyNumber: string): Promise<{
+    canFileConfirmationStatement: boolean;
+    canFileAnnualAccounts: boolean;
+    canFileCorporationTax: boolean;
+    reasons: string[];
+  }> {
+    try {
+      const company = await this.getCompanyInfo(companyNumber);
+      const reasons: string[] = [];
+      
+      const canFileConfirmationStatement = company.company_status === 'active';
+      const canFileAnnualAccounts = company.company_status === 'active';
+      const canFileCorporationTax = ['active', 'dissolved'].includes(company.company_status);
+      
+      if (company.company_status === 'dissolved') {
+        reasons.push('Company is dissolved - only final corporation tax returns may be filed');
+      }
+      
+      if (company.company_status === 'liquidation') {
+        reasons.push('Company is in liquidation - special filing requirements apply');
+      }
+      
+      return {
+        canFileConfirmationStatement,
+        canFileAnnualAccounts,
+        canFileCorporationTax,
+        reasons
+      };
+    } catch (error) {
+      throw new Error(`Failed to check filing eligibility: ${error.message}`);
     }
-  };
+  }
+
+  // Get next filing deadlines
+  async getFilingDeadlines(companyNumber: string): Promise<{
+    confirmationStatement?: string;
+    annualAccounts?: string;
+    corporationTax?: string;
+  }> {
+    try {
+      const company = await this.getCompanyInfo(companyNumber);
+      const deadlines: any = {};
+      
+      if (company.confirmation_statement?.next_due) {
+        deadlines.confirmationStatement = company.confirmation_statement.next_due;
+      }
+      
+      if (company.accounts?.next_due) {
+        deadlines.annualAccounts = company.accounts.next_due;
+      }
+      
+      // Corporation tax deadline is typically 12 months after accounting period end
+      if (company.accounts?.next_made_up_to) {
+        const accountingDate = new Date(company.accounts.next_made_up_to);
+        accountingDate.setFullYear(accountingDate.getFullYear() + 1);
+        deadlines.corporationTax = accountingDate.toISOString().split('T')[0];
+      }
+      
+      return deadlines;
+    } catch (error) {
+      throw new Error(`Failed to get filing deadlines: ${error.message}`);
+    }
+  }
+
+  // Get rate limit information
+  getRateLimitInfo(): {
+    limit: number;
+    window: string;
+    description: string;
+  } {
+    return {
+      limit: 600,
+      window: '5 minutes',
+      description: 'Companies House API allows 600 requests per 5-minute window'
+    };
+  }
 }
 
-/**
- * Add months to a date
- * @param date Date to add months to
- * @param months Number of months to add
- * @returns New date with added months
- */
-function addMonths(date: Date, months: number): Date {
-  const result = new Date(date);
-  result.setMonth(result.getMonth() + months);
-  return result;
-}
+export const companiesHouseService = new CompaniesHouseService();
+export default companiesHouseService;
