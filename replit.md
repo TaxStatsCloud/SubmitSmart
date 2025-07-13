@@ -13,6 +13,8 @@ PromptSubmissions is an AI-powered platform for UK corporate compliance, special
 - Agent-based outreach system
 
 ## Recent Changes
+- **July 14, 2025**: Fixed critical cash balance calculation error in Balance Sheet - now properly nets all account 1200 entries to show correct £0 balance matching Trial Balance
+- **July 14, 2025**: Added comprehensive PDF, Excel, and CSV export functionality for all financial statements with proper error handling and professional formatting
 - **July 14, 2025**: Enhanced journal entry system with comprehensive audit trail capabilities, supporting document uploads, and detailed explanations for maximum accuracy and auditor trust
 - **July 14, 2025**: Improved journal entry interface with responsive design, proper scrolling, and enhanced description fields for thorough documentation
 - **July 13, 2025**: Built comprehensive Financial Reporting module with detailed P&L, Balance Sheet, Cash Flow, Statement of Changes in Equity, and Statement of Comprehensive Income

@@ -24,9 +24,13 @@ import {
   Eye,
   Download,
   Plus,
-  Trash2
+  Trash2,
+  FileDown
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import * as XLSX from 'xlsx';
 
 interface FinancialLineItem {
   id: string;
@@ -50,6 +54,7 @@ export default function FinancialReporting() {
   const [showNoteDialog, setShowNoteDialog] = useState(false);
   const [editingNote, setEditingNote] = useState<FinancialNote | null>(null);
   const [aiGenerating, setAiGenerating] = useState(false);
+  const [exportingPDF, setExportingPDF] = useState(false);
   const { toast } = useToast();
 
   // Financial data state
@@ -197,10 +202,14 @@ export default function FinancialReporting() {
                 return { ...item, amount: Math.max(0, debtorsBalance) };
               }
               if (item.id === 'cash_bank') {
-                const cashBalance = trialBalanceData
-                  .filter(entry => entry.accountCode === '1200')
-                  .reduce((sum, entry) => sum + (entry.debit - entry.credit), 0);
-                return { ...item, amount: Math.max(0, cashBalance) };
+                // Calculate net cash position from all 1200 entries
+                const cashEntries = trialBalanceData.filter(entry => entry.accountCode === '1200');
+                const totalDebits = cashEntries.reduce((sum, entry) => sum + entry.debit, 0);
+                const totalCredits = cashEntries.reduce((sum, entry) => sum + entry.credit, 0);
+                const netCashBalance = totalDebits - totalCredits;
+                
+                // Only show positive cash balances on assets side
+                return { ...item, amount: Math.max(0, netCashBalance) };
               }
               return item;
             }),
@@ -349,6 +358,265 @@ export default function FinancialReporting() {
 
   const totals = calculateTotals();
 
+  // Export functions
+  const exportToPDF = async (reportType: string) => {
+    setExportingPDF(true);
+    try {
+      const element = document.getElementById(`${reportType}-report`);
+      if (!element) {
+        throw new Error('Report element not found');
+      }
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff'
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 295; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const reportNames = {
+        'profit-loss': 'Profit_and_Loss_Statement',
+        'balance-sheet': 'Balance_Sheet',
+        'cash-flow': 'Cash_Flow_Statement',
+        'equity': 'Statement_of_Changes_in_Equity',
+        'comprehensive': 'Statement_of_Comprehensive_Income'
+      };
+
+      const fileName = `${reportNames[reportType as keyof typeof reportNames] || reportType}_${new Date().toISOString().split('T')[0]}.pdf`;
+      pdf.save(fileName);
+
+      toast({
+        title: "PDF Export Successful",
+        description: `${reportType.replace('-', ' ')} has been exported to PDF`,
+      });
+    } catch (error) {
+      console.error('PDF Export Error:', error);
+      toast({
+        title: "PDF Export Failed",
+        description: "There was an error exporting the report to PDF",
+        variant: "destructive",
+      });
+    } finally {
+      setExportingPDF(false);
+    }
+  };
+
+  const exportToExcel = (reportType: string) => {
+    try {
+      let data: any[] = [];
+      let sheetName = '';
+
+      switch (reportType) {
+        case 'profit-loss':
+          sheetName = 'Profit and Loss';
+          data = profitLossData.map(item => ({
+            'Description': item.description,
+            'Amount (£)': item.amount.toFixed(2)
+          }));
+          break;
+        
+        case 'balance-sheet':
+          sheetName = 'Balance Sheet';
+          data = [
+            { 'Section': 'Fixed Assets', 'Description': '', 'Amount (£)': '' },
+            ...balanceSheetData.fixedAssets.map(item => ({
+              'Section': '',
+              'Description': item.description,
+              'Amount (£)': item.amount.toFixed(2)
+            })),
+            { 'Section': '', 'Description': 'Total Fixed Assets', 'Amount (£)': balanceSheetData.fixedAssets.reduce((sum, item) => sum + item.amount, 0).toFixed(2) },
+            { 'Section': 'Current Assets', 'Description': '', 'Amount (£)': '' },
+            ...balanceSheetData.currentAssets.map(item => ({
+              'Section': '',
+              'Description': item.description,
+              'Amount (£)': item.amount.toFixed(2)
+            })),
+            { 'Section': '', 'Description': 'Total Current Assets', 'Amount (£)': balanceSheetData.currentAssets.reduce((sum, item) => sum + item.amount, 0).toFixed(2) },
+            { 'Section': 'Current Liabilities', 'Description': '', 'Amount (£)': '' },
+            ...balanceSheetData.currentLiabilities.map(item => ({
+              'Section': '',
+              'Description': item.description,
+              'Amount (£)': item.amount.toFixed(2)
+            })),
+            { 'Section': '', 'Description': 'Net Current Assets', 'Amount (£)': totals.netCurrentAssets.toFixed(2) },
+            { 'Section': 'Long-term Liabilities', 'Description': '', 'Amount (£)': '' },
+            ...balanceSheetData.longTermLiabilities.map(item => ({
+              'Section': '',
+              'Description': item.description,
+              'Amount (£)': item.amount.toFixed(2)
+            })),
+            { 'Section': 'Capital and Reserves', 'Description': '', 'Amount (£)': '' },
+            ...balanceSheetData.equity.map(item => ({
+              'Section': '',
+              'Description': item.description,
+              'Amount (£)': item.amount.toFixed(2)
+            })),
+            { 'Section': '', 'Description': 'Total Assets', 'Amount (£)': totals.totalAssets.toFixed(2) },
+            { 'Section': '', 'Description': 'Net Assets', 'Amount (£)': totals.netAssets.toFixed(2) }
+          ];
+          break;
+        
+        case 'cash-flow':
+          sheetName = 'Cash Flow';
+          data = cashFlowData.map(item => ({
+            'Description': item.description,
+            'Amount (£)': item.amount.toFixed(2)
+          }));
+          break;
+        
+        case 'equity-changes':
+          sheetName = 'Statement of Changes in Equity';
+          data = [
+            { 'Description': 'Share Capital', 'Beginning': '0.00', 'Changes': '0.00', 'Ending': '0.00' },
+            { 'Description': 'Share Premium', 'Beginning': '0.00', 'Changes': '0.00', 'Ending': '0.00' },
+            { 'Description': 'Retained Earnings', 'Beginning': '0.00', 'Changes': '0.00', 'Ending': '0.00' },
+            { 'Description': 'Total Equity', 'Beginning': '0.00', 'Changes': '0.00', 'Ending': '0.00' }
+          ];
+          break;
+        
+        case 'comprehensive-income':
+          sheetName = 'Statement of Comprehensive Income';
+          data = [
+            { 'Description': 'Profit for the financial year', 'Amount (£)': '0.00' },
+            { 'Description': 'Other comprehensive income', 'Amount (£)': '0.00' },
+            { 'Description': 'Total comprehensive income', 'Amount (£)': '0.00' }
+          ];
+          break;
+
+        default:
+          throw new Error('Unknown report type');
+      }
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+      const fileName = `${sheetName.replace(/ /g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+
+      toast({
+        title: "Excel Export Successful",
+        description: `${sheetName} has been exported to Excel`,
+      });
+    } catch (error) {
+      console.error('Excel Export Error:', error);
+      toast({
+        title: "Excel Export Failed",
+        description: "There was an error exporting the report to Excel",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const exportToCSV = (reportType: string) => {
+    try {
+      let data: any[] = [];
+      let fileName = '';
+
+      switch (reportType) {
+        case 'profit-loss':
+          fileName = 'Profit_and_Loss';
+          data = profitLossData.map(item => ({
+            'Description': item.description,
+            'Amount': item.amount
+          }));
+          break;
+        
+        case 'balance-sheet':
+          fileName = 'Balance_Sheet';
+          data = [
+            { 'Section': 'Fixed Assets', 'Description': '', 'Amount': '' },
+            ...balanceSheetData.fixedAssets.map(item => ({
+              'Section': '',
+              'Description': item.description,
+              'Amount': item.amount
+            })),
+            { 'Section': 'Current Assets', 'Description': '', 'Amount': '' },
+            ...balanceSheetData.currentAssets.map(item => ({
+              'Section': '',
+              'Description': item.description,
+              'Amount': item.amount
+            }))
+          ];
+          break;
+        
+        case 'cash-flow':
+          fileName = 'Cash_Flow';
+          data = cashFlowData.map(item => ({
+            'Description': item.description,
+            'Amount': item.amount
+          }));
+          break;
+        
+        case 'equity-changes':
+          fileName = 'Statement_of_Changes_in_Equity';
+          data = [
+            { 'Description': 'Share Capital', 'Beginning': 0, 'Changes': 0, 'Ending': 0 },
+            { 'Description': 'Share Premium', 'Beginning': 0, 'Changes': 0, 'Ending': 0 },
+            { 'Description': 'Retained Earnings', 'Beginning': 0, 'Changes': 0, 'Ending': 0 }
+          ];
+          break;
+        
+        case 'comprehensive-income':
+          fileName = 'Statement_of_Comprehensive_Income';
+          data = [
+            { 'Description': 'Profit for the financial year', 'Amount': 0 },
+            { 'Description': 'Other comprehensive income', 'Amount': 0 },
+            { 'Description': 'Total comprehensive income', 'Amount': 0 }
+          ];
+          break;
+
+        default:
+          throw new Error('Unknown report type');
+      }
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      const csvContent = XLSX.utils.sheet_to_csv(ws);
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${fileName}_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: "CSV Export Successful",
+        description: `${fileName.replace('_', ' ')} has been exported to CSV`,
+      });
+    } catch (error) {
+      console.error('CSV Export Error:', error);
+      toast({
+        title: "CSV Export Failed",
+        description: "There was an error exporting the report to CSV",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -357,17 +625,27 @@ export default function FinancialReporting() {
           <p className="text-muted-foreground">Comprehensive financial statements and notes</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
-            <Eye className="h-4 w-4 mr-2" />
-            Preview
+          <Button
+            variant="outline"
+            onClick={() => exportToPDF(activeReport)}
+            disabled={exportingPDF}
+          >
+            <FileDown className="h-4 w-4 mr-2" />
+            {exportingPDF ? 'Exporting...' : 'Export PDF'}
           </Button>
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Export PDF
+          <Button
+            variant="outline"
+            onClick={() => exportToExcel(activeReport)}
+          >
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Export Excel
           </Button>
-          <Button>
-            <Save className="h-4 w-4 mr-2" />
-            Save All
+          <Button
+            variant="outline"
+            onClick={() => exportToCSV(activeReport)}
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Export CSV
           </Button>
         </div>
       </div>
@@ -402,7 +680,7 @@ export default function FinancialReporting() {
 
         {/* Profit & Loss Statement */}
         <TabsContent value="profit-loss" className="space-y-4">
-          <Card>
+          <Card id="profit-loss-report">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
@@ -446,7 +724,7 @@ export default function FinancialReporting() {
 
         {/* Balance Sheet */}
         <TabsContent value="balance-sheet" className="space-y-4">
-          <Card>
+          <Card id="balance-sheet-report">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calculator className="h-5 w-5" />
@@ -627,7 +905,7 @@ export default function FinancialReporting() {
 
         {/* Cash Flow Statement */}
         <TabsContent value="cash-flow" className="space-y-4">
-          <Card>
+          <Card id="cash-flow-report">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5" />
@@ -666,7 +944,7 @@ export default function FinancialReporting() {
 
         {/* Statement of Changes in Equity */}
         <TabsContent value="equity-changes" className="space-y-4">
-          <Card>
+          <Card id="equity-changes-report">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BarChart3 className="h-5 w-5" />
@@ -726,7 +1004,7 @@ export default function FinancialReporting() {
 
         {/* Statement of Comprehensive Income */}
         <TabsContent value="comprehensive-income" className="space-y-4">
-          <Card>
+          <Card id="comprehensive-income-report">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <PieChart className="h-5 w-5" />
