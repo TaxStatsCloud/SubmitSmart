@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Edit, Trash2, FileSpreadsheet, CheckCircle2, Calculator, AlertTriangle } from 'lucide-react';
+import { Plus, Edit, Trash2, FileSpreadsheet, CheckCircle2, Calculator, AlertTriangle, ChevronRight, Eye } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
 
 interface TrialBalanceEntry {
@@ -21,6 +22,12 @@ interface TrialBalanceEntry {
   source: 'ai_processed' | 'manual_journal' | 'opening_balance';
   documentRef?: string;
   adjustmentRef?: string;
+  breakdown?: {
+    documentName: string;
+    amount: number;
+    description: string;
+    documentId: string;
+  }[];
 }
 
 interface JournalEntry {
@@ -72,6 +79,79 @@ const ACCOUNT_CODES = {
   '3200': 'Current Year Earnings'
 };
 
+// Separate component for trial balance row with breakdown
+function TrialBalanceRow({ entry, onEditBreakdown }: { entry: TrialBalanceEntry; onEditBreakdown: (entryId: string, item: any) => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <CollapsibleTrigger asChild>
+        <tr className="border-b hover:bg-muted/50 cursor-pointer">
+          <td className="p-2 font-mono">{entry.accountCode}</td>
+          <td className="p-2">
+            <div className="flex items-center gap-2">
+              {entry.breakdown && entry.breakdown.length > 0 && (
+                <ChevronRight className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
+              )}
+              {entry.accountName}
+            </div>
+          </td>
+          <td className="p-2 text-right">
+            {entry.debit > 0 ? `£${entry.debit.toFixed(2)}` : '-'}
+          </td>
+          <td className="p-2 text-right">
+            {entry.credit > 0 ? `£${entry.credit.toFixed(2)}` : '-'}
+          </td>
+          <td className="p-2">
+            <Badge variant={entry.source === 'ai_processed' ? 'default' : 'secondary'}>
+              {entry.source === 'ai_processed' ? 'AI Processed' : 'Manual Journal'}
+            </Badge>
+          </td>
+        </tr>
+      </CollapsibleTrigger>
+      {entry.breakdown && entry.breakdown.length > 0 && (
+        <CollapsibleContent asChild>
+          <tr>
+            <td colSpan={5} className="p-2 bg-gray-50">
+              <div className="ml-6 space-y-2">
+                <div className="text-sm font-semibold text-gray-700 mb-3">
+                  Breakdown for {entry.accountName}:
+                </div>
+                <div className="space-y-1">
+                  {entry.breakdown.map((item, idx) => (
+                    <div key={idx} className="flex justify-between items-center py-2 px-4 bg-white rounded border">
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">{item.documentName}</div>
+                        <div className="text-gray-600 text-xs">{item.description}</div>
+                      </div>
+                      <div className="font-mono text-right ml-4 font-medium">
+                        £{item.amount.toFixed(2)}
+                      </div>
+                      <div className="ml-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEditBreakdown(entry.id, item);
+                          }}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </td>
+          </tr>
+        </CollapsibleContent>
+      )}
+    </Collapsible>
+  );
+}
+
 export default function ExtendedTrialBalance() {
   const [trialBalance, setTrialBalance] = useState<TrialBalanceEntry[]>([]);
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
@@ -80,6 +160,13 @@ export default function ExtendedTrialBalance() {
   const [aiProcessedData, setAiProcessedData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+
+  const handleEditBreakdownItem = (entryId: string, item: any) => {
+    toast({
+      title: "Edit Breakdown Item",
+      description: `Click to edit ${item.documentName} (${item.description})`,
+    });
+  };
 
   const [newJournal, setNewJournal] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -523,21 +610,7 @@ export default function ExtendedTrialBalance() {
                   </thead>
                   <tbody>
                     {trialBalance.map((entry) => (
-                      <tr key={entry.id} className="border-b hover:bg-muted/50">
-                        <td className="p-2 font-mono">{entry.accountCode}</td>
-                        <td className="p-2">{entry.accountName}</td>
-                        <td className="p-2 text-right">
-                          {entry.debit > 0 ? `£${entry.debit.toFixed(2)}` : '-'}
-                        </td>
-                        <td className="p-2 text-right">
-                          {entry.credit > 0 ? `£${entry.credit.toFixed(2)}` : '-'}
-                        </td>
-                        <td className="p-2">
-                          <Badge variant={entry.source === 'ai_processed' ? 'default' : 'secondary'}>
-                            {entry.source === 'ai_processed' ? 'AI Processed' : 'Manual Journal'}
-                          </Badge>
-                        </td>
-                      </tr>
+                      <TrialBalanceRow key={entry.id} entry={entry} onEditBreakdown={handleEditBreakdownItem} />
                     ))}
                   </tbody>
                   <tfoot>

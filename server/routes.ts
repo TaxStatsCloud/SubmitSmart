@@ -736,17 +736,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
           doc.name.includes('Printify')
         );
         
-        // Sample data based on the uploaded documents
+        // Calculate correct sales figures from actual orders
+        const salesRevenue = 55.81 + 13.95 + 9.95 + 11.95 + 11.95 + 9.95; // £113.56
+        const vatOnSales = 8.91; // VAT from order #3355744244
+        const netSales = salesRevenue - vatOnSales; // £104.65
+        const totalExpenses = 65.17 + 35.62; // £100.79
+        
+        // Sample data based on the uploaded documents with detailed breakdowns
         const sampleData = [
-          { id: 'etsy_sales', accountCode: '4000', accountName: 'Sales Revenue', debit: 0, credit: 67.75, source: 'ai_processed', documentRef: 'Etsy sales orders' },
-          { id: 'printify_costs', accountCode: '5000', accountName: 'Cost of Sales', debit: 65.17, credit: 0, source: 'ai_processed', documentRef: 'Printify production costs' },
-          { id: 'software_costs', accountCode: '6000', accountName: 'Administrative Expenses', debit: 17.05, credit: 0, source: 'ai_processed', documentRef: 'Software subscriptions' },
-          { id: 'bank_balance', accountCode: '1200', accountName: 'Cash at Bank', debit: 0, credit: 0, source: 'ai_processed', documentRef: 'Monzo bank statement' }
+          { 
+            id: 'etsy_sales', 
+            accountCode: '4000', 
+            accountName: 'Sales Revenue', 
+            debit: 0, 
+            credit: netSales, 
+            source: 'ai_processed', 
+            documentRef: 'Etsy sales orders',
+            breakdown: [
+              { documentName: 'Order #3355744244', amount: 46.90, description: 'Girls Olympic Hearts T-Shirt x2 (ex VAT)', documentId: 'order_3355744244' },
+              { documentName: 'Order #3276887608', amount: 13.95, description: 'Custom Girls T-Shirt', documentId: 'order_3276887608' },
+              { documentName: 'Order #3311826278', amount: 9.95, description: 'Sloth Mug', documentId: 'order_3311826278' },
+              { documentName: 'Order #3282549690', amount: 11.95, description: 'Kawaii Cat T-Shirt', documentId: 'order_3282549690' },
+              { documentName: 'Order #3278636927', amount: 11.95, description: 'Funny Sloth T-Shirt', documentId: 'order_3278636927' },
+              { documentName: 'Order #3278594603', amount: 9.95, description: 'Sloth Mug', documentId: 'order_3278594603' }
+            ]
+          },
+          { 
+            id: 'vat_liability', 
+            accountCode: '2200', 
+            accountName: 'VAT Liability', 
+            debit: 0, 
+            credit: vatOnSales, 
+            source: 'ai_processed', 
+            documentRef: 'VAT on sales',
+            breakdown: [
+              { documentName: 'Order #3355744244', amount: 8.91, description: 'VAT on German order', documentId: 'order_3355744244' }
+            ]
+          },
+          { 
+            id: 'debtors', 
+            accountCode: '1100', 
+            accountName: 'Trade Debtors', 
+            debit: salesRevenue, 
+            credit: 0, 
+            source: 'ai_processed', 
+            documentRef: 'Sales invoices raised',
+            breakdown: [
+              { documentName: 'Order #3355744244', amount: 55.81, description: 'German customer order', documentId: 'order_3355744244' },
+              { documentName: 'Order #3276887608', amount: 13.95, description: 'UK customer order', documentId: 'order_3276887608' },
+              { documentName: 'Order #3311826278', amount: 9.95, description: 'UK customer order', documentId: 'order_3311826278' },
+              { documentName: 'Order #3282549690', amount: 11.95, description: 'UK customer order', documentId: 'order_3282549690' },
+              { documentName: 'Order #3278636927', amount: 11.95, description: 'UK customer order', documentId: 'order_3278636927' },
+              { documentName: 'Order #3278594603', amount: 9.95, description: 'UK customer order', documentId: 'order_3278594603' }
+            ]
+          },
+          { 
+            id: 'printify_costs', 
+            accountCode: '5000', 
+            accountName: 'Cost of Sales', 
+            debit: 65.17, 
+            credit: 0, 
+            source: 'ai_processed', 
+            documentRef: 'Printify production costs',
+            breakdown: [
+              { documentName: 'Invoice #2024.4348402', amount: 27.16, description: 'Olympic Hearts T-Shirt production', documentId: 'printify_2024_4348402' },
+              { documentName: 'Invoice #2024.3234076', amount: 8.95, description: 'Sloth Mug production', documentId: 'printify_2024_3234076' },
+              { documentName: 'Invoice #2024.2580143', amount: 9.72, description: 'Sloth T-Shirt production', documentId: 'printify_2024_2580143' },
+              { documentName: 'Invoice #2024.2572395', amount: 8.95, description: 'Sloth Mug production', documentId: 'printify_2024_2572395' },
+              { documentName: 'Invoice #2024.2572333', amount: 9.72, description: 'Kawaii Cat T-Shirt production', documentId: 'printify_2024_2572333' },
+              { documentName: 'Invoice #2024.2473473', amount: 9.72, description: 'Custom T-Shirt production', documentId: 'printify_2024_2473473' }
+            ]
+          },
+          { 
+            id: 'software_costs', 
+            accountCode: '6000', 
+            accountName: 'Administrative Expenses', 
+            debit: 35.62, 
+            credit: 0, 
+            source: 'ai_processed', 
+            documentRef: 'Software subscriptions',
+            breakdown: [
+              { documentName: 'Canva Pro Subscription', amount: 12.99, description: 'Monthly design subscription', documentId: 'canva_may_2024' },
+              { documentName: 'Placeit Subscription', amount: 17.94, description: 'Monthly mockup subscription (USD)', documentId: 'placeit_may_2024' },
+              { documentName: 'Erank Tool', amount: 4.69, description: 'SEO optimization tool', documentId: 'erank_may_2024' }
+            ]
+          },
+          { 
+            id: 'trade_creditors', 
+            accountCode: '2100', 
+            accountName: 'Trade Creditors', 
+            debit: 0, 
+            credit: 100.79, 
+            source: 'ai_processed', 
+            documentRef: 'Outstanding supplier invoices',
+            breakdown: [
+              { documentName: 'Printify invoices', amount: 65.17, description: 'Production costs payable', documentId: 'printify_total' },
+              { documentName: 'Software subscriptions', amount: 35.62, description: 'Monthly subscriptions payable', documentId: 'software_total' }
+            ]
+          }
         ];
         
         trialBalanceEntries.push(...sampleData);
-        totalRevenue = 67.75;
-        totalExpenses = 82.22;
+        totalRevenue = netSales;
+        totalExpenses = totalExpenses;
       }
       
       // Calculate final balances
@@ -768,6 +860,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error getting trial balance:', error);
       res.status(500).json({ message: 'Failed to get trial balance data' });
+    }
+  });
+
+  // Update document categorization
+  app.put('/api/documents/:id/categorize', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { type, accountCode, accountName } = req.body;
+      
+      const document = await storage.getDocument(parseInt(id));
+      if (!document) {
+        return res.status(404).json({ message: 'Document not found' });
+      }
+      
+      // Update document type and account mapping
+      const updatedDocument = await storage.updateDocument(parseInt(id), {
+        type,
+        metadata: {
+          ...document.metadata,
+          accountMapping: {
+            accountCode,
+            accountName,
+            updatedAt: new Date().toISOString()
+          }
+        }
+      });
+      
+      res.json(updatedDocument);
+    } catch (error) {
+      console.error('Error updating document categorization:', error);
+      res.status(500).json({ message: 'Failed to update document categorization' });
+    }
+  });
+
+  // Get detailed breakdown for a specific account
+  app.get('/api/trial-balance/:companyId/:period/breakdown/:accountCode', async (req, res) => {
+    try {
+      const { companyId, period, accountCode } = req.params;
+      
+      // Get trial balance data first
+      const trialBalanceResponse = await fetch(`http://localhost:5000/api/trial-balance/${companyId}/${period}`);
+      const trialBalanceData = await trialBalanceResponse.json();
+      
+      // Find the account entry
+      const accountEntry = trialBalanceData.trialBalance.find(entry => entry.accountCode === accountCode);
+      
+      if (!accountEntry || !accountEntry.breakdown) {
+        return res.status(404).json({ message: 'Account breakdown not found' });
+      }
+      
+      res.json({
+        accountCode,
+        accountName: accountEntry.accountName,
+        totalAmount: accountEntry.debit || accountEntry.credit,
+        breakdown: accountEntry.breakdown
+      });
+    } catch (error) {
+      console.error('Error getting account breakdown:', error);
+      res.status(500).json({ message: 'Failed to get account breakdown' });
     }
   });
 
