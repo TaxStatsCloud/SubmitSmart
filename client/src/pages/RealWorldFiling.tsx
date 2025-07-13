@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Upload, FileText, Calculator, CheckCircle2, AlertTriangle, Building, Receipt, FileSpreadsheet, Calendar, DollarSign, TrendingUp, Send } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -36,8 +37,44 @@ const RealWorldFiling = () => {
   });
 
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [duplicateFiles, setDuplicateFiles] = useState<{file: File, existingFile: string}[]>([]);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+
+  const checkForDuplicates = async (files: File[]) => {
+    try {
+      const response = await fetch('/api/documents');
+      const existingDocs = await response.json();
+      
+      const duplicates = files.filter(file => 
+        existingDocs.some(doc => 
+          doc.name === file.name && doc.size === file.size
+        )
+      );
+      
+      return duplicates.map(file => ({
+        file,
+        existingFile: existingDocs.find(doc => doc.name === file.name && doc.size === file.size)?.id
+      }));
+    } catch (error) {
+      console.error('Error checking duplicates:', error);
+      return [];
+    }
+  };
 
   const handleBulkUpload = async (files: File[], documentType: string) => {
+    // Check for duplicates first
+    const duplicates = await checkForDuplicates(files);
+    
+    if (duplicates.length > 0) {
+      setDuplicateFiles(duplicates);
+      setShowDuplicateDialog(true);
+      return;
+    }
+
+    await processBulkUpload(files, documentType);
+  };
+
+  const processBulkUpload = async (files: File[], documentType: string) => {
     const uploadPromises = files.map(async (file) => {
       try {
         const formData = new FormData();
@@ -82,6 +119,49 @@ const RealWorldFiling = () => {
     }
 
     return results;
+  };
+
+  const handleDuplicateResolution = async (action: 'skip' | 'replace', filesToProcess: File[], documentType: string) => {
+    setShowDuplicateDialog(false);
+    
+    if (action === 'skip') {
+      // Filter out duplicates and upload only new files
+      const nonDuplicateFiles = filesToProcess.filter(file => 
+        !duplicateFiles.some(dup => dup.file.name === file.name)
+      );
+      
+      if (nonDuplicateFiles.length > 0) {
+        await processBulkUpload(nonDuplicateFiles, documentType);
+        toast({
+          title: "Duplicates skipped",
+          description: `Uploaded ${nonDuplicateFiles.length} new files, skipped ${duplicateFiles.length} duplicates.`,
+        });
+      } else {
+        toast({
+          title: "No new files to upload",
+          description: "All selected files were duplicates and have been skipped.",
+        });
+      }
+    } else {
+      // Replace duplicates - first delete existing duplicates, then upload all files
+      for (const duplicate of duplicateFiles) {
+        try {
+          await fetch(`/api/documents/${duplicate.existingFile}`, {
+            method: 'DELETE'
+          });
+        } catch (error) {
+          console.error('Error deleting duplicate:', error);
+        }
+      }
+      
+      await processBulkUpload(filesToProcess, documentType);
+      toast({
+        title: "Files replaced",
+        description: `Replaced ${duplicateFiles.length} duplicate files and uploaded ${filesToProcess.length} files total.`,
+      });
+    }
+    
+    setDuplicateFiles([]);
   };
 
   const saveSectionMutation = useMutation({
@@ -400,90 +480,129 @@ const RealWorldFiling = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card className="border-dashed border-2 hover:border-primary/50 transition-colors">
-                      <CardContent className="p-6 text-center">
-                        <FileSpreadsheet className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                        <h3 className="font-medium mb-1">Bank Statements</h3>
-                        <p className="text-sm text-muted-foreground mb-3">
-                          Upload final period bank statements
-                        </p>
-                        <Button variant="outline" size="sm" onClick={() => {
-                          const input = document.createElement('input');
-                          input.type = 'file';
-                          input.accept = '.pdf,.csv,.xlsx,.xls';
-                          input.onchange = (e) => {
-                            const file = (e.target as HTMLInputElement).files?.[0];
-                            if (file) {
-                              handleFileUpload(file, 'bank_statements');
-                            }
-                          };
-                          input.click();
-                        }}>
-                          <Upload className="h-4 w-4 mr-2" />
-                          Upload
-                        </Button>
-                      </CardContent>
-                    </Card>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <h3 className="font-semibold text-lg text-green-600">Sales & Revenue Documents</h3>
+                      <div className="grid grid-cols-1 gap-4">
+                        <Card className="border-dashed border-2 hover:border-primary/50 transition-colors">
+                          <CardContent className="p-6 text-center">
+                            <FileSpreadsheet className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                            <h3 className="font-medium mb-1">Bank Statements</h3>
+                            <p className="text-sm text-muted-foreground mb-3">
+                              Upload final period bank statements
+                            </p>
+                            <Button variant="outline" size="sm" onClick={() => {
+                              const input = document.createElement('input');
+                              input.type = 'file';
+                              input.accept = '.pdf,.csv,.xlsx,.xls';
+                              input.onchange = (e) => {
+                                const file = (e.target as HTMLInputElement).files?.[0];
+                                if (file) {
+                                  handleFileUpload(file, 'bank_statements');
+                                }
+                              };
+                              input.click();
+                            }}>
+                              <Upload className="h-4 w-4 mr-2" />
+                              Upload
+                            </Button>
+                          </CardContent>
+                        </Card>
 
-                    <Card className="border-dashed border-2 hover:border-primary/50 transition-colors">
-                      <CardContent className="p-6 text-center">
-                        <Receipt className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                        <h3 className="font-medium mb-1">Invoices</h3>
-                        <p className="text-sm text-muted-foreground mb-3">
-                          Upload sales invoices and receipts
-                        </p>
-                        <Button variant="outline" size="sm" onClick={() => {
-                          const input = document.createElement('input');
-                          input.type = 'file';
-                          input.accept = '.pdf,.jpg,.jpeg,.png';
-                          input.multiple = true;
-                          input.onchange = (e) => {
-                            const files = Array.from((e.target as HTMLInputElement).files || []);
-                            if (files.length > 0) {
-                              handleBulkUpload(files, 'invoices');
-                            }
-                          };
-                          input.click();
-                        }}>
-                          <Upload className="h-4 w-4 mr-2" />
-                          Upload (Multiple)
-                        </Button>
-                      </CardContent>
-                    </Card>
+                        <Card className="border-dashed border-2 hover:border-primary/50 transition-colors">
+                          <CardContent className="p-6 text-center">
+                            <Receipt className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                            <h3 className="font-medium mb-1">Sales Invoices</h3>
+                            <p className="text-sm text-muted-foreground mb-3">
+                              Upload sales invoices and receipts (Multiple files)
+                            </p>
+                            <Button variant="outline" size="sm" onClick={() => {
+                              const input = document.createElement('input');
+                              input.type = 'file';
+                              input.accept = '.pdf,.jpg,.jpeg,.png';
+                              input.multiple = true;
+                              input.onchange = (e) => {
+                                const files = Array.from((e.target as HTMLInputElement).files || []);
+                                if (files.length > 0) {
+                                  setUploadedFiles(files);
+                                  handleBulkUpload(files, 'sales_invoices');
+                                }
+                              };
+                              input.click();
+                            }}>
+                              <Upload className="h-4 w-4 mr-2" />
+                              Bulk Upload
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </div>
 
-                    <Card className="border-dashed border-2 hover:border-primary/50 transition-colors">
-                      <CardContent className="p-6 text-center">
-                        <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                        <h3 className="font-medium mb-1">Receipts</h3>
-                        <p className="text-sm text-muted-foreground mb-3">
-                          Upload business expense receipts
-                        </p>
-                        <Button variant="outline" size="sm" onClick={() => {
-                          const input = document.createElement('input');
-                          input.type = 'file';
-                          input.accept = '.pdf,.jpg,.jpeg,.png';
-                          input.multiple = true;
-                          input.onchange = (e) => {
-                            const files = Array.from((e.target as HTMLInputElement).files || []);
-                            if (files.length > 0) {
-                              handleBulkUpload(files, 'receipts');
-                            }
-                          };
-                          input.click();
-                        }}>
-                          <Upload className="h-4 w-4 mr-2" />
-                          Upload (Multiple)
-                        </Button>
-                      </CardContent>
-                    </Card>
+                    <div className="space-y-4">
+                      <h3 className="font-semibold text-lg text-red-600">Purchase & Expense Documents</h3>
+                      <div className="grid grid-cols-1 gap-4">
+                        <Card className="border-dashed border-2 hover:border-primary/50 transition-colors">
+                          <CardContent className="p-6 text-center">
+                            <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                            <h3 className="font-medium mb-1">Purchase Invoices</h3>
+                            <p className="text-sm text-muted-foreground mb-3">
+                              Upload supplier invoices and bills (Multiple files)
+                            </p>
+                            <Button variant="outline" size="sm" onClick={() => {
+                              const input = document.createElement('input');
+                              input.type = 'file';
+                              input.accept = '.pdf,.jpg,.jpeg,.png';
+                              input.multiple = true;
+                              input.onchange = (e) => {
+                                const files = Array.from((e.target as HTMLInputElement).files || []);
+                                if (files.length > 0) {
+                                  setUploadedFiles(files);
+                                  handleBulkUpload(files, 'purchase_invoices');
+                                }
+                              };
+                              input.click();
+                            }}>
+                              <Upload className="h-4 w-4 mr-2" />
+                              Bulk Upload
+                            </Button>
+                          </CardContent>
+                        </Card>
+
+                        <Card className="border-dashed border-2 hover:border-primary/50 transition-colors">
+                          <CardContent className="p-6 text-center">
+                            <Receipt className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                            <h3 className="font-medium mb-1">Expense Receipts</h3>
+                            <p className="text-sm text-muted-foreground mb-3">
+                              Upload business expense receipts (Multiple files)
+                            </p>
+                            <Button variant="outline" size="sm" onClick={() => {
+                              const input = document.createElement('input');
+                              input.type = 'file';
+                              input.accept = '.pdf,.jpg,.jpeg,.png';
+                              input.multiple = true;
+                              input.onchange = (e) => {
+                                const files = Array.from((e.target as HTMLInputElement).files || []);
+                                if (files.length > 0) {
+                                  setUploadedFiles(files);
+                                  handleBulkUpload(files, 'expense_receipts');
+                                }
+                              };
+                              input.click();
+                            }}>
+                              <Upload className="h-4 w-4 mr-2" />
+                              Bulk Upload
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </div>
                   </div>
 
                   <Alert>
                     <FileText className="h-4 w-4" />
                     <AlertDescription>
                       <strong>AI Processing:</strong> Once uploaded, our AI will analyse your documents and automatically 
-                      extract financial data for the profit and loss account and balance sheet.
+                      extract financial data for the profit and loss account and balance sheet. Duplicate files will be detected and you can choose to skip or replace them.
                     </AlertDescription>
                   </Alert>
 
@@ -754,6 +873,48 @@ const RealWorldFiling = () => {
           </Tabs>
         </div>
       </div>
+
+      {/* Duplicate Files Dialog */}
+      <Dialog open={showDuplicateDialog} onOpenChange={setShowDuplicateDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Duplicate Files Detected</DialogTitle>
+            <DialogDescription>
+              The following files already exist in your uploads:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="space-y-2">
+              {duplicateFiles.map((dup, index) => (
+                <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded">
+                  <FileText className="h-4 w-4" />
+                  <span className="text-sm">{dup.file.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                const originalFiles = uploadedFiles.filter(file => 
+                  !duplicateFiles.some(dup => dup.file.name === file.name)
+                );
+                handleDuplicateResolution('skip', originalFiles, 'mixed');
+              }}
+            >
+              Skip Duplicates ({duplicateFiles.length})
+            </Button>
+            <Button 
+              onClick={() => {
+                handleDuplicateResolution('replace', uploadedFiles, 'mixed');
+              }}
+            >
+              Replace Existing ({duplicateFiles.length})
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -591,6 +591,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Document routes
+  app.get('/api/documents', async (req, res) => {
+    try {
+      const documents = await storage.getAllDocuments();
+      res.json(documents);
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to fetch documents' });
+    }
+  });
+
+  app.delete('/api/documents/:id', async (req, res) => {
+    try {
+      const documentId = parseInt(req.params.id);
+      await storage.deleteDocument(documentId);
+      res.json({ message: 'Document deleted successfully' });
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to delete document' });
+    }
+  });
+
   app.post('/api/documents/upload', upload.single('file'), async (req, res) => {
     try {
       const file = req.file;
