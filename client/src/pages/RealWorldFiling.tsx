@@ -80,6 +80,54 @@ const RealWorldFiling = () => {
     setProgress(prev => Math.min(prev + 15, 90));
   };
 
+  const handleFileUpload = async (file: File, documentType: string) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('documentType', documentType);
+      formData.append('companyId', '1');
+      formData.append('filingPeriod', '2024-25');
+      
+      const response = await fetch('/api/documents/upload', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        toast({
+          title: "Document Uploaded",
+          description: `${file.name} has been uploaded successfully.`,
+        });
+        
+        // Update filing data to reflect uploaded document
+        setFilingData(prev => ({
+          ...prev,
+          sections: {
+            ...prev.sections,
+            documents: {
+              ...prev.sections.documents,
+              [documentType]: {
+                filename: file.name,
+                uploadedAt: new Date().toISOString(),
+                status: 'uploaded'
+              }
+            }
+          }
+        }));
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload document",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSubmitFiling = () => {
     submitFilingMutation.mutate();
   };
@@ -293,7 +341,18 @@ const RealWorldFiling = () => {
                         <p className="text-sm text-muted-foreground mb-3">
                           Upload final period bank statements
                         </p>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = '.pdf,.csv,.xlsx,.xls';
+                          input.onchange = (e) => {
+                            const file = (e.target as HTMLInputElement).files?.[0];
+                            if (file) {
+                              handleFileUpload(file, 'bank_statements');
+                            }
+                          };
+                          input.click();
+                        }}>
                           <Upload className="h-4 w-4 mr-2" />
                           Upload
                         </Button>
@@ -307,7 +366,18 @@ const RealWorldFiling = () => {
                         <p className="text-sm text-muted-foreground mb-3">
                           Upload sales invoices and receipts
                         </p>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = '.pdf,.jpg,.jpeg,.png';
+                          input.onchange = (e) => {
+                            const file = (e.target as HTMLInputElement).files?.[0];
+                            if (file) {
+                              handleFileUpload(file, 'invoices');
+                            }
+                          };
+                          input.click();
+                        }}>
                           <Upload className="h-4 w-4 mr-2" />
                           Upload
                         </Button>
@@ -321,7 +391,18 @@ const RealWorldFiling = () => {
                         <p className="text-sm text-muted-foreground mb-3">
                           Upload business expense receipts
                         </p>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = '.pdf,.jpg,.jpeg,.png';
+                          input.onchange = (e) => {
+                            const file = (e.target as HTMLInputElement).files?.[0];
+                            if (file) {
+                              handleFileUpload(file, 'receipts');
+                            }
+                          };
+                          input.click();
+                        }}>
                           <Upload className="h-4 w-4 mr-2" />
                           Upload
                         </Button>

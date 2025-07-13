@@ -519,6 +519,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Tax filing routes - for real-world filing demo
+  app.post('/api/tax-filings/:companyId/:period/section', async (req, res) => {
+    try {
+      const { companyId, period } = req.params;
+      const { sectionId, data } = req.body;
+      
+      // For now, just store in memory (in production, this would use database)
+      const filingKey = `${companyId}-${period}`;
+      
+      // Simple in-memory storage for demo
+      if (!global.taxFilings) {
+        global.taxFilings = {};
+      }
+      
+      if (!global.taxFilings[filingKey]) {
+        global.taxFilings[filingKey] = {};
+      }
+      
+      global.taxFilings[filingKey][sectionId] = {
+        ...data,
+        updatedAt: new Date().toISOString()
+      };
+      
+      res.json({ 
+        success: true, 
+        message: 'Section saved successfully',
+        data: global.taxFilings[filingKey][sectionId]
+      });
+    } catch (error) {
+      console.error('Tax filing section save error:', error);
+      res.status(500).json({ error: 'Failed to save section data' });
+    }
+  });
+
+  app.get('/api/tax-filings/:companyId/:period', async (req, res) => {
+    try {
+      const { companyId, period } = req.params;
+      const filingKey = `${companyId}-${period}`;
+      
+      const filingData = global.taxFilings?.[filingKey] || {};
+      
+      res.json({
+        companyId,
+        period,
+        sections: filingData,
+        lastUpdated: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Tax filing fetch error:', error);
+      res.status(500).json({ error: 'Failed to fetch filing data' });
+    }
+  });
+
+  app.post('/api/tax-filings/:companyId/:period/submit', async (req, res) => {
+    try {
+      const { companyId, period } = req.params;
+      const filingKey = `${companyId}-${period}`;
+      
+      // In production, this would submit to HMRC
+      const filingData = global.taxFilings?.[filingKey] || {};
+      
+      // Mark as submitted
+      if (!global.taxFilings) {
+        global.taxFilings = {};
+      }
+      
+      global.taxFilings[filingKey] = {
+        ...filingData,
+        status: 'submitted',
+        submittedAt: new Date().toISOString()
+      };
+      
+      res.json({ 
+        success: true, 
+        message: 'Tax filing submitted successfully',
+        submissionId: `CT600-${companyId}-${Date.now()}`
+      });
+    } catch (error) {
+      console.error('Tax filing submission error:', error);
+      res.status(500).json({ error: 'Failed to submit filing' });
+    }
+  });
+
   // Document routes
   app.post('/api/documents/upload', upload.single('file'), async (req, res) => {
     try {
