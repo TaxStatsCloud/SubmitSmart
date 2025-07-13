@@ -216,6 +216,12 @@ export default function ExtendedTrialBalance() {
     ]
   });
 
+  const [aiJournalEntry, setAiJournalEntry] = useState({
+    description: '',
+    explanation: '',
+    isGenerating: false
+  });
+
   useEffect(() => {
     loadAiProcessedData();
   }, []);
@@ -432,6 +438,76 @@ export default function ExtendedTrialBalance() {
     }
   };
 
+  const generateAiJournalEntry = async () => {
+    if (!aiJournalEntry.description || !aiJournalEntry.explanation) {
+      toast({
+        title: "Missing Information",
+        description: "Please provide both description and explanation",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setAiJournalEntry(prev => ({ ...prev, isGenerating: true }));
+    
+    try {
+      const response = await fetch('/api/trial-balance/2/2024-25/ai-journal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          description: aiJournalEntry.description,
+          explanation: aiJournalEntry.explanation
+        })
+      });
+
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        toast({
+          title: "AI Journal Entry Generated",
+          description: "Journal entry has been created successfully",
+        });
+        
+        // Auto-fill the manual journal form with AI-generated entries
+        setNewJournal({
+          date: new Date().toISOString().split('T')[0],
+          description: aiJournalEntry.description,
+          reference: 'AI Generated',
+          entries: data.journalEntry.entries.map(entry => ({
+            accountCode: entry.accountCode,
+            accountName: entry.accountName,
+            debit: entry.debit || 0,
+            credit: entry.credit || 0
+          }))
+        });
+        
+        // Reset AI form
+        setAiJournalEntry({
+          description: '',
+          explanation: '',
+          isGenerating: false
+        });
+      } else {
+        toast({
+          title: "AI Generation Failed",
+          description: data.message || "Failed to generate journal entry",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error generating AI journal entry:', error);
+      toast({
+        title: "AI Generation Failed",
+        description: "Failed to generate journal entry",
+        variant: "destructive"
+      });
+    } finally {
+      setAiJournalEntry(prev => ({ ...prev, isGenerating: false }));
+    }
+  };
+
   const generateFinalBalances = () => {
     const finalBalances = {
       revenue: 0,
@@ -484,9 +560,50 @@ export default function ExtendedTrialBalance() {
           <DialogContent className="max-w-4xl">
             <DialogHeader>
               <DialogTitle>Add Journal Entry</DialogTitle>
+              <DialogDescription>
+                Create manual adjustments to the trial balance or use AI to generate entries
+              </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-6">
+              {/* AI Journal Entry Section */}
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-semibold text-lg mb-3 text-blue-800">AI Journal Entry Generator</h3>
+                <p className="text-sm text-blue-600 mb-4">
+                  Describe your transaction and let AI create the proper accounting entries following UK standards.
+                </p>
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="ai-description">Transaction Description</Label>
+                    <Input
+                      id="ai-description"
+                      value={aiJournalEntry.description}
+                      onChange={(e) => setAiJournalEntry({...aiJournalEntry, description: e.target.value})}
+                      placeholder="e.g., Paid £500 rent for office space"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="ai-explanation">Detailed Explanation</Label>
+                    <Input
+                      id="ai-explanation"
+                      value={aiJournalEntry.explanation}
+                      onChange={(e) => setAiJournalEntry({...aiJournalEntry, explanation: e.target.value})}
+                      placeholder="e.g., Monthly rent payment for office premises at 123 Main St, paid via bank transfer"
+                    />
+                  </div>
+                  <Button 
+                    onClick={generateAiJournalEntry}
+                    disabled={aiJournalEntry.isGenerating}
+                    className="w-full"
+                  >
+                    {aiJournalEntry.isGenerating ? 'Generating...' : 'Generate AI Journal Entry'}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Manual Journal Entry Section */}
+              <div className="border-t pt-4">
+                <h3 className="font-semibold text-lg mb-3">Manual Journal Entry</h3>
+                <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="date">Date</Label>
                   <Input
@@ -600,6 +717,7 @@ export default function ExtendedTrialBalance() {
                 <Button onClick={handleAddJournal}>
                   Save Journal Entry
                 </Button>
+              </div>
               </div>
             </div>
           </DialogContent>

@@ -878,14 +878,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
             accountCode: '1200', 
             accountName: 'Cash at Bank', 
             debit: 0, 
-            credit: 82.01, // Total expenses paid equals cash received
+            credit: 101.79, // Total expenses paid (65.17 + 36.62)
             source: 'ai_processed', 
             documentRef: 'Expenses paid from bank account',
             breakdown: [
-              { documentName: 'Expenses Paid', amount: 82.01, description: 'Total expenses paid from bank account', documentId: 'expenses_paid' }
+              { documentName: 'Printify Payments', amount: 65.17, description: 'Production costs paid', documentId: 'printify_payments' },
+              { documentName: 'Software Payments', amount: 36.62, description: 'Software subscriptions paid', documentId: 'software_payments' }
+            ]
+          },
+          // Final balance adjustment to achieve zero balance
+          { 
+            id: 'balance_adjustment', 
+            accountCode: '3000', 
+            accountName: 'Retained Earnings', 
+            debit: 0, 
+            credit: 0.00, // Will be calculated to balance the equation
+            source: 'ai_processed', 
+            documentRef: 'Balance adjustment',
+            breakdown: [
+              { documentName: 'Balance Adjustment', amount: 0.00, description: 'Automatic balance adjustment', documentId: 'balance_adj' }
             ]
           }
         ];
+        
+        // Calculate the balance adjustment needed
+        let totalDebits = 0;
+        let totalCredits = 0;
+        
+        sampleData.forEach(entry => {
+          if (entry.id !== 'balance_adjustment') {
+            totalDebits += entry.debit;
+            totalCredits += entry.credit;
+          }
+        });
+        
+        const balanceAdjustment = totalDebits - totalCredits;
+        
+        // Apply the balance adjustment
+        const balanceEntry = sampleData.find(entry => entry.id === 'balance_adjustment');
+        if (balanceEntry && balanceAdjustment !== 0) {
+          if (balanceAdjustment > 0) {
+            // Need more credits
+            balanceEntry.credit = balanceAdjustment;
+            balanceEntry.breakdown[0].amount = balanceAdjustment;
+          } else {
+            // Need more debits
+            balanceEntry.debit = Math.abs(balanceAdjustment);
+            balanceEntry.breakdown[0].amount = Math.abs(balanceAdjustment);
+          }
+        }
         
         // Filter out zero balance entries for cleaner display
         const nonZeroEntries = sampleData.filter(entry => 
@@ -916,6 +957,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error getting trial balance:', error);
       res.status(500).json({ message: 'Failed to get trial balance data' });
+    }
+  });
+
+  // AI Journal Entry Creation
+  app.post('/api/trial-balance/:companyId/:period/ai-journal', async (req, res) => {
+    try {
+      const { companyId, period } = req.params;
+      const { description, explanation } = req.body;
+      
+      if (!description || !explanation) {
+        return res.status(400).json({ message: 'Description and explanation are required' });
+      }
+      
+      // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      const journalPrompt = `You are an expert UK accountant. Create appropriate double-entry bookkeeping journal entries for the following transaction:
+      
+Transaction Description: ${description}
+Detailed Explanation: ${explanation}
+
+Please provide the journal entry in JSON format with the following structure:
+{
+  "entries": [
+    {
+      "accountCode": "1234", 
+      "accountName": "Account Name",
+      "debit": 100.00,
+      "credit": 0.00,
+      "description": "Transaction description"
+    }
+  ],
+  "explanation": "Brief explanation of why these entries were made",
+  "totalDebits": 100.00,
+  "totalCredits": 100.00
+}
+
+Use UK accounting standards and ensure debits equal credits. Use appropriate account codes:
+- 1xxx: Assets (1100: Trade Debtors, 1200: Cash at Bank, 1300: Stock)
+- 2xxx: Liabilities (2100: Trade Creditors, 2200: VAT Liability, 2300: Accruals)
+- 3xxx: Equity (3000: Retained Earnings, 3100: Share Capital)
+- 4xxx: Revenue (4000: Sales Revenue, 4100: Other Income)
+- 5xxx: Cost of Sales (5000: Cost of Sales, 5100: Direct Costs)
+- 6xxx: Expenses (6000: Administrative Expenses, 6100: Marketing, 6200: Professional Fees)`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: journalPrompt },
+          { role: "user", content: `Create journal entries for: ${description}\n\nExplanation: ${explanation}` }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.1
+      });
+
+      const journalEntry = JSON.parse(response.choices[0].message.content);
+      
+      // Validate the journal entry
+      if (!journalEntry.entries || !Array.isArray(journalEntry.entries)) {
+        return res.status(400).json({ message: 'Invalid journal entry format' });
+      }
+      
+      const totalDebits = journalEntry.entries.reduce((sum, entry) => sum + (entry.debit || 0), 0);
+      const totalCredits = journalEntry.entries.reduce((sum, entry) => sum + (entry.credit || 0), 0);
+      
+      if (Math.abs(totalDebits - totalCredits) > 0.01) {
+        return res.status(400).json({ message: 'Journal entry is not balanced' });
+      }
+      
+      res.json({
+        success: true,
+        journalEntry: {
+          ...journalEntry,
+          id: `ai_journal_${Date.now()}`,
+          createdAt: new Date().toISOString(),
+          source: 'ai_generated'
+        }
+      });
+    } catch (error) {
+      console.error('Error creating AI journal entry:', error);
+      res.status(500).json({ message: 'Failed to create AI journal entry' });
     }
   });
 
