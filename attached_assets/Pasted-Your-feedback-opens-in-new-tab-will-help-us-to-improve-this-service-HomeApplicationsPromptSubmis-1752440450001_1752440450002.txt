@@ -1,0 +1,320 @@
+Your feedback (opens in new tab) will help us to improve this service.
+
+HomeApplicationsPromptSubmissions
+Robert Johnson
+Sign out
+PromptSubmissions
+Application details
+Credentials
+Client ID
+Client secrets
+API subscriptions
+Redirect URIs
+IP allow list
+Team members
+Delete application
+
+Manage applications
+View all applications
+Add an application to the sandbox
+
+Manage account
+Manage profile
+Email preferences
+Change password
+Security preferences
+Manage API subscriptions
+Application:
+PromptSubmissions
+
+Environment:
+Sandbox
+
+You must subscribe to an API so your application can access it. You’ll receive notifications about its lifecycle events, such as new version introductions and old version retirements.
+
+Learn more about our APIs in API documentation.
+
+Example API
+Use Hello World to test your software connects to HMRC
+
+Show all sections
+
+Hello World
+0 subscriptions
+Show
+APIs for accessing secure data
+APIs that access secure data and require authentication
+
+Show all sections
+
+Agent Authorisation
+0 subscriptions
+Show
+
+Bulk Data File List
+0 subscriptions
+Show
+
+Business Details (MTD)
+1 subscription
+Hide
+2.0 (Beta)
+
+ 
+1.0 (Beta)
+
+ 
+
+Business Income Source Summary (MTD)
+1 subscription
+Hide
+3.0 (Beta)
+
+ 
+
+Business Source Adjustable Summary (MTD)
+1 subscription
+Hide
+7.0 (Beta)
+
+ 
+
+CIS Deductions (MTD)
+0 subscriptions
+Show
+
+CTC Guarantee Balance
+0 subscriptions
+Show
+
+CTC Traders
+0 subscriptions
+Show
+
+Check a UK VAT number
+0 subscriptions
+Show
+
+Customs Inventory Linking Exports
+0 subscriptions
+Show
+
+Excise Movement Control System
+0 subscriptions
+Show
+
+Goods Vehicle Movements
+0 subscriptions
+Show
+
+Import Control Presentation of Goods
+0 subscriptions
+Show
+
+Individual Benefits
+0 subscriptions
+Show
+
+Individual Calculations (MTD)
+0 subscriptions
+Show
+
+Individual Employment
+0 subscriptions
+Show
+
+Individual Income
+0 subscriptions
+Show
+
+Individual Losses (MTD)
+0 subscriptions
+Show
+
+Individual Tax
+0 subscriptions
+Show
+
+Individuals Capital Gains Income (MTD)
+0 subscriptions
+Show
+
+Individuals Charges (MTD)
+0 subscriptions
+Show
+
+Individuals Disclosures (MTD)
+0 subscriptions
+Show
+
+Individuals Dividends Income (MTD)
+0 subscriptions
+Show
+
+Individuals Employments Income (MTD)
+0 subscriptions
+Show
+
+Individuals Expenses (MTD)
+0 subscriptions
+Show
+
+Individuals Foreign Income (MTD)
+0 subscriptions
+Show
+
+Individuals Insurance Policies Income (MTD)
+0 subscriptions
+Show
+
+Individuals Other Income (MTD)
+0 subscriptions
+Show
+
+Individuals Pensions Income (MTD)
+0 subscriptions
+Show
+
+Individuals Reliefs (MTD)
+0 subscriptions
+Show
+
+Individuals Savings Income (MTD)
+0 subscriptions
+Show
+
+Individuals State Benefits (MTD)
+0 subscriptions
+Show
+
+Interest Restriction Return (IRR)
+0 subscriptions
+Show
+
+Lifetime ISA
+0 subscriptions
+Show
+
+Marriage Allowance
+0 subscriptions
+Show
+
+National Insurance
+0 subscriptions
+Show
+
+Notification of Presentation Waiver Checker
+0 subscriptions
+Show
+
+Obligations (MTD)
+0 subscriptions
+Show
+
+Other Deductions (MTD)
+0 subscriptions
+Show
+
+Property Business (MTD)
+0 subscriptions
+Show
+
+Pull Notifications
+0 subscriptions
+Show
+
+Push Pull Notifications
+0 subscriptions
+Show
+
+Relief At Source
+0 subscriptions
+Show
+
+Safety and Security Import Declarations
+0 subscriptions
+Show
+
+Safety and Security Import Notifications
+0 subscriptions
+Show
+
+Safety and Security Import Outcomes
+0 subscriptions
+Show
+
+Secure Data Exchange File Upload API
+0 subscriptions
+Show
+
+Self Assessment Accounts (MTD)
+0 subscriptions
+Show
+
+Self Assessment Assist (MTD)
+0 subscriptions
+Show
+
+Self Assessment Individual Details (MTD)
+0 subscriptions
+Show
+
+Self Employment Business (MTD)
+0 subscriptions
+Show
+
+Trader Goods Profiles
+0 subscriptions
+Show
+
+Trader Goods Profiles Test Support
+0 subscriptions
+Show
+
+VAT (MTD)
+0 subscriptions
+Show
+APIs with only open access endpoints
+You do not need an application or subscription to use open access endpoints
+
+Show all sections
+
+Agent Authorisation Test Support
+Show
+
+Check an EORI Number
+Show
+APIs for testing your service
+Set up test data to accept or reject requests or check your fraud prevention headers
+
+Show all sections
+
+Create Test User
+0 subscriptions
+Show
+
+Individual PAYE Test Support
+0 subscriptions
+Show
+
+Marriage Allowance Test Support
+0 subscriptions
+Show
+
+National Insurance Test Support
+0 subscriptions
+Show
+
+Self Assessment Test Support (MTD)
+0 subscriptions
+Show
+
+Test Fraud Prevention Headers
+0 subscriptions
+Show
+
+
+
+Is this page not working properly?
+Cookies Accessibility statement Privacy Policy Terms and conditions Help using GOV.UK
+ All content is available under the Open Government Licence v3.0, except where otherwise stated
