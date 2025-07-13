@@ -25,7 +25,9 @@ import {
   Download,
   Plus,
   Trash2,
-  FileDown
+  FileDown,
+  CheckCircle2,
+  AlertTriangle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
@@ -156,11 +158,17 @@ export default function FinancialReporting() {
   useEffect(() => {
     const loadFinancialData = () => {
       const etbData = localStorage.getItem('etbData');
+      
+      // Debug: Log the ETB data to console
+      console.log('ETB Data from localStorage:', etbData);
+      
       if (etbData) {
         const parsedData = JSON.parse(etbData);
+        console.log('Parsed ETB Data:', parsedData);
         
         // Update P&L from ETB final balances
         if (parsedData.finalBalances) {
+          console.log('Final balances found:', parsedData.finalBalances);
           setProfitLossData(prev => prev.map(item => {
             switch (item.id) {
               case 'turnover':
@@ -182,6 +190,8 @@ export default function FinancialReporting() {
           // Update Balance Sheet from ETB final balances
           // Distribute assets based on account codes from trial balance
           const trialBalanceData = parsedData.trialBalance || [];
+          console.log('Trial balance data for balance sheet:', trialBalanceData);
+          
           const assetsTotalFromTB = trialBalanceData
             .filter(entry => entry.accountCode.startsWith('1'))
             .reduce((sum, entry) => sum + (entry.debit - entry.credit), 0);
@@ -191,6 +201,12 @@ export default function FinancialReporting() {
           const equityTotalFromTB = trialBalanceData
             .filter(entry => entry.accountCode.startsWith('3'))
             .reduce((sum, entry) => sum + (entry.credit - entry.debit), 0);
+            
+          console.log('Balance sheet totals calculated:', {
+            assets: assetsTotalFromTB,
+            liabilities: liabilitiesTotalFromTB,
+            equity: equityTotalFromTB
+          });
 
           setBalanceSheetData(prev => ({
             ...prev,
@@ -207,6 +223,13 @@ export default function FinancialReporting() {
                 const totalDebits = cashEntries.reduce((sum, entry) => sum + entry.debit, 0);
                 const totalCredits = cashEntries.reduce((sum, entry) => sum + entry.credit, 0);
                 const netCashBalance = totalDebits - totalCredits;
+                
+                console.log('Cash balance calculation:', {
+                  cashEntries,
+                  totalDebits,
+                  totalCredits,
+                  netCashBalance
+                });
                 
                 // Only show positive cash balances on assets side
                 return { ...item, amount: Math.max(0, netCashBalance) };
@@ -236,7 +259,18 @@ export default function FinancialReporting() {
               return item;
             })
           }));
+        } else {
+          console.log('No finalBalances found in ETB data');
         }
+      } else {
+        console.log('No ETB data found in localStorage');
+        
+        // Show info toast to user
+        toast({
+          title: "No ETB Data Found",
+          description: "Please complete the Extended Trial Balance first to populate financial statements.",
+          variant: "default",
+        });
       }
     };
 
@@ -623,6 +657,21 @@ export default function FinancialReporting() {
         <div>
           <h1 className="text-3xl font-bold">Financial Reporting</h1>
           <p className="text-muted-foreground">Comprehensive financial statements and notes</p>
+          
+          {/* ETB Data Status Indicator */}
+          <div className="flex items-center gap-2 mt-2">
+            {localStorage.getItem('etbData') ? (
+              <Badge className="bg-green-100 text-green-800">
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                ETB Data Loaded
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-300">
+                <AlertTriangle className="h-3 w-3 mr-1" />
+                No ETB Data - Run Extended Trial Balance First
+              </Badge>
+            )}
+          </div>
         </div>
         <div className="flex gap-2">
           <Button

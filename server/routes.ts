@@ -58,6 +58,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register agent routes
   app.use('/api/agents', agentRoutes);
+
+  // ETB data endpoint for debugging
+  app.get('/api/etb/data', (req, res) => {
+    // Since ETB data is stored in localStorage on client side, return a debug endpoint
+    res.json({
+      message: "ETB data is stored in browser localStorage",
+      expectedStructure: {
+        trialBalance: "Array of trial balance entries with accountCode, debit, credit",
+        journalEntries: "Array of journal adjustments",
+        finalBalances: "Calculated final balances for revenue and expenses"
+      },
+      instruction: "Use browser localStorage.getItem('etbData') to view actual data"
+    });
+  });
   
   // Companies House API routes
   app.get('/api/companies-house/company/:companyNumber', async (req, res) => {
