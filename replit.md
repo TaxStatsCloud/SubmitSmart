@@ -13,6 +13,7 @@ PromptSubmissions is an AI-powered platform for UK corporate compliance, special
 - Agent-based outreach system
 
 ## Recent Changes
+- **July 14, 2025**: OPENING TRIAL BALANCE UPLOAD - Built comprehensive opening trial balance upload system with AI processing, file validation, progress tracking, and verification workflow
 - **July 14, 2025**: COMPARATIVE PERIODS IMPLEMENTATION - Added comprehensive comparative period functionality with database schema for prior_year_data, comparative_periods, and companies_house_filings tables
 - **July 14, 2025**: PRICING HARMONIZATION - Synchronized pricing across all subscription pages: Corporation Tax £70, Dormant Company Accounts £100, Confirmation Statements £70, based on competitive analysis of UK accountant fees
 - **July 14, 2025**: ENHANCED CREDIT PACKAGES - Updated to market-competitive levels: Starter Pack £199.99 (200 credits), Professional Pack £399.99 (400 credits), Business Pack £799.99 (800 credits), Enterprise Pack £1,499.99 (1,500 credits)

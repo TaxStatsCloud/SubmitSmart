@@ -416,6 +416,46 @@ export const insertCompaniesHouseFilingSchema = createInsertSchema(companiesHous
   isImported: true,
 });
 
+// Opening Trial Balances
+export const openingTrialBalances = pgTable("opening_trial_balances", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull().references(() => companies.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  periodStartDate: date("period_start_date").notNull(),
+  periodEndDate: date("period_end_date").notNull(),
+  fileName: text("file_name").notNull(),
+  fileSize: integer("file_size").notNull(),
+  filePath: text("file_path").notNull(),
+  uploadedAt: timestamp("uploaded_at").notNull().defaultNow(),
+  processedAt: timestamp("processed_at"),
+  processingStatus: text("processing_status").notNull().default("pending"), // pending, processing, completed, failed
+  processingError: text("processing_error"),
+  trialBalanceData: jsonb("trial_balance_data"), // Structured trial balance data
+  totalDebits: integer("total_debits").default(0), // In pence
+  totalCredits: integer("total_credits").default(0), // In pence
+  accountCount: integer("account_count").default(0),
+  isVerified: boolean("is_verified").notNull().default(false),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertOpeningTrialBalanceSchema = createInsertSchema(openingTrialBalances).pick({
+  companyId: true,
+  userId: true,
+  periodStartDate: true,
+  periodEndDate: true,
+  fileName: true,
+  fileSize: true,
+  filePath: true,
+  trialBalanceData: true,
+  totalDebits: true,
+  totalCredits: true,
+  accountCount: true,
+  isVerified: true,
+  notes: true,
+});
+
 // Export additional types
 export type FilingReminder = typeof filingReminders.$inferSelect;
 export type InsertFilingReminder = z.infer<typeof insertFilingReminderSchema>;
@@ -450,6 +490,9 @@ export type InsertComparativePeriod = z.infer<typeof insertComparativePeriodSche
 export type CompaniesHouseFiling = typeof companiesHouseFilings.$inferSelect;
 export type InsertCompaniesHouseFiling = z.infer<typeof insertCompaniesHouseFilingSchema>;
 
+export type OpeningTrialBalance = typeof openingTrialBalances.$inferSelect;
+export type InsertOpeningTrialBalance = z.infer<typeof insertOpeningTrialBalanceSchema>;
+
 // Define relationships between tables for better querying
 export const usersRelations = relations(users, ({ one, many }) => ({
   company: one(companies, { fields: [users.companyId], references: [companies.id] }),
@@ -469,7 +512,8 @@ export const companiesRelations = relations(companies, ({ many }) => ({
   outreachCampaigns: many(outreachCampaigns),
   priorYearData: many(priorYearData),
   comparativePeriods: many(comparativePeriods),
-  companiesHouseFilings: many(companiesHouseFilings)
+  companiesHouseFilings: many(companiesHouseFilings),
+  openingTrialBalances: many(openingTrialBalances)
 }));
 
 export const documentsRelations = relations(documents, ({ one }) => ({
@@ -537,6 +581,12 @@ export const comparativePeriodsRelations = relations(comparativePeriods, ({ one 
 // Companies House filings relations
 export const companiesHouseFilingsRelations = relations(companiesHouseFilings, ({ one }) => ({
   company: one(companies, { fields: [companiesHouseFilings.companyId], references: [companies.id] })
+}));
+
+// Opening trial balance relations
+export const openingTrialBalancesRelations = relations(openingTrialBalances, ({ one }) => ({
+  company: one(companies, { fields: [openingTrialBalances.companyId], references: [companies.id] }),
+  user: one(users, { fields: [openingTrialBalances.userId], references: [users.id] })
 }));
 
 

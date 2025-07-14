@@ -34,6 +34,7 @@ import RealWorldFiling from "@/pages/RealWorldFiling";
 import ExtendedTrialBalance from "@/pages/ExtendedTrialBalance";
 import FinancialReporting from "@/pages/FinancialReporting";
 import ComparativePeriods from "@/pages/ComparativePeriods";
+import OpeningTrialBalance from "@/pages/OpeningTrialBalance";
 
 function Router() {
   return (
@@ -60,6 +61,7 @@ function Router() {
         {/* Financial reporting */}
         <Route path="/financial-reporting" component={FinancialReporting} />
         <Route path="/comparative-periods" component={ComparativePeriods} />
+        <Route path="/opening-trial-balance" component={OpeningTrialBalance} />
         
         {/* Document routes */}
         <Route path="/upload" component={Upload} />

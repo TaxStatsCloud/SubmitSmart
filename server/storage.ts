@@ -1085,6 +1085,58 @@ export class MemStorage implements IStorage {
   async deleteCompaniesHouseFiling(id: number): Promise<void> {
     this.companiesHouseFilings.delete(id);
   }
+
+  // Opening trial balance methods
+  async getOpeningTrialBalance(id: number): Promise<OpeningTrialBalance | undefined> {
+    return this.openingTrialBalances.get(id);
+  }
+
+  async getOpeningTrialBalancesByCompany(companyId: number): Promise<OpeningTrialBalance[]> {
+    return Array.from(this.openingTrialBalances.values()).filter(otb => otb.companyId === companyId);
+  }
+
+  async getOpeningTrialBalancesByCompanyAndPeriod(companyId: number, periodStartDate: string, periodEndDate: string): Promise<OpeningTrialBalance[]> {
+    return Array.from(this.openingTrialBalances.values()).filter(
+      otb => otb.companyId === companyId && 
+             otb.periodStartDate === periodStartDate && 
+             otb.periodEndDate === periodEndDate
+    );
+  }
+
+  async createOpeningTrialBalance(insertData: InsertOpeningTrialBalance): Promise<OpeningTrialBalance> {
+    const id = this.openingTrialBalanceId++;
+    const now = new Date();
+    const openingTrialBalance: OpeningTrialBalance = {
+      ...insertData,
+      id,
+      uploadedAt: now,
+      processingStatus: 'pending',
+      processedAt: undefined,
+      processingError: undefined,
+      totalDebits: insertData.totalDebits || 0,
+      totalCredits: insertData.totalCredits || 0,
+      accountCount: insertData.accountCount || 0,
+      isVerified: insertData.isVerified || false,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.openingTrialBalances.set(id, openingTrialBalance);
+    return openingTrialBalance;
+  }
+
+  async updateOpeningTrialBalance(id: number, updateData: Partial<OpeningTrialBalance>): Promise<OpeningTrialBalance> {
+    const existing = await this.getOpeningTrialBalance(id);
+    if (!existing) {
+      throw new Error(`Opening trial balance with id ${id} not found`);
+    }
+    const updated = { ...existing, ...updateData, updatedAt: new Date() };
+    this.openingTrialBalances.set(id, updated);
+    return updated;
+  }
+
+  async deleteOpeningTrialBalance(id: number): Promise<void> {
+    this.openingTrialBalances.delete(id);
+  }
 }
 
 // Database implementation of IStorage
