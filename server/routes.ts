@@ -464,6 +464,134 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register billing routes
   app.use('/api/billing', billingRoutes);
   
+  // Prior year data routes
+  app.get('/api/prior-year-data/:companyId', async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      const data = await storage.getPriorYearDataByCompany(parseInt(companyId));
+      res.json(data);
+    } catch (error) {
+      console.error('Error getting prior year data:', error);
+      res.status(500).json({ error: 'Failed to retrieve prior year data' });
+    }
+  });
+  
+  app.get('/api/prior-year-data/:companyId/:year', async (req, res) => {
+    try {
+      const { companyId, year } = req.params;
+      const data = await storage.getPriorYearDataByCompanyAndYear(parseInt(companyId), year);
+      res.json(data);
+    } catch (error) {
+      console.error('Error getting prior year data for specific year:', error);
+      res.status(500).json({ error: 'Failed to retrieve prior year data' });
+    }
+  });
+  
+  app.post('/api/prior-year-data', async (req, res) => {
+    try {
+      const priorYearData = req.body;
+      const result = await storage.createPriorYearData(priorYearData);
+      res.json(result);
+    } catch (error) {
+      console.error('Error creating prior year data:', error);
+      res.status(500).json({ error: 'Failed to create prior year data' });
+    }
+  });
+  
+  // Comparative period routes
+  app.get('/api/comparative-periods/:companyId', async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      const periods = await storage.getComparativePeriodByCompany(parseInt(companyId));
+      res.json(periods);
+    } catch (error) {
+      console.error('Error getting comparative periods:', error);
+      res.status(500).json({ error: 'Failed to retrieve comparative periods' });
+    }
+  });
+  
+  app.get('/api/comparative-periods/:companyId/active', async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      const period = await storage.getActiveComparativePeriod(parseInt(companyId));
+      res.json(period);
+    } catch (error) {
+      console.error('Error getting active comparative period:', error);
+      res.status(500).json({ error: 'Failed to retrieve active comparative period' });
+    }
+  });
+  
+  app.post('/api/comparative-periods', async (req, res) => {
+    try {
+      const periodData = req.body;
+      const result = await storage.createComparativePeriod(periodData);
+      res.json(result);
+    } catch (error) {
+      console.error('Error creating comparative period:', error);
+      res.status(500).json({ error: 'Failed to create comparative period' });
+    }
+  });
+  
+  // Companies House filing history routes
+  app.get('/api/companies-house-filings/:companyId', async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      const filings = await storage.getCompaniesHouseFilingsByCompany(parseInt(companyId));
+      res.json(filings);
+    } catch (error) {
+      console.error('Error getting Companies House filings:', error);
+      res.status(500).json({ error: 'Failed to retrieve Companies House filings' });
+    }
+  });
+  
+  app.get('/api/companies-house-filings/by-registration/:registrationNumber', async (req, res) => {
+    try {
+      const { registrationNumber } = req.params;
+      const filings = await storage.getCompaniesHouseFilingsByRegistrationNumber(registrationNumber);
+      res.json(filings);
+    } catch (error) {
+      console.error('Error getting Companies House filings by registration number:', error);
+      res.status(500).json({ error: 'Failed to retrieve Companies House filings' });
+    }
+  });
+  
+  app.post('/api/companies-house-filings/import', async (req, res) => {
+    try {
+      const { registrationNumber, companyId } = req.body;
+      
+      // Here we would call Companies House API to get filing history
+      // For now, we'll return a placeholder response
+      const filingHistory = await companiesHouseService.getFilingHistory(registrationNumber);
+      
+      // Process and store the filing history
+      const results = [];
+      for (const filing of filingHistory) {
+        const filingData = {
+          companyId,
+          registrationNumber,
+          filingDate: filing.date,
+          accountsPeriodEndOn: filing.made_up_to,
+          accountsPeriodStartOn: filing.period_start_on,
+          category: filing.category,
+          description: filing.description,
+          actionDate: filing.action_date,
+          paperFiled: filing.paper_filed,
+          filingHistoryData: filing,
+          accountsData: filing.accounts_data || null,
+          isImported: true
+        };
+        
+        const result = await storage.createCompaniesHouseFiling(filingData);
+        results.push(result);
+      }
+      
+      res.json(results);
+    } catch (error) {
+      console.error('Error importing Companies House filings:', error);
+      res.status(500).json({ error: 'Failed to import Companies House filings' });
+    }
+  });
+  
   // Setup WebSocket server for real-time updates with a specific path
   // to avoid conflicts with Vite's WebSocket server
   const wss = new WebSocketServer({ 

@@ -7,7 +7,10 @@ import {
   assistantMessages, type AssistantMessage, type InsertAssistantMessage,
   creditPackages, type CreditPackage, type InsertCreditPackage,
   filingCosts, type FilingCost, type InsertFilingCost,
-  creditTransactions, type CreditTransaction, type InsertCreditTransaction
+  creditTransactions, type CreditTransaction, type InsertCreditTransaction,
+  priorYearData, type PriorYearData, type InsertPriorYearData,
+  comparativePeriods, type ComparativePeriod, type InsertComparativePeriod,
+  companiesHouseFilings, type CompaniesHouseFiling, type InsertCompaniesHouseFiling
 } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { db } from "./db";
@@ -81,6 +84,30 @@ export interface IStorage {
   getUserCredits(userId: number): Promise<number>;
   updateUserCredits(userId: number, amount: number): Promise<User>;
   deductCreditsForFiling(userId: number, filingType: string, filingId: number): Promise<boolean>;
+  
+  // Prior year data methods
+  getPriorYearData(id: number): Promise<PriorYearData | undefined>;
+  getPriorYearDataByCompany(companyId: number): Promise<PriorYearData[]>;
+  getPriorYearDataByCompanyAndYear(companyId: number, yearEnding: string): Promise<PriorYearData[]>;
+  createPriorYearData(data: InsertPriorYearData): Promise<PriorYearData>;
+  updatePriorYearData(id: number, data: Partial<PriorYearData>): Promise<PriorYearData>;
+  deletePriorYearData(id: number): Promise<void>;
+  
+  // Comparative period methods
+  getComparativePeriod(id: number): Promise<ComparativePeriod | undefined>;
+  getComparativePeriodByCompany(companyId: number): Promise<ComparativePeriod[]>;
+  getActiveComparativePeriod(companyId: number): Promise<ComparativePeriod | undefined>;
+  createComparativePeriod(data: InsertComparativePeriod): Promise<ComparativePeriod>;
+  updateComparativePeriod(id: number, data: Partial<ComparativePeriod>): Promise<ComparativePeriod>;
+  deleteComparativePeriod(id: number): Promise<void>;
+  
+  // Companies House filing methods
+  getCompaniesHouseFiling(id: number): Promise<CompaniesHouseFiling | undefined>;
+  getCompaniesHouseFilingsByCompany(companyId: number): Promise<CompaniesHouseFiling[]>;
+  getCompaniesHouseFilingsByRegistrationNumber(registrationNumber: string): Promise<CompaniesHouseFiling[]>;
+  createCompaniesHouseFiling(data: InsertCompaniesHouseFiling): Promise<CompaniesHouseFiling>;
+  updateCompaniesHouseFiling(id: number, data: Partial<CompaniesHouseFiling>): Promise<CompaniesHouseFiling>;
+  deleteCompaniesHouseFiling(id: number): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -93,6 +120,9 @@ export class MemStorage implements IStorage {
   private creditPackages: Map<number, CreditPackage>;
   private filingCosts: Map<number, FilingCost>;
   private creditTransactions: Map<number, CreditTransaction>;
+  private priorYearData: Map<number, PriorYearData>;
+  private comparativePeriods: Map<number, ComparativePeriod>;
+  private companiesHouseFilings: Map<number, CompaniesHouseFiling>;
   
   private userId: number;
   private companyId: number;
@@ -103,6 +133,9 @@ export class MemStorage implements IStorage {
   private packageId: number;
   private costId: number;
   private transactionId: number;
+  private priorYearId: number;
+  private comparativePeriodId: number;
+  private companiesHouseFilingId: number;
 
   constructor() {
     this.users = new Map();
@@ -114,6 +147,9 @@ export class MemStorage implements IStorage {
     this.creditPackages = new Map();
     this.filingCosts = new Map();
     this.creditTransactions = new Map();
+    this.priorYearData = new Map();
+    this.comparativePeriods = new Map();
+    this.companiesHouseFilings = new Map();
     
     this.userId = 1;
     this.companyId = 1;
@@ -124,6 +160,9 @@ export class MemStorage implements IStorage {
     this.packageId = 1;
     this.costId = 1;
     this.transactionId = 1;
+    this.priorYearId = 1;
+    this.comparativePeriodId = 1;
+    this.companiesHouseFilingId = 1;
     
     // Add sample data
     this.initSampleData();
@@ -919,6 +958,132 @@ export class MemStorage implements IStorage {
     for (const costData of filingCosts) {
       this.filingCosts.set(costData.id, costData);
     }
+  }
+
+  // Prior year data methods
+  async getPriorYearData(id: number): Promise<PriorYearData | undefined> {
+    return this.priorYearData.get(id);
+  }
+
+  async getPriorYearDataByCompany(companyId: number): Promise<PriorYearData[]> {
+    return Array.from(this.priorYearData.values()).filter(data => data.companyId === companyId);
+  }
+
+  async getPriorYearDataByCompanyAndYear(companyId: number, yearEnding: string): Promise<PriorYearData[]> {
+    return Array.from(this.priorYearData.values()).filter(
+      data => data.companyId === companyId && data.yearEnding === yearEnding
+    );
+  }
+
+  async createPriorYearData(insertData: InsertPriorYearData): Promise<PriorYearData> {
+    const id = this.priorYearId++;
+    const now = new Date();
+    const priorYearData: PriorYearData = {
+      ...insertData,
+      id,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.priorYearData.set(id, priorYearData);
+    return priorYearData;
+  }
+
+  async updatePriorYearData(id: number, updateData: Partial<PriorYearData>): Promise<PriorYearData> {
+    const existing = await this.getPriorYearData(id);
+    if (!existing) {
+      throw new Error(`Prior year data with id ${id} not found`);
+    }
+    const updated = { ...existing, ...updateData, updatedAt: new Date() };
+    this.priorYearData.set(id, updated);
+    return updated;
+  }
+
+  async deletePriorYearData(id: number): Promise<void> {
+    this.priorYearData.delete(id);
+  }
+
+  // Comparative period methods
+  async getComparativePeriod(id: number): Promise<ComparativePeriod | undefined> {
+    return this.comparativePeriods.get(id);
+  }
+
+  async getComparativePeriodByCompany(companyId: number): Promise<ComparativePeriod[]> {
+    return Array.from(this.comparativePeriods.values()).filter(period => period.companyId === companyId);
+  }
+
+  async getActiveComparativePeriod(companyId: number): Promise<ComparativePeriod | undefined> {
+    return Array.from(this.comparativePeriods.values()).find(
+      period => period.companyId === companyId && period.isActive
+    );
+  }
+
+  async createComparativePeriod(insertData: InsertComparativePeriod): Promise<ComparativePeriod> {
+    const id = this.comparativePeriodId++;
+    const now = new Date();
+    const comparativePeriod: ComparativePeriod = {
+      ...insertData,
+      id,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.comparativePeriods.set(id, comparativePeriod);
+    return comparativePeriod;
+  }
+
+  async updateComparativePeriod(id: number, updateData: Partial<ComparativePeriod>): Promise<ComparativePeriod> {
+    const existing = await this.getComparativePeriod(id);
+    if (!existing) {
+      throw new Error(`Comparative period with id ${id} not found`);
+    }
+    const updated = { ...existing, ...updateData, updatedAt: new Date() };
+    this.comparativePeriods.set(id, updated);
+    return updated;
+  }
+
+  async deleteComparativePeriod(id: number): Promise<void> {
+    this.comparativePeriods.delete(id);
+  }
+
+  // Companies House filing methods
+  async getCompaniesHouseFiling(id: number): Promise<CompaniesHouseFiling | undefined> {
+    return this.companiesHouseFilings.get(id);
+  }
+
+  async getCompaniesHouseFilingsByCompany(companyId: number): Promise<CompaniesHouseFiling[]> {
+    return Array.from(this.companiesHouseFilings.values()).filter(filing => filing.companyId === companyId);
+  }
+
+  async getCompaniesHouseFilingsByRegistrationNumber(registrationNumber: string): Promise<CompaniesHouseFiling[]> {
+    return Array.from(this.companiesHouseFilings.values()).filter(
+      filing => filing.registrationNumber === registrationNumber
+    );
+  }
+
+  async createCompaniesHouseFiling(insertData: InsertCompaniesHouseFiling): Promise<CompaniesHouseFiling> {
+    const id = this.companiesHouseFilingId++;
+    const now = new Date();
+    const companiesHouseFiling: CompaniesHouseFiling = {
+      ...insertData,
+      id,
+      createdAt: now,
+      importedAt: insertData.isImported ? now : undefined
+    };
+    this.companiesHouseFilings.set(id, companiesHouseFiling);
+    return companiesHouseFiling;
+  }
+
+  async updateCompaniesHouseFiling(id: number, updateData: Partial<CompaniesHouseFiling>): Promise<CompaniesHouseFiling> {
+    const existing = await this.getCompaniesHouseFiling(id);
+    if (!existing) {
+      throw new Error(`Companies House filing with id ${id} not found`);
+    }
+    const updated = { ...existing, ...updateData };
+    this.companiesHouseFilings.set(id, updated);
+    return updated;
+  }
+
+  async deleteCompaniesHouseFiling(id: number): Promise<void> {
+    this.companiesHouseFilings.delete(id);
   }
 }
 

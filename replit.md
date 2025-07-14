@@ -13,9 +13,11 @@ PromptSubmissions is an AI-powered platform for UK corporate compliance, special
 - Agent-based outreach system
 
 ## Recent Changes
-- **July 14, 2025**: PRICING UPDATE - Aligned with UK market: Corporation Tax £70, Dormant Accounts £100, Confirmation Statements £70, based on competitive analysis of accountant fees (£325-£480 for Corp Tax, £49-£300 for dormant accounts)
-- **July 14, 2025**: Updated credit packages to market-competitive levels: Starter Pack £199.99 (200 credits), Professional Pack £399.99 (400 credits), Business Pack £799.99 (800 credits), Enterprise Pack £1,499.99 (1,500 credits)
-- **July 14, 2025**: Enhanced filing cost structure: Micro-entity accounts £140, Small company accounts £220, Annual accounts £250, VAT filing £45, Full statutory accounts £350
+- **July 14, 2025**: COMPARATIVE PERIODS IMPLEMENTATION - Added comprehensive comparative period functionality with database schema for prior_year_data, comparative_periods, and companies_house_filings tables
+- **July 14, 2025**: PRICING HARMONIZATION - Synchronized pricing across all subscription pages: Corporation Tax £70, Dormant Company Accounts £100, Confirmation Statements £70, based on competitive analysis of UK accountant fees
+- **July 14, 2025**: ENHANCED CREDIT PACKAGES - Updated to market-competitive levels: Starter Pack £199.99 (200 credits), Professional Pack £399.99 (400 credits), Business Pack £799.99 (800 credits), Enterprise Pack £1,499.99 (1,500 credits)
+- **July 14, 2025**: COMPREHENSIVE FILING COSTS - Enhanced filing cost structure: Micro-entity accounts £140, Small company accounts £220, Annual accounts £250, VAT filing £45, Full statutory accounts £350
+- **July 14, 2025**: COMPARATIVE PERIODS UI - Built comprehensive frontend component with Companies House filing import, prior year data management, and comparative period configuration
 - **July 14, 2025**: Fixed logout button functionality using proper Firebase signOut method with improved error handling and user feedback
 - **July 14, 2025**: MAJOR UI UPGRADE - Implemented Silicon Valley-level design system with glass morphism, gradient backgrounds, and premium visual elements
 - **July 14, 2025**: Enhanced AI chatbot with comprehensive UK accounting and tax expertise, covering CT600, VAT, Companies House regulations, and platform features
@@ -78,6 +80,7 @@ PromptSubmissions is an AI-powered platform for UK corporate compliance, special
 4. **Agent System**: Automated outreach to companies with filing deadlines
 5. **Admin Dashboard**: Real-time monitoring of agent activities and conversions
 6. **Credit System**: Flexible billing with Stripe integration
+7. **Comparative Periods**: Year-over-year consistency in statutory accounts layout with prior year data import and Companies House integration
 
 ## User Preferences
 - **Silicon Valley-level UI/UX**: Premium design with glass morphism, gradients, and professional visual hierarchy

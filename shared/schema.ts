@@ -334,6 +334,88 @@ export const insertCreditTransactionSchema = createInsertSchema(creditTransactio
   stripePaymentId: true,
 });
 
+// Prior Year Data for Comparative Reporting
+export const priorYearData = pgTable("prior_year_data", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull().references(() => companies.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  yearEnding: date("year_ending").notNull(),
+  dataType: text("data_type").notNull(), // 'trial_balance', 'accounts', 'companies_house_filing'
+  sourceType: text("source_type").notNull(), // 'uploaded', 'companies_house_api', 'manual_entry'
+  sourceReference: text("source_reference"), // File name or API reference
+  data: jsonb("data").notNull(), // JSON structure of financial data
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  isVerified: boolean("is_verified").notNull().default(false),
+});
+
+export const insertPriorYearDataSchema = createInsertSchema(priorYearData).pick({
+  companyId: true,
+  userId: true,
+  yearEnding: true,
+  dataType: true,
+  sourceType: true,
+  sourceReference: true,
+  data: true,
+  isVerified: true,
+});
+
+// Comparative Period Configurations
+export const comparativePeriods = pgTable("comparative_periods", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull().references(() => companies.id),
+  currentYearEnding: date("current_year_ending").notNull(),
+  priorYearEnding: date("prior_year_ending").notNull(),
+  layoutTemplate: text("layout_template").notNull().default("standard"), // Template for consistent formatting
+  mappingRules: jsonb("mapping_rules"), // Account mapping between periods
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertComparativePeriodSchema = createInsertSchema(comparativePeriods).pick({
+  companyId: true,
+  currentYearEnding: true,
+  priorYearEnding: true,
+  layoutTemplate: true,
+  mappingRules: true,
+  isActive: true,
+});
+
+// Companies House Filing History
+export const companiesHouseFilings = pgTable("companies_house_filings", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull().references(() => companies.id),
+  registrationNumber: text("registration_number").notNull(),
+  filingDate: date("filing_date").notNull(),
+  accountsPeriodEndOn: date("accounts_period_end_on").notNull(),
+  accountsPeriodStartOn: date("accounts_period_start_on").notNull(),
+  category: text("category").notNull(), // 'accounts', 'confirmation-statement', etc.
+  description: text("description").notNull(),
+  actionDate: date("action_date"),
+  paperFiled: boolean("paper_filed").default(false),
+  filingHistoryData: jsonb("filing_history_data"), // Raw data from Companies House API
+  accountsData: jsonb("accounts_data"), // Extracted accounts data if available
+  isImported: boolean("is_imported").notNull().default(false),
+  importedAt: timestamp("imported_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertCompaniesHouseFilingSchema = createInsertSchema(companiesHouseFilings).pick({
+  companyId: true,
+  registrationNumber: true,
+  filingDate: true,
+  accountsPeriodEndOn: true,
+  accountsPeriodStartOn: true,
+  category: true,
+  description: true,
+  actionDate: true,
+  paperFiled: true,
+  filingHistoryData: true,
+  accountsData: true,
+  isImported: true,
+});
+
 // Export additional types
 export type FilingReminder = typeof filingReminders.$inferSelect;
 export type InsertFilingReminder = z.infer<typeof insertFilingReminderSchema>;
@@ -359,6 +441,15 @@ export type InsertFilingCost = z.infer<typeof insertFilingCostSchema>;
 export type CreditTransaction = typeof creditTransactions.$inferSelect;
 export type InsertCreditTransaction = z.infer<typeof insertCreditTransactionSchema>;
 
+export type PriorYearData = typeof priorYearData.$inferSelect;
+export type InsertPriorYearData = z.infer<typeof insertPriorYearDataSchema>;
+
+export type ComparativePeriod = typeof comparativePeriods.$inferSelect;
+export type InsertComparativePeriod = z.infer<typeof insertComparativePeriodSchema>;
+
+export type CompaniesHouseFiling = typeof companiesHouseFilings.$inferSelect;
+export type InsertCompaniesHouseFiling = z.infer<typeof insertCompaniesHouseFilingSchema>;
+
 // Define relationships between tables for better querying
 export const usersRelations = relations(users, ({ one, many }) => ({
   company: one(companies, { fields: [users.companyId], references: [companies.id] }),
@@ -375,7 +466,10 @@ export const companiesRelations = relations(companies, ({ many }) => ({
   filings: many(filings),
   filingReminders: many(filingReminders),
   contacts: many(companyContacts),
-  outreachCampaigns: many(outreachCampaigns)
+  outreachCampaigns: many(outreachCampaigns),
+  priorYearData: many(priorYearData),
+  comparativePeriods: many(comparativePeriods),
+  companiesHouseFilings: many(companiesHouseFilings)
 }));
 
 export const documentsRelations = relations(documents, ({ one }) => ({
@@ -427,6 +521,22 @@ export const creditTransactionsRelations = relations(creditTransactions, ({ one 
   user: one(users, { fields: [creditTransactions.userId], references: [users.id] }),
   filing: one(filings, { fields: [creditTransactions.filingId], references: [filings.id] }),
   package: one(creditPackages, { fields: [creditTransactions.packageId], references: [creditPackages.id] })
+}));
+
+// Prior year data relations
+export const priorYearDataRelations = relations(priorYearData, ({ one }) => ({
+  company: one(companies, { fields: [priorYearData.companyId], references: [companies.id] }),
+  user: one(users, { fields: [priorYearData.userId], references: [users.id] })
+}));
+
+// Comparative periods relations
+export const comparativePeriodsRelations = relations(comparativePeriods, ({ one }) => ({
+  company: one(companies, { fields: [comparativePeriods.companyId], references: [companies.id] })
+}));
+
+// Companies House filings relations
+export const companiesHouseFilingsRelations = relations(companiesHouseFilings, ({ one }) => ({
+  company: one(companies, { fields: [companiesHouseFilings.companyId], references: [companies.id] })
 }));
 
 

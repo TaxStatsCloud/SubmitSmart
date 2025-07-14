@@ -33,6 +33,7 @@ import TaxEngine from "@/pages/TaxEngine";
 import RealWorldFiling from "@/pages/RealWorldFiling";
 import ExtendedTrialBalance from "@/pages/ExtendedTrialBalance";
 import FinancialReporting from "@/pages/FinancialReporting";
+import ComparativePeriods from "@/pages/ComparativePeriods";
 
 function Router() {
   return (
@@ -58,6 +59,7 @@ function Router() {
         
         {/* Financial reporting */}
         <Route path="/financial-reporting" component={FinancialReporting} />
+        <Route path="/comparative-periods" component={ComparativePeriods} />
         
         {/* Document routes */}
         <Route path="/upload" component={Upload} />

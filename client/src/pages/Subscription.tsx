@@ -16,59 +16,64 @@ if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
 }
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
-// Silicon Valley-competitive pricing for UK market
+// Market-competitive UK pricing structure (Updated July 2025)
 const pricingPlans = [
   {
     id: 'starter',
-    name: 'Starter',
-    price: 79,
-    credits: 50,
-    description: 'Perfect for dormant companies',
+    name: 'Starter Pack',
+    price: 199.99,
+    credits: 200,
+    description: 'Perfect for dormant companies and micro-entities',
     features: [
-      '10 Dormant Company Filings',
+      '2 Dormant Company Accounts (£100 each)',
+      '2 Confirmation Statements (£70 each)', 
+      '1 Corporation Tax Return (£70)',
       'AI Document Processing',
       'Email Support',
       'Basic Templates',
       'Companies House Integration'
     ],
     recommended: false,
-    filingTypes: 'Dormant accounts only',
+    filingTypes: 'Dormant accounts & basic filings',
     popular: false
   },
   {
     id: 'professional',
-    name: 'Professional',
-    price: 199,
-    credits: 150,
-    description: 'Most popular for small businesses',
+    name: 'Professional Pack',
+    price: 399.99,
+    credits: 400,
+    description: 'Most popular for growing businesses with regular filing needs',
     features: [
-      '6 Small Company Filings',
+      '1 Annual Account (£250)',
+      '2 Corporation Tax Returns (£70 each)',
+      '1 VAT Filing (£45)',
+      '1 Confirmation Statement (£70)',
       'Advanced AI Processing',
       'Extended Trial Balance',
       'Financial Statements',
       'Priority Support',
-      'Email Notifications',
-      'Corporation Tax Returns'
+      'Email Notifications'
     ],
     recommended: true,
-    filingTypes: 'Small companies with P&L',
+    filingTypes: 'Mixed filings for growing businesses',
     popular: true
   },
   {
     id: 'business',
-    name: 'Business',
-    price: 399,
-    credits: 350,
-    description: 'For growing businesses',
+    name: 'Business Pack',
+    price: 799.99,
+    credits: 800,
+    description: 'For established businesses with multiple companies and complex filings',
     features: [
-      '14 Mixed Filing Types',
+      'Multiple Company Support',
+      'All Filing Types Available',
       'Advanced AI Processing',
-      'Corporation Tax Returns',
-      'VAT Integration',
+      'Corporation Tax & VAT Returns',
       'Audit Trail Support',
       'Phone Support',
       'Multi-user Access',
-      'API Access'
+      'API Access',
+      'Comparative Period Support'
     ],
     recommended: false,
     filingTypes: 'All filing types',
@@ -76,22 +81,24 @@ const pricingPlans = [
   },
   {
     id: 'enterprise',
-    name: 'Enterprise',
-    price: 899,
-    credits: 850,
-    description: 'For accounting firms',
+    name: 'Enterprise Pack',
+    price: 1499.99,
+    credits: 1500,
+    description: 'For accounting firms and large operations with high-volume needs',
     features: [
-      '35+ Company Filings',
+      'High-Volume Filing Support',
       'Multi-user Access',
       'White-label Options',
       'Full API Access',
       'Dedicated Account Manager',
       'Custom Integrations',
       'SLA Guarantees',
-      'Advanced Analytics'
+      'Advanced Analytics',
+      'Prior Year Data Import',
+      'Companies House Integration'
     ],
     recommended: false,
-    filingTypes: 'All types + custom',
+    filingTypes: 'All types + enterprise features',
     popular: false
   }
 ];
