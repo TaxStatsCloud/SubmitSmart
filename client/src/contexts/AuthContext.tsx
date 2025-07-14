@@ -34,6 +34,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     try {
       await signOutUser();
+      // Redirect to login page after successful logout
+      window.location.href = '/login';
     } catch (error) {
       console.error('Error signing out:', error);
     }

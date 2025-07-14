@@ -18,8 +18,14 @@ export const signInWithGoogle = () => {
   return signInWithRedirect(auth, provider);
 };
 
-export const signOutUser = () => {
-  return signOut(auth);
+export const signOutUser = async () => {
+  try {
+    await signOut(auth);
+    console.log('User signed out successfully');
+  } catch (error) {
+    console.error('Error signing out:', error);
+    throw error;
+  }
 };
 
 export const onAuthStateChange = (callback: (user: User | null) => void) => {

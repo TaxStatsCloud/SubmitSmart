@@ -1,10 +1,12 @@
 import { Link, useLocation } from "wouter";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { LogOut } from "lucide-react";
 
 const Sidebar = () => {
   const [location] = useLocation();
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   
   const isActive = (path: string) => location === path;
 
@@ -199,12 +201,14 @@ const Sidebar = () => {
             <p className="text-sm font-medium text-neutral-700">{user?.fullName || "User"}</p>
             <p className="text-xs text-neutral-500">{user?.role || "Guest"}</p>
           </div>
-          <button 
-            onClick={logout}
-            className="ml-auto p-1 rounded-full text-neutral-400 hover:text-neutral-600"
+          <Button 
+            onClick={signOut}
+            variant="ghost"
+            size="sm"
+            className="ml-auto p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 transition-colors"
           >
-            <span className="material-icons text-xl">logout</span>
-          </button>
+            <LogOut className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     </aside>
