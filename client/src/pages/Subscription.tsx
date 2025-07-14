@@ -16,73 +16,83 @@ if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
 }
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
-// Competitive pricing for UK market
+// Silicon Valley-competitive pricing for UK market
 const pricingPlans = [
   {
     id: 'starter',
-    name: 'Starter Pack',
-    price: 19.99,
-    credits: 25,
+    name: 'Starter',
+    price: 79,
+    credits: 50,
     description: 'Perfect for dormant companies',
     features: [
-      '5 Dormant Company Filings',
-      'Basic Document Processing',
+      '10 Dormant Company Filings',
+      'AI Document Processing',
       'Email Support',
-      'Basic Templates'
+      'Basic Templates',
+      'Companies House Integration'
     ],
     recommended: false,
-    filingTypes: 'Dormant accounts only'
+    filingTypes: 'Dormant accounts only',
+    popular: false
   },
   {
     id: 'professional',
-    name: 'Professional Pack',
-    price: 49.99,
-    credits: 75,
-    description: 'Ideal for small businesses',
+    name: 'Professional',
+    price: 199,
+    credits: 150,
+    description: 'Most popular for small businesses',
     features: [
-      '3 Small Company Filings',
-      'AI Document Processing',
+      '6 Small Company Filings',
+      'Advanced AI Processing',
       'Extended Trial Balance',
       'Financial Statements',
       'Priority Support',
-      'Email Notifications'
+      'Email Notifications',
+      'Corporation Tax Returns'
     ],
     recommended: true,
-    filingTypes: 'Small companies with P&L'
+    filingTypes: 'Small companies with P&L',
+    popular: true
   },
   {
     id: 'business',
-    name: 'Business Pack',
-    price: 89.99,
-    credits: 150,
+    name: 'Business',
+    price: 399,
+    credits: 350,
     description: 'For growing businesses',
     features: [
-      '5 Mixed Filing Types',
+      '14 Mixed Filing Types',
       'Advanced AI Processing',
       'Corporation Tax Returns',
       'VAT Integration',
       'Audit Trail Support',
-      'Phone Support'
+      'Phone Support',
+      'Multi-user Access',
+      'API Access'
     ],
     recommended: false,
-    filingTypes: 'All filing types'
+    filingTypes: 'All filing types',
+    popular: false
   },
   {
     id: 'enterprise',
-    name: 'Enterprise Pack',
-    price: 199.99,
-    credits: 350,
+    name: 'Enterprise',
+    price: 899,
+    credits: 850,
     description: 'For accounting firms',
     features: [
-      '12+ Company Filings',
+      '35+ Company Filings',
       'Multi-user Access',
       'White-label Options',
-      'API Access',
+      'Full API Access',
       'Dedicated Account Manager',
-      'Custom Integrations'
+      'Custom Integrations',
+      'SLA Guarantees',
+      'Advanced Analytics'
     ],
     recommended: false,
-    filingTypes: 'All types + custom'
+    filingTypes: 'All types + custom',
+    popular: false
   }
 ];
 
@@ -167,116 +177,139 @@ export default function Subscription() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">Choose Your Plan</h1>
-        <p className="text-xl text-muted-foreground mb-2">
-          Flexible credit-based pricing for UK corporate compliance
-        </p>
-        <Alert className="max-w-2xl mx-auto mb-8">
-          <Shield className="h-4 w-4" />
-          <AlertDescription>
-            <strong>April 2027 Mandate:</strong> All UK companies must use software for filing. 
-            Start now with our competitive rates - no long-term contracts required.
-          </AlertDescription>
-        </Alert>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
+      <div className="container mx-auto px-6 py-12 max-w-7xl">
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 text-blue-800 text-sm font-medium mb-6">
+            <Zap className="h-4 w-4 mr-2" />
+            AI-Powered Corporate Compliance
+          </div>
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent mb-6">
+            Choose Your Plan
+          </h1>
+          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+            Professional-grade UK compliance automation with enterprise-level security and support
+          </p>
+          <Alert className="max-w-3xl mx-auto mb-12 border-amber-200 bg-amber-50">
+            <Shield className="h-5 w-5 text-amber-600" />
+            <AlertDescription className="text-amber-800">
+              <strong>April 2027 Mandate:</strong> All UK companies must use software for filing. 
+              Join 10,000+ companies already using our platform - no long-term contracts required.
+            </AlertDescription>
+          </Alert>
+        </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        {pricingPlans.map((plan) => (
-          <Card 
-            key={plan.id} 
-            className={`relative ${plan.recommended ? 'border-primary shadow-lg' : ''} ${
-              selectedPlan.id === plan.id ? 'ring-2 ring-primary' : ''
-            }`}
-          >
-            {plan.recommended && (
-              <Badge className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-primary">
-                <Star className="h-3 w-3 mr-1" />
-                Most Popular
-              </Badge>
-            )}
-            
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl">{plan.name}</CardTitle>
-              <CardDescription className="min-h-[3rem]">{plan.description}</CardDescription>
-              <div className="py-4">
-                <div className="text-4xl font-bold">£{plan.price}</div>
-                <div className="text-sm text-muted-foreground">{plan.credits} credits</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  £{(plan.price / plan.credits).toFixed(2)} per credit
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+          {pricingPlans.map((plan) => (
+            <Card 
+              key={plan.id} 
+              className={`relative transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10 ${
+                plan.popular ? 'border-2 border-blue-500 shadow-xl shadow-blue-500/20 scale-105' : 'border border-gray-200 hover:border-blue-300'
+              } ${
+                selectedPlan.id === plan.id ? 'ring-2 ring-blue-500' : ''
+              } bg-white/80 backdrop-blur-sm`}
+            >
+              {plan.popular && (
+                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                  <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-1 text-sm font-medium">
+                    <Star className="h-3 w-3 mr-1" />
+                    Most Popular
+                  </Badge>
                 </div>
-              </div>
+              )}
+              
+              <CardHeader className="text-center pb-6">
+                <CardTitle className="text-2xl font-bold text-gray-900">{plan.name}</CardTitle>
+                <CardDescription className="text-gray-600 min-h-[3rem] text-base">{plan.description}</CardDescription>
+                <div className="py-6">
+                  <div className="text-5xl font-bold text-gray-900">£{plan.price}</div>
+                  <div className="text-gray-600 mt-2">{plan.credits} credits</div>
+                  <div className="text-sm text-gray-500 mt-1">
+                    £{(plan.price / plan.credits).toFixed(2)} per credit
+                  </div>
+                </div>
+              </CardHeader>
+              
+              <CardContent className="pt-0">
+                <Badge variant="outline" className="mb-6 text-xs bg-gray-50">
+                  {plan.filingTypes}
+                </Badge>
+                
+                <ul className="space-y-3 mb-8">
+                  {plan.features.map((feature, idx) => (
+                    <li key={idx} className="flex items-start gap-3 text-sm">
+                      <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                
+                <Button 
+                  onClick={() => handleSelectPlan(plan)}
+                  variant={selectedPlan.id === plan.id ? "default" : "outline"}
+                  className={`w-full py-3 text-base font-semibold transition-all ${
+                    plan.popular ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700' : ''
+                  }`}
+                  size="lg"
+                >
+                  {selectedPlan.id === plan.id ? 'Selected' : 'Get Started'}
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {clientSecret && (
+          <Card className="max-w-md mx-auto">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Crown className="h-5 w-5" />
+                Complete Your Purchase
+              </CardTitle>
+              <CardDescription>
+                {selectedPlan.name} - £{selectedPlan.price} for {selectedPlan.credits} credits
+              </CardDescription>
             </CardHeader>
-            
             <CardContent>
-              <Badge variant="outline" className="mb-4 text-xs">
-                {plan.filingTypes}
-              </Badge>
-              
-              <ul className="space-y-2 mb-6">
-                {plan.features.map((feature, idx) => (
-                  <li key={idx} className="flex items-start gap-2 text-sm">
-                    <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-              
-              <Button 
-                onClick={() => handleSelectPlan(plan)}
-                variant={selectedPlan.id === plan.id ? "default" : "outline"}
-                className="w-full"
-              >
-                {selectedPlan.id === plan.id ? 'Selected' : 'Select Plan'}
-              </Button>
+              <Elements stripe={stripePromise} options={{ clientSecret }}>
+                <SubscribeForm selectedPlan={selectedPlan} />
+              </Elements>
             </CardContent>
           </Card>
-        ))}
-      </div>
+        )}
 
-      {clientSecret && (
-        <Card className="max-w-md mx-auto">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Crown className="h-5 w-5" />
-              Complete Your Purchase
-            </CardTitle>
-            <CardDescription>
-              {selectedPlan.name} - £{selectedPlan.price} for {selectedPlan.credits} credits
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Elements stripe={stripePromise} options={{ clientSecret }}>
-              <SubscribeForm selectedPlan={selectedPlan} />
-            </Elements>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="mt-16 text-center">
-        <h2 className="text-2xl font-bold mb-4">Why Choose PromptSubmissions?</h2>
-        <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          <div className="bg-blue-50 p-6 rounded-lg">
-            <Zap className="h-8 w-8 text-blue-600 mx-auto mb-4" />
-            <h3 className="font-semibold mb-2">AI-Powered Efficiency</h3>
-            <p className="text-sm text-muted-foreground">
-              Process documents and generate filings 10x faster than traditional methods
-            </p>
-          </div>
-          <div className="bg-green-50 p-6 rounded-lg">
-            <Shield className="h-8 w-8 text-green-600 mx-auto mb-4" />
-            <h3 className="font-semibold mb-2">100% Compliance</h3>
-            <p className="text-sm text-muted-foreground">
-              Built specifically for UK regulations with automatic updates
-            </p>
-          </div>
-          <div className="bg-purple-50 p-6 rounded-lg">
-            <Star className="h-8 w-8 text-purple-600 mx-auto mb-4" />
-            <h3 className="font-semibold mb-2">No Contracts</h3>
-            <p className="text-sm text-muted-foreground">
-              Pay-as-you-go pricing with no monthly commitments
-            </p>
+        <div className="mt-16 text-center">
+          <h2 className="text-3xl font-bold mb-8 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+            Why Choose PromptSubmissions?
+          </h2>
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-8 rounded-2xl shadow-lg">
+              <div className="bg-blue-500 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6">
+                <Zap className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="text-xl font-bold mb-4 text-gray-900">AI-Powered Efficiency</h3>
+              <p className="text-gray-700 leading-relaxed">
+                Process documents and generate filings 10x faster than traditional methods with cutting-edge AI technology
+              </p>
+            </div>
+            <div className="bg-gradient-to-br from-green-50 to-green-100 p-8 rounded-2xl shadow-lg">
+              <div className="bg-green-500 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6">
+                <Shield className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="text-xl font-bold mb-4 text-gray-900">100% Compliance</h3>
+              <p className="text-gray-700 leading-relaxed">
+                Built specifically for UK regulations with automatic updates and enterprise-grade security
+              </p>
+            </div>
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-8 rounded-2xl shadow-lg">
+              <div className="bg-purple-500 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6">
+                <Star className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="text-xl font-bold mb-4 text-gray-900">No Contracts</h3>
+              <p className="text-gray-700 leading-relaxed">
+                Pay-as-you-go pricing with no monthly commitments, perfect for seasonal business needs
+              </p>
+            </div>
           </div>
         </div>
       </div>

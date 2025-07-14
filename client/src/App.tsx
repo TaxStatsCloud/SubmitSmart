@@ -17,6 +17,7 @@ import Login from "@/pages/Login";
 import Subscription from "@/pages/Subscription";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AiAssistantProvider } from "@/contexts/AiAssistantContext";
+import { AIChatbot } from "@/components/chat/AIChatbot";
 import { useEffect } from "react";
 import { initWebSocket } from "@/lib/websocket";
 
@@ -111,6 +112,7 @@ function App() {
           <TooltipProvider>
             <Toaster />
             <Router />
+            <AIChatbot />
           </TooltipProvider>
         </AiAssistantProvider>
       </AuthProvider>

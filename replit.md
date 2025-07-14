@@ -13,10 +13,13 @@ PromptSubmissions is an AI-powered platform for UK corporate compliance, special
 - Agent-based outreach system
 
 ## Recent Changes
+- **July 14, 2025**: MAJOR UI UPGRADE - Implemented Silicon Valley-level design system with glass morphism, gradient backgrounds, and premium visual elements
+- **July 14, 2025**: Enhanced AI chatbot with comprehensive UK accounting and tax expertise, covering CT600, VAT, Companies House regulations, and platform features
+- **July 14, 2025**: Upgraded pricing to competitive Silicon Valley standards (£79-£899) with enhanced Professional plan at £199 as most popular
+- **July 14, 2025**: Created enhanced dashboard with real-time status indicators, glass cards, and intuitive quick actions for professional users
 - **July 14, 2025**: Implemented comprehensive Firebase authentication system with Google sign-in, user session management, and secure authentication context
 - **July 14, 2025**: Integrated SendGrid email service with professional welcome emails, filing confirmations, and payment notifications
-- **July 14, 2025**: Built competitive Stripe subscription system with 4-tier pricing (£19.99-£199.99) positioned strategically for UK market
-- **July 14, 2025**: Created professional subscription page with market-competitive pricing analysis and credit-based billing system
+- **July 14, 2025**: Built competitive Stripe subscription system with enhanced UI and credit-based billing system
 - **July 14, 2025**: Enhanced authentication flow with protected routes, login/logout functionality, and user state management
 - **July 14, 2025**: Fixed critical cash balance calculation error in Balance Sheet - now properly nets all account 1200 entries to show correct £0 balance matching Trial Balance
 - **July 14, 2025**: Added comprehensive PDF, Excel, and CSV export functionality for all financial statements with proper error handling and professional formatting
@@ -74,10 +77,12 @@ PromptSubmissions is an AI-powered platform for UK corporate compliance, special
 6. **Credit System**: Flexible billing with Stripe integration
 
 ## User Preferences
-- Focus on professional, clean UI design
-- Prioritize user experience and workflow efficiency
-- Maintain comprehensive documentation
-- Implement proper error handling and loading states
+- **Silicon Valley-level UI/UX**: Premium design with glass morphism, gradients, and professional visual hierarchy
+- **Competitive Pricing**: Enterprise-level pricing that reflects the platform's professional capabilities
+- **AI Excellence**: Chatbot must be expert-level on UK accounting rules, tax compliance, and platform usage
+- Focus on professional, clean UI design with cutting-edge visual elements
+- Prioritize user experience and workflow efficiency with intuitive navigation
+- Maintain comprehensive documentation and error handling
 - **Critical Priority**: Maximum accuracy in all filings with comprehensive supporting documentation
 - **Auditor Trust**: Build features that provide transparency and detailed audit trails
 - **Documentation Guidance**: Provide hints and support for users to upload correct documentation
@@ -113,12 +118,11 @@ PromptSubmissions is an AI-powered platform for UK corporate compliance, special
 - ✅ Scales from simple to complex filings
 - ✅ No long-term commitments (reduces barrier to entry)
 
-**Tiered Pricing Structure**:
-- **Dormant Pack**: £19.99 for 25 credits (5 filings)
-- **Micro Business Pack**: £39.99 for 50 credits (5 filings)
-- **Small Business Pack**: £89.99 for 100 credits (4 filings)
-- **Professional Pack**: £179.99 for 200 credits (mixed filings)
-- **Enterprise Pack**: £499.99 for 500 credits (future)
+**Silicon Valley-Competitive Pricing Structure**:
+- **Starter**: £79 for 50 credits (10 dormant filings)
+- **Professional**: £199 for 150 credits (6 small company filings) - MOST POPULAR
+- **Business**: £399 for 350 credits (14 mixed filings)
+- **Enterprise**: £899 for 850 credits (35+ filings with white-label)
 
 ## Next Steps
 1. Launch Stage 1 filings immediately to capture early market
