@@ -728,15 +728,15 @@ export class MemStorage implements IStorage {
       this.activities.set(activity.id, activity);
     }
     
-    // Staged Rollout Credit Packages
+    // Competitive UK Market Pricing - Updated Jan 2025
     const creditPackages = [
       // STAGE 1: Simple filings (Dormant & Micro-entity companies)
       {
         id: this.packageId++,
-        name: 'Dormant Company Pack',
-        description: 'Perfect for dormant companies - balance sheet only filings',
-        price: 1999, // £19.99 in pence
-        creditAmount: 25, // 5 dormant filings
+        name: 'Starter Pack',
+        description: 'Perfect for dormant companies and micro-entities',
+        price: 19999, // £199.99 in pence
+        creditAmount: 200, // 2 dormant accounts (£100 each) or 2 confirmation statements (£70 each) + Corporation Tax (£70)
         isActive: true,
         isPopular: false,
         createdAt: new Date(),
@@ -744,10 +744,10 @@ export class MemStorage implements IStorage {
       },
       {
         id: this.packageId++,
-        name: 'Micro Business Pack',
-        description: 'Ideal for micro-entities (up to £632k turnover) - simplified accounts',
-        price: 3999, // £39.99 in pence
-        creditAmount: 50, // 5 micro-entity filings
+        name: 'Professional Pack',
+        description: 'Most popular for growing businesses with regular filing needs',
+        price: 39999, // £399.99 in pence
+        creditAmount: 400, // 1 annual account (£250) + 2 corporation tax (£70 each) + VAT filing (£45) + confirmation statement (£70)
         isActive: true,
         isPopular: true,
         createdAt: new Date(),
@@ -757,10 +757,10 @@ export class MemStorage implements IStorage {
       // STAGE 2: Moderate complexity (Small companies with P&L)
       {
         id: this.packageId++,
-        name: 'Small Business Pack',
-        description: 'Small companies with P&L preparation (up to £10.2m turnover)',
-        price: 8999, // £89.99 in pence
-        creditAmount: 100, // 4 small company filings
+        name: 'Business Pack',
+        description: 'For established businesses with multiple companies and complex filings',
+        price: 79999, // £799.99 in pence
+        creditAmount: 800, // Multiple companies with various filing types
         isActive: true,
         isPopular: false,
         createdAt: new Date(),
@@ -768,10 +768,10 @@ export class MemStorage implements IStorage {
       },
       {
         id: this.packageId++,
-        name: 'Professional Pack',
-        description: 'Growing businesses with regular filing needs including tax returns',
-        price: 17999, // £179.99 in pence
-        creditAmount: 200, // Mixed filing types
+        name: 'Enterprise Pack',
+        description: 'For accounting firms and large operations with high-volume needs',
+        price: 149999, // £1,499.99 in pence
+        creditAmount: 1500, // High volume for accounting firms
         isActive: true,
         isPopular: false,
         createdAt: new Date(),
@@ -781,10 +781,10 @@ export class MemStorage implements IStorage {
       // STAGE 3: Complex filings (Future - Full statutory & audited accounts)
       {
         id: this.packageId++,
-        name: 'Enterprise Pack',
-        description: 'Large companies with full statutory and audited accounts',
-        price: 49999, // £499.99 in pence
-        creditAmount: 500, // Full statutory filings
+        name: 'Premium Enterprise',
+        description: 'White-label solution for accounting firms with unlimited filings',
+        price: 299999, // £2,999.99 in pence
+        creditAmount: 3000, // Enterprise-level volume
         isActive: false, // Will be activated in Stage 3
         isPopular: false,
         createdAt: new Date(),
@@ -792,10 +792,10 @@ export class MemStorage implements IStorage {
       },
       {
         id: this.packageId++,
-        name: 'Accounting Firm Pack',
-        description: 'For accounting firms managing multiple clients across all filing types',
-        price: 99999, // £999.99 in pence
-        creditAmount: 1000, // High volume for accounting firms
+        name: 'White-Label Partner',
+        description: 'Custom solution for large accounting firms and software integrators',
+        price: 599999, // £5,999.99 in pence
+        creditAmount: 6000, // Maximum volume for partners
         isActive: false, // Will be activated in Stage 3
         isPopular: false,
         createdAt: new Date(),
@@ -813,7 +813,7 @@ export class MemStorage implements IStorage {
       {
         id: this.costId++,
         filingType: 'dormant_accounts',
-        creditCost: 5,
+        creditCost: 100, // £100 per filing - competitive with market
         actualCost: 0,
         description: 'Dormant company accounts - balance sheet only',
         isActive: true,
@@ -823,7 +823,7 @@ export class MemStorage implements IStorage {
       {
         id: this.costId++,
         filingType: 'micro_entity_accounts',
-        creditCost: 10,
+        creditCost: 140, // £140 per filing - competitive for micro-entities
         actualCost: 0,
         description: 'Micro-entity accounts - simplified balance sheet (up to £632k turnover)',
         isActive: true,
@@ -833,8 +833,8 @@ export class MemStorage implements IStorage {
       {
         id: this.costId++,
         filingType: 'confirmation_statement',
-        creditCost: 8,
-        actualCost: 3400, // £34.00 in pence (Companies House fee)
+        creditCost: 70, // £70 per filing (includes £13 Companies House fee)
+        actualCost: 1300, // £13.00 in pence (Companies House fee)
         description: 'Annual confirmation statement submission to Companies House',
         isActive: true,
         createdAt: new Date(),
@@ -845,7 +845,7 @@ export class MemStorage implements IStorage {
       {
         id: this.costId++,
         filingType: 'small_company_accounts',
-        creditCost: 25,
+        creditCost: 220, // £220 per filing - competitive for small company accounts
         actualCost: 0,
         description: 'Small company accounts with P&L preparation (up to £10.2m turnover)',
         isActive: true,
@@ -854,10 +854,10 @@ export class MemStorage implements IStorage {
       },
       {
         id: this.costId++,
-        filingType: 'small_company_accounts_with_pl',
-        creditCost: 35,
+        filingType: 'annual_accounts',
+        creditCost: 250, // £250 per filing - comprehensive annual accounts
         actualCost: 0,
-        description: 'Small company accounts with NEW P&L requirements (post-April 2027)',
+        description: 'Annual accounts with P&L requirements (post-April 2027 compliant)',
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -865,7 +865,7 @@ export class MemStorage implements IStorage {
       {
         id: this.costId++,
         filingType: 'corporation_tax',
-        creditCost: 30,
+        creditCost: 70, // £70 per filing - as requested by user
         actualCost: 0,
         description: 'Corporation tax return (CT600) preparation and submission',
         isActive: true,
@@ -875,7 +875,7 @@ export class MemStorage implements IStorage {
       {
         id: this.costId++,
         filingType: 'vat_filing',
-        creditCost: 15,
+        creditCost: 45, // £45 per filing - competitive for VAT returns
         actualCost: 0,
         description: 'VAT return filing',
         isActive: true,
@@ -887,7 +887,7 @@ export class MemStorage implements IStorage {
       {
         id: this.costId++,
         filingType: 'full_statutory_accounts',
-        creditCost: 50,
+        creditCost: 350, // £350 per filing - competitive for full statutory accounts
         actualCost: 0,
         description: 'Full statutory accounts with directors report (medium/large companies)',
         isActive: false, // Will be activated in Stage 3
@@ -897,7 +897,7 @@ export class MemStorage implements IStorage {
       {
         id: this.costId++,
         filingType: 'audited_accounts',
-        creditCost: 75,
+        creditCost: 500, // £500 per filing - premium for audited accounts
         actualCost: 0,
         description: 'Audited accounts requiring multi-team collaboration',
         isActive: false, // Will be activated in Stage 3
@@ -907,7 +907,7 @@ export class MemStorage implements IStorage {
       {
         id: this.costId++,
         filingType: 'group_accounts',
-        creditCost: 100,
+        creditCost: 750, // £750 per filing - premium for group accounts
         actualCost: 0,
         description: 'Group accounts for parent companies',
         isActive: false, // Will be activated in Stage 3
