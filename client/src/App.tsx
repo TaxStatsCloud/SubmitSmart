@@ -35,6 +35,7 @@ import ExtendedTrialBalance from "@/pages/ExtendedTrialBalance";
 import FinancialReporting from "@/pages/FinancialReporting";
 import ComparativePeriods from "@/pages/ComparativePeriods";
 import OpeningTrialBalance from "@/pages/OpeningTrialBalance";
+import HMRCIntegration from "@/pages/HMRCIntegration";
 
 function Router() {
   return (
@@ -62,6 +63,9 @@ function Router() {
         <Route path="/financial-reporting" component={FinancialReporting} />
         <Route path="/comparative-periods" component={ComparativePeriods} />
         <Route path="/opening-trial-balance" component={OpeningTrialBalance} />
+        
+        {/* HMRC Integration */}
+        <Route path="/hmrc-integration" component={HMRCIntegration} />
         
         {/* Document routes */}
         <Route path="/upload" component={Upload} />

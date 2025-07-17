@@ -8,6 +8,7 @@ import { processDocument } from "./services/documentService";
 import { generateResponse } from "./services/aiService";
 import { generateCompletion } from "./services/openai";
 import OpenAI from "openai";
+import hmrcRoutes from "./routes/hmrcRoutes";
 import { companiesHouseService } from "./services/companiesHouseService";
 import { emailService } from "./services/emailService";
 import multer from "multer";
@@ -1894,6 +1895,9 @@ Generate the note content:`;
       });
     }
   });
+
+  // HMRC API routes
+  app.use('/api/hmrc', hmrcRoutes);
 
   return httpServer;
 }
