@@ -9,6 +9,8 @@ import { generateResponse } from "./services/aiService";
 import { generateCompletion } from "./services/openai";
 import OpenAI from "openai";
 import hmrcRoutes from "./routes/hmrcRoutes";
+import { TrialBalanceValidationAgent, FinancialStatementValidationAgent } from "./services/validationAgents";
+import { DrillDownService } from "./services/drillDownService";
 import { companiesHouseService } from "./services/companiesHouseService";
 import { emailService } from "./services/emailService";
 import multer from "multer";
@@ -1898,6 +1900,134 @@ Generate the note content:`;
 
   // HMRC API routes
   app.use('/api/hmrc', hmrcRoutes);
+
+  // Initialize validation agents
+  const trialBalanceValidator = new TrialBalanceValidationAgent();
+  const financialStatementValidator = new FinancialStatementValidationAgent();
+  const drillDownService = new DrillDownService();
+
+  // Validation endpoints
+  app.post('/api/validate/trial-balance/:id', async (req, res) => {
+    try {
+      const trialBalanceId = parseInt(req.params.id);
+      const trialBalance = await storage.getOpeningTrialBalance(trialBalanceId);
+      
+      if (!trialBalance) {
+        return res.status(404).json({ error: 'Trial balance not found' });
+      }
+
+      const validation = await trialBalanceValidator.validateTrialBalance(trialBalance);
+      
+      res.json({
+        success: true,
+        validation,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Trial balance validation error:', error);
+      res.status(500).json({ 
+        error: 'Validation failed', 
+        details: error.message 
+      });
+    }
+  });
+
+  app.post('/api/validate/financial-statements/:companyId', async (req, res) => {
+    try {
+      const companyId = parseInt(req.params.companyId);
+      const { statements } = req.body;
+      
+      const validation = await financialStatementValidator.validateFinancialStatements(statements);
+      
+      res.json({
+        success: true,
+        validation,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Financial statement validation error:', error);
+      res.status(500).json({ 
+        error: 'Validation failed', 
+        details: error.message 
+      });
+    }
+  });
+
+  // Drill-down endpoints
+  app.get('/api/drill-down/balance-sheet/:lineItem/:companyId', async (req, res) => {
+    try {
+      const { lineItem, companyId } = req.params;
+      const { periodEnd } = req.query;
+      
+      const drillDown = await drillDownService.getBalanceSheetDrillDown(
+        lineItem, 
+        parseInt(companyId), 
+        periodEnd as string || '2024-12-31'
+      );
+      
+      res.json({
+        success: true,
+        drillDown,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Balance sheet drill-down error:', error);
+      res.status(500).json({ 
+        error: 'Drill-down failed', 
+        details: error.message 
+      });
+    }
+  });
+
+  app.get('/api/drill-down/profit-loss/:lineItem/:companyId', async (req, res) => {
+    try {
+      const { lineItem, companyId } = req.params;
+      const { periodEnd } = req.query;
+      
+      const drillDown = await drillDownService.getProfitLossDrillDown(
+        lineItem, 
+        parseInt(companyId), 
+        periodEnd as string || '2024-12-31'
+      );
+      
+      res.json({
+        success: true,
+        drillDown,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Profit & Loss drill-down error:', error);
+      res.status(500).json({ 
+        error: 'Drill-down failed', 
+        details: error.message 
+      });
+    }
+  });
+
+  app.get('/api/drill-down/journal-entries/:accountCode/:companyId', async (req, res) => {
+    try {
+      const { accountCode, companyId } = req.params;
+      const { periodEnd } = req.query;
+      
+      const journalEntries = await drillDownService.getJournalEntriesForAccount(
+        accountCode, 
+        parseInt(companyId), 
+        periodEnd as string || '2024-12-31'
+      );
+      
+      res.json({
+        success: true,
+        journalEntries,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Journal entries drill-down error:', error);
+      res.status(500).json({ 
+        error: 'Drill-down failed', 
+        details: error.message 
+      });
+    }
+  });
 
   return httpServer;
 }

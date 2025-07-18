@@ -36,6 +36,7 @@ import FinancialReporting from "@/pages/FinancialReporting";
 import ComparativePeriods from "@/pages/ComparativePeriods";
 import OpeningTrialBalance from "@/pages/OpeningTrialBalance";
 import HMRCIntegration from "@/pages/HMRCIntegration";
+import ValidationDemo from "@/pages/ValidationDemo";
 
 function Router() {
   return (
@@ -66,6 +67,9 @@ function Router() {
         
         {/* HMRC Integration */}
         <Route path="/hmrc-integration" component={HMRCIntegration} />
+        
+        {/* Validation Demo */}
+        <Route path="/validation-demo" component={ValidationDemo} />
         
         {/* Document routes */}
         <Route path="/upload" component={Upload} />
