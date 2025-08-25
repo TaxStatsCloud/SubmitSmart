@@ -234,7 +234,11 @@ export default function ExtendedTrialBalance() {
   });
 
   useEffect(() => {
-    loadAiProcessedData();
+    loadAiProcessedData().catch((error) => {
+      console.error('Failed to load AI processed data in useEffect:', error);
+      // Don't crash the component on initial data load failure
+      setLoading(false);
+    });
   }, []);
 
   const loadAiProcessedData = async () => {

@@ -65,21 +65,45 @@ export default function ComparativePeriods() {
   // Fetch prior year data for the selected company
   const { data: priorYearData = [], isLoading: priorYearLoading } = useQuery({
     queryKey: ['/api/prior-year-data', selectedCompany],
-    queryFn: () => apiRequest('GET', `/api/prior-year-data/${selectedCompany}`).then(res => res.json()),
+    queryFn: async () => {
+      try {
+        const response = await apiRequest('GET', `/api/prior-year-data/${selectedCompany}`);
+        return await response.json();
+      } catch (error) {
+        console.error('Failed to load prior year data:', error);
+        throw error;
+      }
+    },
     enabled: !!selectedCompany
   });
 
   // Fetch comparative periods for the selected company
   const { data: comparativePeriods = [], isLoading: periodsLoading } = useQuery({
     queryKey: ['/api/comparative-periods', selectedCompany],
-    queryFn: () => apiRequest('GET', `/api/comparative-periods/${selectedCompany}`).then(res => res.json()),
+    queryFn: async () => {
+      try {
+        const response = await apiRequest('GET', `/api/comparative-periods/${selectedCompany}`);
+        return await response.json();
+      } catch (error) {
+        console.error('Failed to load comparative periods:', error);
+        throw error;
+      }
+    },
     enabled: !!selectedCompany
   });
 
   // Fetch Companies House filings for the selected company
   const { data: companiesHouseFilings = [], isLoading: filingsLoading } = useQuery({
     queryKey: ['/api/companies-house-filings', selectedCompany],
-    queryFn: () => apiRequest('GET', `/api/companies-house-filings/${selectedCompany}`).then(res => res.json()),
+    queryFn: async () => {
+      try {
+        const response = await apiRequest('GET', `/api/companies-house-filings/${selectedCompany}`);
+        return await response.json();
+      } catch (error) {
+        console.error('Failed to load Companies House filings:', error);
+        throw error;
+      }
+    },
     enabled: !!selectedCompany
   });
 

@@ -53,7 +53,15 @@ export default function OpeningTrialBalance() {
   // Fetch opening trial balances for the selected company
   const { data: openingBalances = [], isLoading, refetch } = useQuery({
     queryKey: ['/api/opening-trial-balances', selectedCompany],
-    queryFn: () => apiRequest('GET', `/api/opening-trial-balances/${selectedCompany}`).then(res => res.json()),
+    queryFn: async () => {
+      try {
+        const response = await apiRequest('GET', `/api/opening-trial-balances/${selectedCompany}`);
+        return await response.json();
+      } catch (error) {
+        console.error('Failed to load opening trial balances:', error);
+        throw error; // Re-throw for TanStack Query error handling
+      }
+    },
     enabled: !!selectedCompany
   });
 

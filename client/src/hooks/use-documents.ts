@@ -26,7 +26,7 @@ export function useDocuments(): UseDocumentsReturn {
   });
 
   // Get recent documents (last 5)
-  const recentDocuments = documents
+  const recentDocuments = (documents && Array.isArray(documents))
     ? [...documents]
         .sort((a: Document, b: Document) => 
           new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())
@@ -121,7 +121,7 @@ export function useDocuments(): UseDocumentsReturn {
   });
 
   return {
-    documents: documents || [],
+    documents: Array.isArray(documents) ? documents : [],
     recentDocuments,
     isLoading,
     isUploading,
