@@ -43,22 +43,40 @@ export default function EnhancedDashboard() {
   const { data: dashboardData, isLoading } = useQuery<DashboardData>({
     queryKey: ['/api/dashboard'],
     queryFn: async () => {
-      const [filings, activities] = await Promise.all([
-        fetch('/api/filings').then(res => res.json()),
-        fetch('/api/activities').then(res => res.json())
-      ]);
+      try {
+        const [filingsRes, activitiesRes] = await Promise.all([
+          fetch('/api/filings'),
+          fetch('/api/activities')
+        ]);
+        
+        const [filings, activities] = await Promise.all([
+          filingsRes.json(),
+          activitiesRes.json()
+        ]);
       
-      return {
-        filings,
-        activities,
-        credits: 150, // Mock data for demo
-        pendingTasks: 3,
-        completedFilings: 12,
-        upcomingDeadlines: [
-          { company: "Example Ltd", type: "Annual Accounts", due: "2024-12-31", urgency: "medium" },
-          { company: "Demo Corp", type: "Corporation Tax", due: "2024-11-30", urgency: "high" }
-        ]
-      };
+        return {
+          filings,
+          activities,
+          credits: 150, // Mock data for demo
+          pendingTasks: 3,
+          completedFilings: 12,
+          upcomingDeadlines: [
+            { company: "Example Ltd", type: "Annual Accounts", due: "2024-12-31", urgency: "medium" },
+            { company: "Demo Corp", type: "Corporation Tax", due: "2024-11-30", urgency: "high" }
+          ]
+        };
+      } catch (error) {
+        console.error('Dashboard data fetch failed:', error);
+        // Return fallback data to prevent component crash
+        return {
+          filings: [],
+          activities: [],
+          credits: 0,
+          pendingTasks: 0,
+          completedFilings: 0,
+          upcomingDeadlines: []
+        };
+      }
     }
   });
 

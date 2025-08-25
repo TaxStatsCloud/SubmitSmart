@@ -175,26 +175,28 @@ export default function ExtendedTrialBalance() {
   });
   const { toast } = useToast();
 
-  const handleEditBreakdownItem = (entryId: string, item: any) => {
+  const handleEditBreakdownItem = async (entryId: string, item: any) => {
     const newAccountCode = prompt(`Edit account code for ${item.documentName}:`, '6000');
     if (newAccountCode) {
       const newDescription = prompt(`Edit description for ${item.documentName}:`, item.description);
       if (newDescription) {
         // Update the breakdown item
-        fetch(`/api/trial-balance/2/2024-25/breakdown/${entryId}/${item.documentId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            accountCode: newAccountCode,
-            accountName: accountNames[newAccountCode] || 'Unknown Account',
-            amount: item.amount,
-            description: newDescription
-          }),
-        })
-        .then(response => response.json())
-        .then(data => {
+        try {
+          const response = await fetch(`/api/trial-balance/2/2024-25/breakdown/${entryId}/${item.documentId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              accountCode: newAccountCode,
+              accountName: (ACCOUNT_CODES as any)[newAccountCode] || 'Unknown Account',
+              amount: item.amount,
+              description: newDescription
+            }),
+          });
+          
+          const data = await response.json();
+          
           if (data.success) {
             toast({
               title: "Item Updated",
@@ -208,15 +210,14 @@ export default function ExtendedTrialBalance() {
               variant: "destructive"
             });
           }
-        })
-        .catch(error => {
+        } catch (error) {
           console.error('Error updating breakdown item:', error);
           toast({
             title: "Update Failed",
             description: "Failed to update breakdown item",
             variant: "destructive"
           });
-        });
+        }
       }
     }
   };
@@ -488,7 +489,7 @@ export default function ExtendedTrialBalance() {
           date: new Date().toISOString().split('T')[0],
           description: `${aiJournalEntry.description}\n\nDetailed Explanation: ${aiJournalEntry.explanation}\n\nAI Analysis: ${data.journalEntry.explanation}`,
           reference: 'AI Generated',
-          entries: data.journalEntry.entries.map(entry => ({
+          entries: data.journalEntry.entries.map((entry: any) => ({
             accountCode: entry.accountCode,
             accountName: entry.accountName,
             debit: entry.debit || 0,

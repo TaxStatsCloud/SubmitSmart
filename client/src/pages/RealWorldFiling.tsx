@@ -84,14 +84,14 @@ const RealWorldFiling = () => {
       const existingDocs = await response.json();
       
       const duplicates = files.filter(file => 
-        existingDocs.some(doc => 
+        existingDocs.some((doc: any) => 
           doc.name === file.name && doc.size === file.size
         )
       );
       
       return duplicates.map(file => ({
         file,
-        existingFile: existingDocs.find(doc => doc.name === file.name && doc.size === file.size)?.id
+        existingFile: existingDocs.find((doc: any) => doc.name === file.name && doc.size === file.size)?.id
       }));
     } catch (error) {
       console.error('Error checking duplicates:', error);
@@ -143,7 +143,7 @@ const RealWorldFiling = () => {
           throw new Error(`Upload failed for ${file.name}`);
         }
       } catch (error) {
-        return { success: false, file: file.name, error: error.message };
+        return { success: false, file: file.name, error: error instanceof Error ? error.message : String(error) };
       }
     });
 
@@ -301,7 +301,7 @@ const RealWorldFiling = () => {
           sections: {
             ...prev.sections,
             documents: {
-              ...prev.sections.documents,
+              ...(prev.sections as any).documents || {},
               [documentType]: {
                 filename: file.name,
                 uploadedAt: new Date().toISOString(),
