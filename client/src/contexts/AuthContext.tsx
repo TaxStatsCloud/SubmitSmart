@@ -25,13 +25,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // Handle Firebase redirect result first
-    handleRedirectResult().then((result) => {
-      if (result?.user) {
-        setUser(result.user);
+    const initAuth = async () => {
+      try {
+        const result = await handleRedirectResult();
+        if (result?.user) {
+          setUser(result.user);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Redirect result handling failed:', error);
+        // Ensure loading is still set to false even on error
         setLoading(false);
       }
-    }).catch((error) => {
-      console.error('Redirect result handling failed:', error);
+    };
+    
+    initAuth().catch((error) => {
+      console.error('Auth initialization failed:', error);
+      setLoading(false);
     });
 
     const unsubscribe = onAuthStateChange((user) => {

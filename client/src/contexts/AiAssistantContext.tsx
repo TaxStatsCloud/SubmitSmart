@@ -31,7 +31,10 @@ export const AiAssistantProvider = ({ children }: AiAssistantProviderProps) => {
   // Load chat history when assistant is opened
   useEffect(() => {
     if (isAssistantOpen && user) {
-      fetchChatHistory();
+      fetchChatHistory().catch((error) => {
+        console.error('Failed to load chat history in useEffect:', error);
+        // Don't crash the component on chat history failure
+      });
     }
   }, [isAssistantOpen, user]);
 
@@ -83,7 +86,7 @@ export const AiAssistantProvider = ({ children }: AiAssistantProviderProps) => {
       // Optimistically add user message to UI
       const userMessage: AssistantMessage = {
         id: Date.now(), // Temporary ID
-        userId: user.id,
+        userId: parseInt(user.uid) || 1, // TODO: Fix Firebase-to-DB user mapping
         role: "user",
         content,
         createdAt: new Date(),
