@@ -73,6 +73,60 @@ export const insertDocumentSchema = createInsertSchema(documents).pick({
   path: true,
 });
 
+// Tax Filing Section Validation Schemas
+export const taxFilingSectionDataSchema = z.object({
+  sectionId: z.string().min(1, "Section ID is required"),
+  data: z.record(z.any()).refine((data) => data !== null, {
+    message: "Section data cannot be null"
+  })
+});
+
+export const companyInfoSectionSchema = z.object({
+  companyName: z.string().min(1, "Company name is required"),
+  companyNumber: z.string().min(8, "Company number must be at least 8 characters"),
+  utr: z.string().min(10, "UTR must be at least 10 characters"),
+  address: z.object({
+    line1: z.string().min(1, "Address line 1 is required"),
+    line2: z.string().optional(),
+    postcode: z.string().min(1, "Postcode is required"),
+    country: z.string().default("GB")
+  }).optional()
+});
+
+export const incomeStatementSectionSchema = z.object({
+  turnover: z.number().min(0, "Turnover cannot be negative"),
+  costOfSales: z.number().min(0, "Cost of sales cannot be negative").optional(),
+  grossProfit: z.number().optional(),
+  administrativeExpenses: z.number().min(0, "Administrative expenses cannot be negative").optional(),
+  operatingProfit: z.number().optional(),
+  netProfit: z.number().optional()
+});
+
+export const balanceSheetSectionSchema = z.object({
+  fixedAssets: z.number().min(0, "Fixed assets cannot be negative").optional(),
+  currentAssets: z.number().min(0, "Current assets cannot be negative").optional(),
+  cash: z.number().optional(),
+  totalAssets: z.number().min(0, "Total assets cannot be negative").optional(),
+  currentLiabilities: z.number().min(0, "Current liabilities cannot be negative").optional(),
+  longTermLiabilities: z.number().min(0, "Long term liabilities cannot be negative").optional(),
+  totalLiabilities: z.number().min(0, "Total liabilities cannot be negative").optional(),
+  netAssets: z.number().optional()
+});
+
+// Validation schema selector based on section ID
+export const getTaxFilingSectionSchema = (sectionId: string) => {
+  switch (sectionId) {
+    case 'company-info':
+      return companyInfoSectionSchema;
+    case 'income-statement':
+      return incomeStatementSectionSchema;
+    case 'balance-sheet':
+      return balanceSheetSectionSchema;
+    default:
+      return z.record(z.any()); // Allow other sections but ensure it's an object
+  }
+};
+
 // Filing types: confirmation_statement, annual_accounts, corporation_tax
 export const filings = pgTable("filings", {
   id: serial("id").primaryKey(),

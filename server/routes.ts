@@ -2,6 +2,7 @@ import type { Express } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { taxFilingSectionDataSchema, getTaxFilingSectionSchema } from "@shared/schema";
 import { z } from "zod";
 import { insertUserSchema, insertCompanySchema, insertDocumentSchema, insertFilingSchema, insertActivitySchema, insertAssistantMessageSchema } from "@shared/schema";
 import { processDocument } from "./services/documentService";
@@ -78,6 +79,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/create-payment-intent", async (req, res) => {
     try {
       const { amount, credits, planId } = req.body;
+      
+      // Critical validation to prevent crashes
+      if (!amount || typeof amount !== 'number' || amount <= 0) {
+        return res.status(400).json({ message: 'Valid amount is required' });
+      }
+      if (!credits || typeof credits !== 'number' || credits <= 0) {
+        return res.status(400).json({ message: 'Valid credits amount is required' });
+      }
+      if (!planId || typeof planId !== 'string') {
+        return res.status(400).json({ message: 'Plan ID is required' });
+      }
       
       const paymentIntent = await stripe.paymentIntents.create({
         amount: Math.round(amount * 100), // Convert to pence
@@ -322,9 +334,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/tax-filings/:companyId/:period/section', async (req, res) => {
     try {
       const { companyId, period } = req.params;
-      const { sectionId, data } = req.body;
       
-      console.log('Received tax filing save request:', { companyId, period, sectionId, data });
+      // CRITICAL: Validate input to prevent data corruption
+      const validationResult = taxFilingSectionDataSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({
+          error: 'Invalid request data',
+          details: validationResult.error.errors
+        });
+      }
+      
+      const { sectionId, data } = validationResult.data;
+      
+      // Validate section-specific data
+      const sectionSchema = getTaxFilingSectionSchema(sectionId);
+      const sectionValidation = sectionSchema.safeParse(data);
+      if (!sectionValidation.success) {
+        return res.status(400).json({
+          error: `Invalid data for section '${sectionId}'`,
+          details: sectionValidation.error.errors
+        });
+      }
+      
+      console.log('Received validated tax filing save request:', { companyId, period, sectionId, data });
       
       // Get existing filing
       const existingFilings = await storage.getFilingsByCompany(Number(companyId));
