@@ -12,6 +12,7 @@ import hmrcRoutes from "./routes/hmrcRoutes";
 import { TrialBalanceValidationAgent, FinancialStatementValidationAgent } from "./services/validationAgents";
 import { DrillDownService } from "./services/drillDownService";
 import { companiesHouseService } from "./services/companiesHouseService";
+import { companiesHouseFilingService } from "./services/companiesHouseFilingService";
 import { emailService } from "./services/emailService";
 import multer from "multer";
 import path from "path";
@@ -84,7 +85,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metadata: {
           credits: credits.toString(),
           planId: planId,
-          userId: (req as any).user?.id?.toString() || 'anonymous'
+          userId: (req as any).user?.uid?.toString() || 'anonymous'
         }
       });
       
@@ -122,7 +123,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             paymentIntent.amount / 100, // Convert back to pounds
             parseInt(credits)
           );
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error sending payment confirmation:', error);
         }
       }
@@ -240,7 +241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { companiesHouseAgent } = await import('./services/companiesHouseAgent');
       const stats = await companiesHouseAgent.getAgentStats(dateRange as string);
       res.json(stats);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ error: 'Failed to fetch agent stats' });
     }
   });
@@ -250,7 +251,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { companiesHouseAgent } = await import('./services/companiesHouseAgent');
       const prospects = await companiesHouseAgent.getProspects(req.query);
       res.json(prospects);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ error: 'Failed to fetch prospects' });
     }
   });
@@ -260,7 +261,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { companiesHouseAgent } = await import('./services/companiesHouseAgent');
       const outreach = await companiesHouseAgent.getOutreachActivity(req.query);
       res.json(outreach);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ error: 'Failed to fetch outreach data' });
     }
   });
@@ -285,7 +286,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       res.json(userUsage);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ error: 'Failed to fetch user usage data' });
     }
   });
@@ -297,7 +298,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get or create tax filing record
       const existingFiling = await storage.getFilingsByCompany(Number(companyId));
-      const taxFiling = existingFiling.find(f => f.type === 'corporation_tax' && f.data?.period === period);
+      const taxFiling = existingFiling.find(f => f.type === 'corporation_tax' && (f.data as any)?.period === period);
       
       if (taxFiling) {
         res.json(taxFiling);
@@ -306,14 +307,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const newFiling = await storage.createFiling({
           type: 'corporation_tax',
           companyId: Number(companyId),
-          userId: req.user?.id || 1,
+          userId: (req as any).user?.uid || 1,
           data: { period, sections: {}, progress: 0 },
           status: 'draft',
           progress: 0
         });
         res.json(newFiling);
       }
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ error: 'Failed to fetch tax filing data' });
     }
   });
@@ -327,7 +328,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get existing filing
       const existingFilings = await storage.getFilingsByCompany(Number(companyId));
-      let taxFiling = existingFilings.find(f => f.type === 'corporation_tax' && f.data?.period === period);
+      let taxFiling = existingFilings.find(f => f.type === 'corporation_tax' && (f.data as any)?.period === period);
       
       if (!taxFiling) {
         // Create a new filing if it doesn't exist
@@ -370,7 +371,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: 'Section saved successfully',
         data: updatedFiling
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Tax filing section save error:', error);
       res.status(500).json({ error: 'Failed to save tax filing section' });
     }
@@ -422,7 +423,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(404).json({ error: 'Tax filing not found or incomplete' });
       }
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ error: 'Failed to calculate tax liability' });
     }
   });
@@ -446,7 +447,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.createActivity({
           type: 'tax_filing_submitted',
           description: `Corporation Tax return submitted for ${period}`,
-          userId: req.user?.id || 1,
+          userId: (req as any).user?.uid || 1,
           companyId: Number(companyId),
           metadata: {
             filingId: taxFiling.id,
@@ -459,7 +460,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(404).json({ error: 'Tax filing not found' });
       }
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ error: 'Failed to submit tax filing' });
     }
   });
@@ -473,7 +474,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { companyId } = req.params;
       const data = await storage.getPriorYearDataByCompany(parseInt(companyId));
       res.json(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting prior year data:', error);
       res.status(500).json({ error: 'Failed to retrieve prior year data' });
     }
@@ -484,7 +485,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { companyId, year } = req.params;
       const data = await storage.getPriorYearDataByCompanyAndYear(parseInt(companyId), year);
       res.json(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting prior year data for specific year:', error);
       res.status(500).json({ error: 'Failed to retrieve prior year data' });
     }
@@ -495,7 +496,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const priorYearData = req.body;
       const result = await storage.createPriorYearData(priorYearData);
       res.json(result);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating prior year data:', error);
       res.status(500).json({ error: 'Failed to create prior year data' });
     }
@@ -507,7 +508,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { companyId } = req.params;
       const periods = await storage.getComparativePeriodByCompany(parseInt(companyId));
       res.json(periods);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting comparative periods:', error);
       res.status(500).json({ error: 'Failed to retrieve comparative periods' });
     }
@@ -518,7 +519,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { companyId } = req.params;
       const period = await storage.getActiveComparativePeriod(parseInt(companyId));
       res.json(period);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting active comparative period:', error);
       res.status(500).json({ error: 'Failed to retrieve active comparative period' });
     }
@@ -529,7 +530,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const periodData = req.body;
       const result = await storage.createComparativePeriod(periodData);
       res.json(result);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating comparative period:', error);
       res.status(500).json({ error: 'Failed to create comparative period' });
     }
@@ -541,7 +542,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { companyId } = req.params;
       const filings = await storage.getCompaniesHouseFilingsByCompany(parseInt(companyId));
       res.json(filings);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting Companies House filings:', error);
       res.status(500).json({ error: 'Failed to retrieve Companies House filings' });
     }
@@ -552,7 +553,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { registrationNumber } = req.params;
       const filings = await storage.getCompaniesHouseFilingsByRegistrationNumber(registrationNumber);
       res.json(filings);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting Companies House filings by registration number:', error);
       res.status(500).json({ error: 'Failed to retrieve Companies House filings' });
     }
@@ -589,7 +590,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(results);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error importing Companies House filings:', error);
       res.status(500).json({ error: 'Failed to import Companies House filings' });
     }
@@ -633,7 +634,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { password, ...userWithoutPassword } = user;
       
       res.status(201).json(userWithoutPassword);
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ message: error.errors });
       } else {
@@ -660,7 +661,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { password: _, ...userWithoutPassword } = user;
       
       res.json(userWithoutPassword);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: 'Login failed' });
     }
   });
@@ -715,7 +716,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { password, ...userWithoutPassword } = updatedUser;
       
       res.json(userWithoutPassword);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: 'Failed to update user' });
     }
   });
@@ -726,7 +727,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertCompanySchema.parse(req.body);
       const company = await storage.createCompany(validatedData);
       res.status(201).json(company);
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ message: error.errors });
       } else {
@@ -739,7 +740,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const companies = await storage.getAllCompanies();
       res.json(companies);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: 'Failed to fetch companies' });
     }
   });
@@ -754,7 +755,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(company);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: 'Failed to fetch company' });
     }
   });
@@ -774,7 +775,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sections: filingData,
         lastUpdated: new Date().toISOString()
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Tax filing fetch error:', error);
       res.status(500).json({ error: 'Failed to fetch filing data' });
     }
@@ -804,7 +805,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: 'Tax filing submitted successfully',
         submissionId: `CT600-${companyId}-${Date.now()}`
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Tax filing submission error:', error);
       res.status(500).json({ error: 'Failed to submit filing' });
     }
@@ -815,7 +816,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const documents = await storage.getAllDocuments();
       res.json(documents);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: 'Failed to fetch documents' });
     }
   });
@@ -825,7 +826,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const documentId = parseInt(req.params.id);
       await storage.deleteDocument(documentId);
       res.json({ message: 'Document deleted successfully' });
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: 'Failed to delete document' });
     }
   });
@@ -865,7 +866,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         processedDocuments: processedDocuments.length,
         totalDocuments: documents.length
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error aggregating financial data:', error);
       res.status(500).json({ error: 'Failed to aggregate financial data' });
     }
@@ -1174,7 +1175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         documentCount: processedDocuments.length,
         totalDocuments: documents.length
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting trial balance:', error);
       res.status(500).json({ message: 'Failed to get trial balance data' });
     }
@@ -1253,7 +1254,7 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
           source: 'ai_generated'
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating AI journal entry:', error);
       res.status(500).json({ message: 'Failed to create AI journal entry' });
     }
@@ -1277,7 +1278,7 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
           description
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating breakdown item:', error);
       res.status(500).json({ message: 'Failed to update breakdown item' });
     }
@@ -1308,7 +1309,7 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
       });
       
       res.json(updatedDocument);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating document categorization:', error);
       res.status(500).json({ message: 'Failed to update document categorization' });
     }
@@ -1336,7 +1337,7 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
         totalAmount: accountEntry.debit || accountEntry.credit,
         breakdown: accountEntry.breakdown
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting account breakdown:', error);
       res.status(500).json({ message: 'Failed to get account breakdown' });
     }
@@ -1415,7 +1416,7 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
       }
       
       res.status(201).json(document);
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ message: error.errors });
       } else {
@@ -1429,7 +1430,7 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
       // In a real app, would filter by user/company from session
       const documents = await storage.getAllDocuments();
       res.json(documents);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: 'Failed to fetch documents' });
     }
   });
@@ -1444,7 +1445,7 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
       }
       
       res.json(document);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: 'Failed to fetch document' });
     }
   });
@@ -1466,7 +1467,7 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
       await storage.deleteDocument(documentId);
       
       res.json({ message: 'Document deleted successfully' });
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: 'Failed to delete document' });
     }
   });
@@ -1482,7 +1483,7 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
       
       const processedDoc = await processDocument(documentId);
       res.json(processedDoc);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: 'Failed to process document' });
     }
   });
@@ -1506,7 +1507,7 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
       });
       
       res.status(201).json(filing);
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ message: error.errors });
       } else {
@@ -1530,7 +1531,7 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
       }));
       
       res.json(enhancedFilings);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: 'Failed to fetch filings' });
     }
   });
@@ -1552,7 +1553,7 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
       };
       
       res.json(enhancedFiling);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: 'Failed to fetch filing' });
     }
   });
@@ -1581,7 +1582,7 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
       });
       
       res.json(updatedFiling);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: 'Failed to update filing' });
     }
   });
@@ -1598,7 +1599,7 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
       await storage.deleteFiling(filingId);
       
       res.json({ message: 'Filing deleted successfully' });
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: 'Failed to delete filing' });
     }
   });
@@ -1631,7 +1632,7 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
       });
       
       res.json(updatedFiling);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: 'Failed to submit filing' });
     }
   });
@@ -1648,7 +1649,7 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
       );
       
       res.json(activities);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: 'Failed to fetch activities' });
     }
   });
@@ -1661,7 +1662,7 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
       
       const messages = await storage.getAssistantMessagesByUser(userId);
       res.json(messages);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: 'Failed to fetch assistant messages' });
     }
   });
@@ -1698,7 +1699,7 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
       });
       
       res.status(201).json(assistantMessage);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: 'Failed to process message' });
     }
   });
@@ -1711,7 +1712,7 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
       await storage.deleteAssistantMessagesByUser(userId);
       
       res.json({ message: 'Assistant messages cleared successfully' });
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: 'Failed to clear assistant messages' });
     }
   });
@@ -1737,7 +1738,7 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
       
       // Return document analysis results
       res.json(document.metadata || { message: 'No analysis available' });
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: 'Failed to analyze document' });
     }
   });
@@ -1751,14 +1752,13 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
         return res.status(400).json({ message: 'Search query is required' });
       }
       
-      const results = await searchCompanies(
+      const results = await companiesHouseService.searchCompanies(
         q as string, 
-        items_per_page ? parseInt(items_per_page as string) : undefined,
-        start_index ? parseInt(start_index as string) : undefined
+        items_per_page ? parseInt(items_per_page as string) : 20
       );
       
       res.json(results);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: 'Failed to search companies' });
     }
   });
@@ -1766,10 +1766,10 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
   app.get('/api/companies-house/company/:number', async (req, res) => {
     try {
       const companyNumber = req.params.number;
-      const company = await getCompanyProfile(companyNumber);
+      const company = await companiesHouseService.getCompanyProfile(companyNumber);
       
       res.json(company);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: 'Failed to fetch company profile' });
     }
   });
@@ -1777,10 +1777,10 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
   app.get('/api/companies-house/company/:number/filing-deadlines', async (req, res) => {
     try {
       const companyNumber = req.params.number;
-      const deadlines = await getFilingDeadlines(companyNumber);
+      const deadlines = await companiesHouseService.getFilingDeadlines(companyNumber);
       
       res.json(deadlines);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: 'Failed to fetch filing deadlines' });
     }
   });
@@ -1859,7 +1859,7 @@ Generate the note content:`;
         }
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('AI note generation error:', error);
       res.status(500).json({ 
         error: "Failed to generate financial note", 
@@ -1887,7 +1887,7 @@ Generate the note content:`;
         apiKeyAvailable: !!process.env.OPENAI_API_KEY,
         response 
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("OpenAI test route error:", error);
       res.status(500).json({ 
         success: false, 
@@ -1923,7 +1923,7 @@ Generate the note content:`;
         validation,
         timestamp: new Date().toISOString()
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Trial balance validation error:', error);
       res.status(500).json({ 
         error: 'Validation failed', 
@@ -1944,7 +1944,7 @@ Generate the note content:`;
         validation,
         timestamp: new Date().toISOString()
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Financial statement validation error:', error);
       res.status(500).json({ 
         error: 'Validation failed', 
@@ -1970,7 +1970,7 @@ Generate the note content:`;
         drillDown,
         timestamp: new Date().toISOString()
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Balance sheet drill-down error:', error);
       res.status(500).json({ 
         error: 'Drill-down failed', 
@@ -1995,7 +1995,7 @@ Generate the note content:`;
         drillDown,
         timestamp: new Date().toISOString()
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Profit & Loss drill-down error:', error);
       res.status(500).json({ 
         error: 'Drill-down failed', 
@@ -2020,10 +2020,198 @@ Generate the note content:`;
         journalEntries,
         timestamp: new Date().toISOString()
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Journal entries drill-down error:', error);
       res.status(500).json({ 
         error: 'Drill-down failed', 
+        details: error.message 
+      });
+    }
+  });
+
+  // ====== COMPANIES HOUSE FILING API ENDPOINTS ======
+  // These endpoints address the critical production gap for actual filing submissions
+  
+  /**
+   * Submit annual accounts to Companies House
+   * This is the missing capability that prevents actual account submissions
+   */
+  app.post('/api/companies-house/submit/annual-accounts', async (req, res) => {
+    try {
+      const { 
+        companyNumber, 
+        accounts, 
+        directors, 
+        authenticatedUser 
+      } = req.body;
+
+      // Validate required data
+      if (!companyNumber || !accounts || !authenticatedUser) {
+        return res.status(400).json({ 
+          error: 'Missing required fields: companyNumber, accounts, and authenticatedUser' 
+        });
+      }
+
+      // Submit to Companies House
+      const submissionResult = await companiesHouseFilingService.submitAnnualAccounts({
+        companyNumber,
+        accounts: {
+          balanceSheet: accounts.balanceSheet,
+          profitLoss: accounts.profitLoss,
+          notes: accounts.notes,
+          accountsType: accounts.accountsType || 'micro',
+          accountingPeriodEnd: accounts.accountingPeriodEnd,
+          accountingPeriodStart: accounts.accountingPeriodStart
+        },
+        directors: directors || [],
+        authenticatedUser
+      });
+
+      // Store filing record in database
+      await storage.createFiling({
+        type: 'annual_accounts',
+        companyId: parseInt(companyNumber), // In production, you'd map this properly
+        userId: 1, // Get from authenticated user
+        status: 'submitted',
+        data: {
+          submissionId: submissionResult.submissionId,
+          submissionResult,
+          accounts
+        },
+        progress: 100
+      });
+
+      res.json({
+        success: true,
+        ...submissionResult
+      });
+
+    } catch (error: any) {
+      console.error('Annual accounts submission error:', error);
+      res.status(500).json({ 
+        error: 'Failed to submit annual accounts',
+        details: error.message 
+      });
+    }
+  });
+
+  /**
+   * Submit confirmation statement (CS01) to Companies House
+   */
+  app.post('/api/companies-house/submit/confirmation-statement', async (req, res) => {
+    try {
+      const { 
+        companyNumber, 
+        statementDate, 
+        madeUpToDate, 
+        confirmationData, 
+        authenticatedUser 
+      } = req.body;
+
+      // Validate required data
+      if (!companyNumber || !statementDate || !madeUpToDate || !authenticatedUser) {
+        return res.status(400).json({ 
+          error: 'Missing required fields: companyNumber, statementDate, madeUpToDate, and authenticatedUser' 
+        });
+      }
+
+      // Submit to Companies House
+      const submissionResult = await companiesHouseFilingService.submitConfirmationStatement({
+        companyNumber,
+        statementDate,
+        madeUpToDate,
+        confirmationData: {
+          sicCodes: confirmationData.sicCodes || [],
+          shareholders: confirmationData.shareholders || [],
+          officers: confirmationData.officers || [],
+          tradingStatus: confirmationData.tradingStatus || 'trading',
+          registeredOffice: confirmationData.registeredOffice
+        },
+        authenticatedUser
+      });
+
+      // Store filing record
+      await storage.createFiling({
+        type: 'confirmation_statement',
+        companyId: parseInt(companyNumber),
+        userId: 1, // Get from authenticated user
+        status: 'submitted',
+        data: {
+          submissionId: submissionResult.submissionId,
+          submissionResult,
+          confirmationData
+        },
+        progress: 100
+      });
+
+      res.json({
+        success: true,
+        ...submissionResult
+      });
+
+    } catch (error: any) {
+      console.error('Confirmation statement submission error:', error);
+      res.status(500).json({ 
+        error: 'Failed to submit confirmation statement',
+        details: error.message 
+      });
+    }
+  });
+
+  /**
+   * Check filing submission status
+   * Allows tracking of submitted filings
+   */
+  app.get('/api/companies-house/submission-status/:submissionId', async (req, res) => {
+    try {
+      const { submissionId } = req.params;
+      
+      const status = await companiesHouseFilingService.getFilingStatus(submissionId);
+      
+      res.json({
+        success: true,
+        submissionId,
+        ...status
+      });
+
+    } catch (error: any) {
+      console.error('Filing status check error:', error);
+      res.status(500).json({ 
+        error: 'Failed to check filing status',
+        details: error.message 
+      });
+    }
+  });
+
+  /**
+   * Calculate filing fees before submission
+   * Helps users understand costs upfront
+   */
+  app.post('/api/companies-house/calculate-fees', async (req, res) => {
+    try {
+      const { filingType, accountsType } = req.body;
+
+      if (!filingType) {
+        return res.status(400).json({ error: 'Filing type is required' });
+      }
+
+      // Use the private method through a workaround (in production, make it public)
+      const fees = (companiesHouseFilingService as any).calculateFilingFees(filingType, accountsType);
+      
+      res.json({
+        success: true,
+        fees: {
+          ...fees,
+          description: filingType === 'annual_accounts' 
+            ? `Annual accounts filing (${accountsType || 'micro'} company)`
+            : 'Confirmation statement filing'
+        }
+      });
+
+    } catch (error: any) {
+      console.error('Fee calculation error:', error);
+      res.status(500).json({ 
+        error: 'Failed to calculate fees',
         details: error.message 
       });
     }

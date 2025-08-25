@@ -93,9 +93,11 @@ export const insertFilingSchema = createInsertSchema(filings).pick({
   companyId: true,
   userId: true,
   type: true,
+  status: true,
   dueDate: true,
   data: true,
   documentIds: true,
+  progress: true,
 });
 
 // Activities
