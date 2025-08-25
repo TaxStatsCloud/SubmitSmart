@@ -66,7 +66,7 @@ export default function EnhancedDashboard() {
           ]
         };
       } catch (error) {
-        console.error('Dashboard data fetch failed:', error);
+        // Handle dashboard data fetch errors silently
         // Return fallback data to prevent component crash
         return {
           filings: [],

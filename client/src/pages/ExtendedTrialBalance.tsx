@@ -211,7 +211,7 @@ export default function ExtendedTrialBalance() {
             });
           }
         } catch (error) {
-          console.error('Error updating breakdown item:', error);
+          // Handle breakdown item update errors silently
           toast({
             title: "Update Failed",
             description: "Failed to update breakdown item",
@@ -235,7 +235,7 @@ export default function ExtendedTrialBalance() {
 
   useEffect(() => {
     loadAiProcessedData().catch((error) => {
-      console.error('Failed to load AI processed data in useEffect:', error);
+      // Handle AI processed data loading errors silently
       // Don't crash the component on initial data load failure
       setLoading(false);
     });
@@ -352,7 +352,7 @@ export default function ExtendedTrialBalance() {
         setTrialBalance(entries);
       }
     } catch (error) {
-      console.error('Error loading processed data:', error);
+      // Handle processed data loading errors silently
       toast({
         title: "Error loading data",
         description: "Failed to load AI processed data for trial balance.",
@@ -517,7 +517,7 @@ export default function ExtendedTrialBalance() {
         });
       }
     } catch (error) {
-      console.error('Error generating AI journal entry:', error);
+      // Handle AI journal entry generation errors silently
       toast({
         title: "AI Generation Failed",
         description: "Failed to generate journal entry",
@@ -883,7 +883,7 @@ export default function ExtendedTrialBalance() {
               filingType="corporation_tax"
               companyType="small"
               onDocumentUpload={(requirement, files) => {
-                console.log('Uploading documents for:', requirement.name, files);
+                // Uploading supporting documents
                 // Handle document upload logic here
                 toast({
                   title: "Documents Uploaded",

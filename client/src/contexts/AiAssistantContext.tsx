@@ -32,7 +32,7 @@ export const AiAssistantProvider = ({ children }: AiAssistantProviderProps) => {
   useEffect(() => {
     if (isAssistantOpen && user) {
       fetchChatHistory().catch((error) => {
-        console.error('Failed to load chat history in useEffect:', error);
+        // Handle chat history loading errors silently
         // Don't crash the component on chat history failure
       });
     }
@@ -47,7 +47,7 @@ export const AiAssistantProvider = ({ children }: AiAssistantProviderProps) => {
       const data = await response.json();
       setMessages(data);
     } catch (error) {
-      console.error("Failed to load chat history:", error);
+      // Handle chat history loading errors silently
       // Don't show toast for this error as it's not critical
     } finally {
       setIsLoading(false);

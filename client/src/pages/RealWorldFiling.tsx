@@ -94,7 +94,7 @@ const RealWorldFiling = () => {
         existingFile: existingDocs.find((doc: any) => doc.name === file.name && doc.size === file.size)?.id
       }));
     } catch (error) {
-      console.error('Error checking duplicates:', error);
+      // Handle duplicate checking errors silently
       return [];
     }
   };
@@ -105,7 +105,7 @@ const RealWorldFiling = () => {
       const data = await response.json();
       setAiProcessedData(data);
     } catch (error) {
-      console.error('Error fetching AI processed data:', error);
+      // Handle AI processed data fetching errors silently
     }
   };
 
@@ -198,7 +198,7 @@ const RealWorldFiling = () => {
             method: 'DELETE'
           });
         } catch (error) {
-          console.error('Error deleting duplicate:', error);
+          // Handle duplicate deletion errors silently
         }
       }
       
@@ -214,7 +214,7 @@ const RealWorldFiling = () => {
 
   const saveSectionMutation = useMutation({
     mutationFn: async (sectionData: any) => {
-      console.log('Saving section data:', sectionData);
+      // Saving section data
       const response = await fetch('/api/tax-filings/1/2024-25/section', {
         method: 'POST',
         headers: {
@@ -224,7 +224,7 @@ const RealWorldFiling = () => {
       });
       
       const result = await response.json();
-      console.log('Save response:', result);
+      // Processing save response
       
       if (!response.ok) {
         throw new Error(result.error || 'Failed to save section');
@@ -233,7 +233,7 @@ const RealWorldFiling = () => {
       return result;
     },
     onSuccess: (data) => {
-      console.log('Save successful:', data);
+      // Save operation successful
       toast({
         title: "Section saved",
         description: "Your progress has been saved successfully",
@@ -241,7 +241,7 @@ const RealWorldFiling = () => {
       queryClient.invalidateQueries({ queryKey: ['tax-filings'] });
     },
     onError: (error) => {
-      console.error('Save error:', error);
+      // Handle save operation errors silently
       toast({
         title: "Save failed",
         description: error.message || "Failed to save section data",
@@ -314,7 +314,7 @@ const RealWorldFiling = () => {
         throw new Error('Upload failed');
       }
     } catch (error) {
-      console.error('Upload error:', error);
+      // Handle upload errors silently
       toast({
         title: "Upload failed",
         description: "Failed to upload document",

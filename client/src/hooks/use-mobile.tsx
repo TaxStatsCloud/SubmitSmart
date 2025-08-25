@@ -1,6 +1,7 @@
 import * as React from "react"
+import { APP_CONFIG } from '@shared/constants'
 
-const MOBILE_BREAKPOINT = 768
+const MOBILE_BREAKPOINT = APP_CONFIG.LIMITS.MOBILE_BREAKPOINT
 
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined)
@@ -12,7 +13,7 @@ export function useIsMobile() {
         try {
           setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
         } catch (error) {
-          console.error('Mobile detection onChange error:', error);
+          // Silently handle mobile detection errors in production
         }
       }
       mql.addEventListener("change", onChange)
@@ -21,11 +22,11 @@ export function useIsMobile() {
         try {
           mql.removeEventListener("change", onChange)
         } catch (error) {
-          console.error('Mobile detection cleanup error:', error);
+          // Silently handle cleanup errors in production
         }
       }
     } catch (error) {
-      console.error('Mobile detection initialization error:', error);
+      // Silently handle initialization errors and fallback to desktop
       // Fallback to desktop mode if detection fails
       setIsMobile(false);
     }

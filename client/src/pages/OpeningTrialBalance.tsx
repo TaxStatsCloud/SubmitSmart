@@ -58,7 +58,7 @@ export default function OpeningTrialBalance() {
         const response = await apiRequest('GET', `/api/opening-trial-balances/${selectedCompany}`);
         return await response.json();
       } catch (error) {
-        console.error('Failed to load opening trial balances:', error);
+        // Handle opening trial balance loading errors silently
         throw error; // Re-throw for TanStack Query error handling
       }
     },

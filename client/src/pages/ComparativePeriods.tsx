@@ -70,7 +70,7 @@ export default function ComparativePeriods() {
         const response = await apiRequest('GET', `/api/prior-year-data/${selectedCompany}`);
         return await response.json();
       } catch (error) {
-        console.error('Failed to load prior year data:', error);
+        // Handle prior year data loading errors silently
         throw error;
       }
     },
@@ -85,7 +85,7 @@ export default function ComparativePeriods() {
         const response = await apiRequest('GET', `/api/comparative-periods/${selectedCompany}`);
         return await response.json();
       } catch (error) {
-        console.error('Failed to load comparative periods:', error);
+        // Handle comparative periods loading errors silently
         throw error;
       }
     },
@@ -100,7 +100,7 @@ export default function ComparativePeriods() {
         const response = await apiRequest('GET', `/api/companies-house-filings/${selectedCompany}`);
         return await response.json();
       } catch (error) {
-        console.error('Failed to load Companies House filings:', error);
+        // Handle Companies House filings loading errors silently
         throw error;
       }
     },

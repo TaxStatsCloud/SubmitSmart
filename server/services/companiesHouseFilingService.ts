@@ -1,5 +1,6 @@
 import https from 'https';
 import { XMLBuilder } from 'fast-xml-parser';
+import { APP_CONFIG } from '@shared/constants';
 
 interface FilingSubmissionRequest {
   companyNumber: string;
@@ -292,17 +293,17 @@ class CompaniesHouseFilingService {
       case 'annual_accounts':
         switch (accountsType) {
           case 'micro':
-            baseFee = 12; // £12 for micro-entity accounts
+            baseFee = APP_CONFIG.COMPANIES_HOUSE_FEES.ACCOUNTS.MICRO;
             break;
           case 'small':
-            baseFee = 12; // £12 for small company accounts
+            baseFee = APP_CONFIG.COMPANIES_HOUSE_FEES.ACCOUNTS.SMALL;
             break;
           case 'medium':
           case 'large':
-            baseFee = 40; // £40 for full accounts
+            baseFee = APP_CONFIG.COMPANIES_HOUSE_FEES.ACCOUNTS.LARGE;
             break;
           default:
-            baseFee = 12;
+            baseFee = APP_CONFIG.COMPANIES_HOUSE_FEES.ACCOUNTS.DEFAULT;
         }
         break;
     }

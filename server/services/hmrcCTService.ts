@@ -1,5 +1,6 @@
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 import fetch from 'node-fetch';
+import { APP_CONFIG } from '@shared/constants';
 
 /**
  * HMRC Corporation Tax API Service
@@ -12,13 +13,13 @@ import fetch from 'node-fetch';
  */
 
 export class HMRCCTService {
-  private readonly vendorId = '9233';
-  private readonly testSenderID = 'CTUser100';
-  private readonly testUTR = '8596148860';
+  private readonly vendorId = APP_CONFIG.HMRC.VENDOR_ID;
+  private readonly testSenderID = APP_CONFIG.HMRC.TEST_SENDER_ID;
+  private readonly testUTR = APP_CONFIG.HMRC.TEST_UTR;
   
   // Test environment endpoints
-  private readonly testSubmissionEndpoint = 'https://test-api.service.hmrc.gov.uk/submissions/corporation-tax';
-  private readonly testPollingEndpoint = 'https://test-api.service.hmrc.gov.uk/polling/corporation-tax';
+  private readonly testSubmissionEndpoint = APP_CONFIG.HMRC.ENDPOINTS.TEST_SUBMISSION;
+  private readonly testPollingEndpoint = APP_CONFIG.HMRC.ENDPOINTS.TEST_POLLING;
   
   private xmlBuilder: XMLBuilder;
   private xmlParser: XMLParser;

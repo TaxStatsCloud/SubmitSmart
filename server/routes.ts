@@ -140,7 +140,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ clientSecret: paymentIntent.client_secret });
     } catch (error: any) {
-      console.error('Stripe payment intent error:', error);
+      // Handle Stripe payment intent errors (logged by service)
       res.status(500).json({ 
         message: "Error creating payment intent: " + error.message 
       });
@@ -155,7 +155,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       event = stripe.webhooks.constructEvent(req.body, sig as string, process.env.STRIPE_WEBHOOK_SECRET!);
     } catch (err: any) {
-      console.log(`Webhook signature verification failed.`, err);
+      // Webhook signature verification failed
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
@@ -173,7 +173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             parseInt(credits)
           );
         } catch (error: any) {
-          console.error('Error sending payment confirmation:', error);
+          // Handle payment confirmation email errors silently
         }
       }
     }
@@ -393,7 +393,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      console.log('Received validated tax filing save request:', { companyId, period, sectionId, data });
+      // Processing validated tax filing save request
       
       // Get existing filing
       const existingFilings = await storage.getFilingsByCompany(Number(companyId));
@@ -434,7 +434,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         progress
       });
       
-      console.log('Successfully saved tax filing section:', updatedFiling);
+      // Tax filing section saved successfully
       
       res.json({ 
         success: true, 
@@ -442,7 +442,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data: updatedFiling
       });
     } catch (error: any) {
-      console.error('Tax filing section save error:', error);
+      // Handle tax filing section save errors (logged by service)
       res.status(500).json({ error: 'Failed to save tax filing section' });
     }
   });
@@ -545,7 +545,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const data = await storage.getPriorYearDataByCompany(parseInt(companyId));
       res.json(data);
     } catch (error: any) {
-      console.error('Error getting prior year data:', error);
+      // Handle prior year data retrieval errors (logged by service)
       res.status(500).json({ error: 'Failed to retrieve prior year data' });
     }
   });
@@ -556,7 +556,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const data = await storage.getPriorYearDataByCompanyAndYear(parseInt(companyId), year);
       res.json(data);
     } catch (error: any) {
-      console.error('Error getting prior year data for specific year:', error);
+      // Handle specific year data retrieval errors (logged by service)
       res.status(500).json({ error: 'Failed to retrieve prior year data' });
     }
   });
@@ -567,7 +567,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await storage.createPriorYearData(priorYearData);
       res.json(result);
     } catch (error: any) {
-      console.error('Error creating prior year data:', error);
+      // Handle prior year data creation errors (logged by service)
       res.status(500).json({ error: 'Failed to create prior year data' });
     }
   });
@@ -579,7 +579,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const periods = await storage.getComparativePeriodByCompany(parseInt(companyId));
       res.json(periods);
     } catch (error: any) {
-      console.error('Error getting comparative periods:', error);
+      // Handle comparative periods retrieval errors (logged by service)
       res.status(500).json({ error: 'Failed to retrieve comparative periods' });
     }
   });
@@ -590,7 +590,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const period = await storage.getActiveComparativePeriod(parseInt(companyId));
       res.json(period);
     } catch (error: any) {
-      console.error('Error getting active comparative period:', error);
+      // Handle active comparative period retrieval errors (logged by service)
       res.status(500).json({ error: 'Failed to retrieve active comparative period' });
     }
   });
@@ -601,7 +601,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await storage.createComparativePeriod(periodData);
       res.json(result);
     } catch (error: any) {
-      console.error('Error creating comparative period:', error);
+      // Handle comparative period creation errors (logged by service)
       res.status(500).json({ error: 'Failed to create comparative period' });
     }
   });
@@ -613,7 +613,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const filings = await storage.getCompaniesHouseFilingsByCompany(parseInt(companyId));
       res.json(filings);
     } catch (error: any) {
-      console.error('Error getting Companies House filings:', error);
+      // Handle Companies House filings retrieval errors (logged by service)
       res.status(500).json({ error: 'Failed to retrieve Companies House filings' });
     }
   });
@@ -624,7 +624,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const filings = await storage.getCompaniesHouseFilingsByRegistrationNumber(registrationNumber);
       res.json(filings);
     } catch (error: any) {
-      console.error('Error getting Companies House filings by registration number:', error);
+      // Handle Companies House filings by registration errors (logged by service)
       res.status(500).json({ error: 'Failed to retrieve Companies House filings' });
     }
   });
@@ -661,7 +661,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(results);
     } catch (error: any) {
-      console.error('Error importing Companies House filings:', error);
+      // Handle Companies House filings import errors (logged by service)
       res.status(500).json({ error: 'Failed to import Companies House filings' });
     }
   });

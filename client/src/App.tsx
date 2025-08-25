@@ -104,12 +104,18 @@ function App() {
   // Global error handlers for unhandled rejections
   useEffect(() => {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      console.error('Unhandled promise rejection:', event.reason);
+      // Log unhandled promise rejections in development only
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Unhandled promise rejection:', event.reason);
+      }
       event.preventDefault(); // Prevent the error from appearing in console as unhandled
     };
 
     const handleError = (event: ErrorEvent) => {
-      console.error('Global error:', event.error);
+      // Log global errors in development only
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Global error:', event.error);
+      }
     };
 
     window.addEventListener('unhandledrejection', handleUnhandledRejection);
@@ -128,9 +134,9 @@ function App() {
     const timer = setTimeout(() => {
       try {
         initWebSocket();
-        console.log("WebSocket connection initialized");
+        // WebSocket connection established successfully
       } catch (error) {
-        console.error("Failed to initialize WebSocket:", error);
+        // Silently handle WebSocket initialization failures
       }
     }, 2000);
     

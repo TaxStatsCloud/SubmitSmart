@@ -10,6 +10,8 @@
 
 import OpenAI from "openai";
 import { logger } from "../utils/logger";
+import { APP_CONFIG, DOCUMENT_ANALYSIS_PROMPTS } from '@shared/constants';
+import { Logger } from '@shared/logger';
 
 // Create logger instance for this service
 const aiLogger = logger.withContext('OpenAIService');
@@ -21,8 +23,8 @@ if (!process.env.OPENAI_API_KEY) {
 
 // Log status about API key (for debugging)
 const hasApiKey = !!process.env.OPENAI_API_KEY;
-console.log('Initializing OpenAI client');
-console.log(`API Key available: ${hasApiKey ? 'Yes (not showing for security)' : 'No'}`);
+Logger.info('Initializing OpenAI client');
+Logger.info(`API Key available: ${hasApiKey ? 'Yes (not showing for security)' : 'No'}`);
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -45,16 +47,16 @@ export async function generateCompletion(
       throw new Error('OpenAI API key is not configured');
     }
 
-    const messages = [
-      ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),
-      { role: "user", content: prompt }
+    const messages: Array<{role: 'system' | 'user' | 'assistant', content: string}> = [
+      ...(systemPrompt ? [{ role: "system" as const, content: systemPrompt }] : []),
+      { role: "user" as const, content: prompt }
     ];
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      model: APP_CONFIG.OPENAI.MODEL,
       messages,
-      temperature: 0.7,
-      max_tokens: 1000
+      temperature: APP_CONFIG.OPENAI.TEMPERATURE.CREATIVE,
+      max_tokens: APP_CONFIG.OPENAI.MAX_TOKENS.STANDARD
     });
 
     return response.choices[0].message.content || '';
@@ -84,16 +86,16 @@ export async function generateStructuredResponse<T>(
     You must respond with valid JSON that can be parsed directly. Do not include any explanations, markdown formatting, or surrounding backticks. 
     The response should be a valid JSON object that matches the expected schema.`;
 
-    const messages = [
-      { role: "system", content: enhancedSystemPrompt },
-      { role: "user", content: prompt }
+    const messages: Array<{role: 'system' | 'user' | 'assistant', content: string}> = [
+      { role: "system" as const, content: enhancedSystemPrompt },
+      { role: "user" as const, content: prompt }
     ];
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      model: APP_CONFIG.OPENAI.MODEL,
       messages,
-      temperature: 0.3,
-      max_tokens: 2000,
+      temperature: APP_CONFIG.OPENAI.TEMPERATURE.STRUCTURED,
+      max_tokens: APP_CONFIG.OPENAI.MAX_TOKENS.EXTENDED,
       response_format: { type: "json_object" }
     });
 
@@ -125,59 +127,21 @@ export async function analyzeDocument<T>(
     let systemPrompt = `You are an expert financial document analyzer specializing in ${documentType} analysis. 
                        Extract key information from the document and provide a structured analysis.`;
 
-    // Customize prompt based on document type
+    // Get prompt based on document type
     let prompt = '';
     switch (documentType) {
       case 'trial_balance':
-        prompt = `Analyze this trial balance document and extract:
-                 - Period end date
-                 - Total debits and credits
-                 - Major account categories with their values
-                 - Any significant observations or potential issues
-                 
-                 Document content:
-                 ${documentContent}
-                 
-                 Respond with a JSON structure that includes these extracted fields.`;
+        prompt = DOCUMENT_ANALYSIS_PROMPTS.TRIAL_BALANCE + `\n\nDocument content:\n${documentContent}`;
         break;
       case 'invoice':
-        prompt = `Analyze this invoice document and extract:
-                 - Invoice number
-                 - Issue date
-                 - Due date
-                 - Vendor/supplier information
-                 - Line items with descriptions, quantities, and amounts
-                 - Total amount (excluding tax)
-                 - VAT/tax amount
-                 - Total amount (including tax)
-                 
-                 Document content:
-                 ${documentContent}
-                 
-                 Respond with a JSON structure that includes these extracted fields.`;
+        prompt = DOCUMENT_ANALYSIS_PROMPTS.INVOICE + `\n\nDocument content:\n${documentContent}`;
         break;
       case 'bank_statement':
-        prompt = `Analyze this bank statement document and extract:
-                 - Bank name
-                 - Account number (masked if present)
-                 - Statement period (start and end dates)
-                 - Opening balance
-                 - Closing balance
-                 - Significant transactions (deposits and withdrawals)
-                 - Any bank fees or charges
-                 
-                 Document content:
-                 ${documentContent}
-                 
-                 Respond with a JSON structure that includes these extracted fields.`;
+        prompt = DOCUMENT_ANALYSIS_PROMPTS.BANK_STATEMENT + `\n\nDocument content:\n${documentContent}`;
         break;
       default:
-        prompt = `Analyze this ${documentType} document and extract key information relevant for financial reporting and compliance.
-                 
-                 Document content:
-                 ${documentContent}
-                 
-                 Respond with a JSON structure that includes all extracted fields.`;
+        prompt = DOCUMENT_ANALYSIS_PROMPTS.DEFAULT(documentType) + `\n\nDocument content:\n${documentContent}`;
+        break;
     }
 
     return await generateStructuredResponse<T>(prompt, systemPrompt);

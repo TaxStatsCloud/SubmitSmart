@@ -33,14 +33,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setLoading(false);
         }
       } catch (error) {
-        console.error('Redirect result handling failed:', error);
+        // Handle redirect result errors silently
         // Ensure loading is still set to false even on error
         setLoading(false);
       }
     };
     
     initAuth().catch((error) => {
-      console.error('Auth initialization failed:', error);
+      // Handle auth initialization errors silently
       setLoading(false);
     });
 
@@ -58,7 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Redirect to login page after successful logout
       window.location.href = '/login';
     } catch (error) {
-      console.error('Error signing out:', error);
+      // Handle sign out errors silently
     }
   };
 

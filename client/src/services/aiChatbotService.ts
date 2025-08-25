@@ -102,7 +102,7 @@ Always provide accurate, helpful guidance on UK regulations and platform usage. 
 
       return assistantMessage;
     } catch (error) {
-      console.error('AI Chatbot Error:', error);
+      // Handle AI chatbot errors silently
       return "I'm experiencing technical difficulties. Please try again or contact support if the issue persists.";
     }
   }
