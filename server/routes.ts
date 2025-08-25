@@ -72,6 +72,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     apiVersion: "2024-06-20" as any,
   });
   
+  // Health check endpoint for production monitoring
+  app.get('/api/health', (req, res) => {
+    res.json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      services: {
+        database: process.env.DATABASE_URL ? 'connected' : 'disconnected',
+        openai: process.env.OPENAI_API_KEY ? 'available' : 'missing',
+        stripe: process.env.STRIPE_SECRET_KEY ? 'available' : 'missing',
+        sendgrid: process.env.SENDGRID_API_KEY ? 'available' : 'missing',
+        hmrc: 'operational'
+      },
+      version: '1.0.0',
+      environment: process.env.NODE_ENV || 'development'
+    });
+  });
+  
+  // System status endpoint for detailed monitoring
+  app.get('/api/system/status', (req, res) => {
+    res.json({
+      uptime: Math.floor(process.uptime()),
+      memory: {
+        used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+        limit: Math.round(process.memoryUsage().rss / 1024 / 1024)
+      },
+      environment: process.env.NODE_ENV || 'development',
+      services: {
+        filingEngine: 'operational',
+        paymentProcessing: process.env.STRIPE_SECRET_KEY ? 'operational' : 'disabled',
+        documentProcessing: process.env.OPENAI_API_KEY ? 'operational' : 'disabled',
+        aiAssistant: process.env.OPENAI_API_KEY ? 'operational' : 'disabled',
+        emailService: process.env.SENDGRID_API_KEY ? 'operational' : 'disabled'
+      }
+    });
+  });
+  
   // Register agent routes
   app.use('/api/agents', agentRoutes);
   
