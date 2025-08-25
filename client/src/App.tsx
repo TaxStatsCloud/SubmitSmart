@@ -101,6 +101,26 @@ function Router() {
 }
 
 function App() {
+  // Global error handlers for unhandled rejections
+  useEffect(() => {
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error('Unhandled promise rejection:', event.reason);
+      event.preventDefault(); // Prevent the error from appearing in console as unhandled
+    };
+
+    const handleError = (event: ErrorEvent) => {
+      console.error('Global error:', event.error);
+    };
+
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    window.addEventListener('error', handleError);
+
+    return () => {
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+      window.removeEventListener('error', handleError);
+    };
+  }, []);
+
   // Initialize WebSocket connection when App loads
   useEffect(() => {
     // Wait until the page is fully loaded to avoid

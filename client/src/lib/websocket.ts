@@ -7,6 +7,8 @@
 
 // Create and export WebSocket singleton
 let socket: WebSocket | null = null;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 5;
 
 // Initialize WebSocket connection
 export function initWebSocket(): WebSocket {
@@ -25,19 +27,33 @@ export function initWebSocket(): WebSocket {
   // Setup event handlers
   socket.addEventListener("open", () => {
     console.log("WebSocket connection established");
+    reconnectAttempts = 0; // Reset counter on successful connection
   });
   
   socket.addEventListener("error", (event) => {
     console.error("WebSocket error:", event);
+    // Don't let WebSocket errors become unhandled rejections
+    event.preventDefault?.();
   });
   
   socket.addEventListener("close", () => {
     console.log("WebSocket connection closed");
-    // Attempt to reconnect after delay
-    setTimeout(() => {
-      socket = null;
-      initWebSocket();
-    }, 5000);
+    // Attempt to reconnect with limits to prevent infinite loops
+    if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+      reconnectAttempts++;
+      console.log(`WebSocket reconnection attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}`);
+      setTimeout(() => {
+        socket = null;
+        try {
+          initWebSocket();
+        } catch (error) {
+          console.error('WebSocket reconnection failed:', error);
+          // Don't rethrow to prevent unhandled rejections
+        }
+      }, 5000 * reconnectAttempts); // Exponential backoff
+    } else {
+      console.warn('Max WebSocket reconnection attempts reached');
+    }
   });
   
   return socket;
