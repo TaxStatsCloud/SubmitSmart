@@ -24,11 +24,9 @@ const Sidebar = () => {
         <div className="flex flex-col flex-grow p-4 overflow-y-auto">
           <nav className="flex-1 space-y-1">
             {/* Dashboard */}
-            <Link href="/">
-              <a className={`sidebar-link ${isActive("/") ? "active" : ""}`}>
-                <span className="material-icons sidebar-icon">dashboard</span>
-                Dashboard
-              </a>
+            <Link href="/" className={`sidebar-link ${isActive("/") ? "active" : ""}`}>
+              <span className="material-icons sidebar-icon">dashboard</span>
+              Dashboard
             </Link>
 
             {/* Filings */}
@@ -37,46 +35,34 @@ const Sidebar = () => {
                 Filings
               </h3>
               
-              <Link href="/filings/confirmation-statements">
-                <a className={`sidebar-link ${isActive("/filings/confirmation-statements") ? "active" : ""}`}>
-                  <span className="material-icons sidebar-icon">description</span>
-                  Confirmation Statements
-                </a>
+              <Link href="/filings/confirmation-statements" className={`sidebar-link ${isActive("/filings/confirmation-statements") ? "active" : ""}`}>
+                <span className="material-icons sidebar-icon">description</span>
+                Confirmation Statements
               </Link>
               
-              <Link href="/filings/annual-accounts">
-                <a className={`sidebar-link ${isActive("/filings/annual-accounts") ? "active" : ""}`}>
-                  <span className="material-icons sidebar-icon">receipt_long</span>
-                  Annual Accounts
-                </a>
+              <Link href="/filings/annual-accounts" className={`sidebar-link ${isActive("/filings/annual-accounts") ? "active" : ""}`}>
+                <span className="material-icons sidebar-icon">receipt_long</span>
+                Annual Accounts
               </Link>
               
-              <Link href="/filings/corporation-tax">
-                <a className={`sidebar-link ${isActive("/filings/corporation-tax") ? "active" : ""}`}>
-                  <span className="material-icons sidebar-icon">calculate</span>
-                  Corporation Tax (CT600)
-                </a>
+              <Link href="/filings/corporation-tax" className={`sidebar-link ${isActive("/filings/corporation-tax") ? "active" : ""}`}>
+                <span className="material-icons sidebar-icon">calculate</span>
+                Corporation Tax (CT600)
               </Link>
               
-              <Link href="/real-world-filing">
-                <a className={`sidebar-link ${isActive("/real-world-filing") ? "active" : ""}`}>
-                  <span className="material-icons sidebar-icon">assignment</span>
-                  Real-World Filing Demo
-                </a>
+              <Link href="/real-world-filing" className={`sidebar-link ${isActive("/real-world-filing") ? "active" : ""}`}>
+                <span className="material-icons sidebar-icon">assignment</span>
+                Real-World Filing Demo
               </Link>
               
-              <Link href="/trial-balance">
-                <a className={`sidebar-link ${isActive("/trial-balance") ? "active" : ""}`}>
-                  <span className="material-icons sidebar-icon">balance</span>
-                  Trial Balance
-                </a>
+              <Link href="/trial-balance" className={`sidebar-link ${isActive("/trial-balance") ? "active" : ""}`}>
+                <span className="material-icons sidebar-icon">balance</span>
+                Trial Balance
               </Link>
               
-              <Link href="/financial-reporting">
-                <a className={`sidebar-link ${isActive("/financial-reporting") ? "active" : ""}`}>
-                  <span className="material-icons sidebar-icon">analytics</span>
-                  Financial Reporting
-                </a>
+              <Link href="/financial-reporting" className={`sidebar-link ${isActive("/financial-reporting") ? "active" : ""}`}>
+                <span className="material-icons sidebar-icon">analytics</span>
+                Financial Reporting
               </Link>
             </div>
 
@@ -86,18 +72,14 @@ const Sidebar = () => {
                 Documents
               </h3>
               
-              <Link href="/upload">
-                <a className={`sidebar-link ${isActive("/upload") ? "active" : ""}`}>
-                  <span className="material-icons sidebar-icon">upload_file</span>
-                  Upload Documents
-                </a>
+              <Link href="/upload" className={`sidebar-link ${isActive("/upload") ? "active" : ""}`}>
+                <span className="material-icons sidebar-icon">upload_file</span>
+                Upload Documents
               </Link>
               
-              <Link href="/documents">
-                <a className={`sidebar-link ${isActive("/documents") ? "active" : ""}`}>
-                  <span className="material-icons sidebar-icon">folder</span>
-                  Document Library
-                </a>
+              <Link href="/documents" className={`sidebar-link ${isActive("/documents") ? "active" : ""}`}>
+                <span className="material-icons sidebar-icon">folder</span>
+                Document Library
               </Link>
             </div>
 
@@ -107,46 +89,34 @@ const Sidebar = () => {
                 Account
               </h3>
               
-              <Link href="/company">
-                <a className={`sidebar-link ${isActive("/company") ? "active" : ""}`}>
-                  <span className="material-icons sidebar-icon">business</span>
-                  Company Details
-                </a>
+              <Link href="/company" className={`sidebar-link ${isActive("/company") ? "active" : ""}`}>
+                <span className="material-icons sidebar-icon">business</span>
+                Company Details
               </Link>
               
-              <Link href="/users">
-                <a className={`sidebar-link ${isActive("/users") ? "active" : ""}`}>
-                  <span className="material-icons sidebar-icon">person</span>
-                  User Management
-                </a>
+              <Link href="/users" className={`sidebar-link ${isActive("/users") ? "active" : ""}`}>
+                <span className="material-icons sidebar-icon">person</span>
+                User Management
               </Link>
               
-              <Link href="/billing">
-                <a className={`sidebar-link ${isActive("/billing") ? "active" : ""}`}>
-                  <span className="material-icons sidebar-icon">credit_card</span>
-                  Billing & Credits
-                </a>
+              <Link href="/billing" className={`sidebar-link ${isActive("/billing") ? "active" : ""}`}>
+                <span className="material-icons sidebar-icon">credit_card</span>
+                Billing & Credits
               </Link>
               
-              <Link href="/credits">
-                <a className={`sidebar-link sidebar-sublink ${isActive("/credits") ? "active" : ""}`}>
-                  <span className="material-icons sidebar-icon">add_card</span>
-                  Purchase Credits
-                </a>
+              <Link href="/credits" className={`sidebar-link sidebar-sublink ${isActive("/credits") ? "active" : ""}`}>
+                <span className="material-icons sidebar-icon">add_card</span>
+                Purchase Credits
               </Link>
               
-              <Link href="/subscription">
-                <a className={`sidebar-link sidebar-sublink ${isActive("/subscription") ? "active" : ""}`}>
-                  <span className="material-icons sidebar-icon">shopping_cart</span>
-                  Buy Credit Packs
-                </a>
+              <Link href="/subscription" className={`sidebar-link sidebar-sublink ${isActive("/subscription") ? "active" : ""}`}>
+                <span className="material-icons sidebar-icon">shopping_cart</span>
+                Buy Credit Packs
               </Link>
               
-              <Link href="/transactions">
-                <a className={`sidebar-link sidebar-sublink ${isActive("/transactions") ? "active" : ""}`}>
-                  <span className="material-icons sidebar-icon">receipt_long</span>
-                  Transaction History
-                </a>
+              <Link href="/transactions" className={`sidebar-link sidebar-sublink ${isActive("/transactions") ? "active" : ""}`}>
+                <span className="material-icons sidebar-icon">receipt_long</span>
+                Transaction History
               </Link>
             </div>
 
@@ -156,33 +126,27 @@ const Sidebar = () => {
                 Advanced Tools
               </h3>
               
-              <Link href="/tax-engine">
-                <a className={`sidebar-link ${isActive("/tax-engine") ? "active" : ""}`}>
-                  <span className="material-icons sidebar-icon">calculate</span>
-                  Tax Preparation Engine
-                </a>
+              <Link href="/tax-engine" className={`sidebar-link ${isActive("/tax-engine") ? "active" : ""}`}>
+                <span className="material-icons sidebar-icon">calculate</span>
+                Tax Preparation Engine
               </Link>
             </div>
             
             {/* Admin & System */}
-            {user?.role === 'admin' && (
+            {(user as any)?.role === 'admin' && (
               <div className="sidebar-section">
                 <h3 className="sidebar-heading">
                   Administration
                 </h3>
                 
-                <Link href="/agents">
-                  <a className={`sidebar-link ${isActive("/agents") ? "active" : ""}`}>
-                    <span className="material-icons sidebar-icon">smart_toy</span>
-                    Agent Manager
-                  </a>
+                <Link href="/agents" className={`sidebar-link ${isActive("/agents") ? "active" : ""}`}>
+                  <span className="material-icons sidebar-icon">smart_toy</span>
+                  Agent Manager
                 </Link>
                 
-                <Link href="/admin/dashboard">
-                  <a className={`sidebar-link ${isActive("/admin/dashboard") ? "active" : ""}`}>
-                    <span className="material-icons sidebar-icon">dashboard</span>
-                    Admin Dashboard
-                  </a>
+                <Link href="/admin/dashboard" className={`sidebar-link ${isActive("/admin/dashboard") ? "active" : ""}`}>
+                  <span className="material-icons sidebar-icon">dashboard</span>
+                  Admin Dashboard
                 </Link>
               </div>
             )}
@@ -193,13 +157,13 @@ const Sidebar = () => {
         <div className="flex items-center p-4 border-t border-neutral-200">
           <div className="flex-shrink-0">
             <Avatar>
-              <AvatarImage src={user?.profileImage || ""} alt={user?.fullName || ""} />
-              <AvatarFallback>{user?.fullName?.charAt(0) || "U"}</AvatarFallback>
+              <AvatarImage src={(user as any)?.profileImage || ""} alt={(user as any)?.displayName || user?.email || ""} />
+              <AvatarFallback>{(user as any)?.displayName?.charAt(0) || user?.email?.charAt(0) || "U"}</AvatarFallback>
             </Avatar>
           </div>
           <div className="ml-3">
-            <p className="text-sm font-medium text-neutral-700">{user?.fullName || "User"}</p>
-            <p className="text-xs text-neutral-500">{user?.role || "Guest"}</p>
+            <p className="text-sm font-medium text-neutral-700">{(user as any)?.displayName || user?.email || "User"}</p>
+            <p className="text-xs text-neutral-500">{(user as any)?.role || "User"}</p>
           </div>
           <Button 
             onClick={signOut}
