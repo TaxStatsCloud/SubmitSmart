@@ -11,14 +11,7 @@ const AnnualAccounts = () => {
   
   const { data: filing, isLoading } = useQuery({
     queryKey: ['/api/filings', 'annual_accounts'],
-    enabled: !!user?.id,
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to load annual accounts data",
-        variant: "destructive",
-      });
-    },
+    enabled: !!user?.uid,
   });
 
   // Get latest annual accounts filing or use default values

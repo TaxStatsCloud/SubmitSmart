@@ -23,7 +23,7 @@ const TaxEngine = () => {
   // Fetch user companies
   const { data: companies, isLoading: isLoadingCompanies } = useQuery({
     queryKey: ['/api/companies'],
-    enabled: !!user?.id,
+    enabled: !!user?.uid,
   });
   
   // Selected company
@@ -186,7 +186,7 @@ const TaxEngine = () => {
                     <div className="space-y-4 bg-muted p-4 rounded-lg">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">Corporation Tax Return</span>
-                        <Badge variant={progress === 100 ? "success" : progress > 0 ? "secondary" : "outline"}>
+                        <Badge variant={progress === 100 ? "secondary" : progress > 0 ? "secondary" : "outline"}>
                           {progress === 100 ? "Completed" : progress > 0 ? "In Progress" : "Not Started"}
                         </Badge>
                       </div>
@@ -230,7 +230,7 @@ const TaxEngine = () => {
                       <h4 className="font-medium">Acme Trading Ltd</h4>
                       <p className="text-sm text-muted-foreground">Year ending 31 Dec 2023</p>
                     </div>
-                    <Badge variant="success">Submitted</Badge>
+                    <Badge variant="secondary">Submitted</Badge>
                   </div>
                   
                   <div className="flex items-center justify-between p-4 border rounded-lg">
@@ -533,7 +533,7 @@ const TaxEngine = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <Badge variant="success" className="mb-2">Submitted</Badge>
+                      <Badge variant="secondary" className="mb-2">Submitted</Badge>
                       <div className="text-sm font-medium">Reference: CT6002023</div>
                     </div>
                   </div>
@@ -550,7 +550,7 @@ const TaxEngine = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <Badge variant="success" className="mb-2">Submitted</Badge>
+                      <Badge variant="secondary" className="mb-2">Submitted</Badge>
                       <div className="text-sm font-medium">Reference: CT6002022</div>
                     </div>
                   </div>
@@ -567,7 +567,7 @@ const TaxEngine = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <Badge variant="success" className="mb-2">Submitted</Badge>
+                      <Badge variant="secondary" className="mb-2">Submitted</Badge>
                       <div className="text-sm font-medium">Reference: CT6002021</div>
                     </div>
                   </div>

@@ -193,14 +193,14 @@ export default function FinancialReporting() {
           console.log('Trial balance data for balance sheet:', trialBalanceData);
           
           const assetsTotalFromTB = trialBalanceData
-            .filter(entry => entry.accountCode.startsWith('1'))
-            .reduce((sum, entry) => sum + (entry.debit - entry.credit), 0);
+            .filter((entry: any) => entry.accountCode.startsWith('1'))
+            .reduce((sum: number, entry: any) => sum + (entry.debit - entry.credit), 0);
           const liabilitiesTotalFromTB = trialBalanceData
-            .filter(entry => entry.accountCode.startsWith('2'))
-            .reduce((sum, entry) => sum + (entry.credit - entry.debit), 0);
+            .filter((entry: any) => entry.accountCode.startsWith('2'))
+            .reduce((sum: number, entry: any) => sum + (entry.credit - entry.debit), 0);
           const equityTotalFromTB = trialBalanceData
-            .filter(entry => entry.accountCode.startsWith('3'))
-            .reduce((sum, entry) => sum + (entry.credit - entry.debit), 0);
+            .filter((entry: any) => entry.accountCode.startsWith('3'))
+            .reduce((sum: number, entry: any) => sum + (entry.credit - entry.debit), 0);
             
           console.log('Balance sheet totals calculated:', {
             assets: assetsTotalFromTB,
@@ -213,15 +213,15 @@ export default function FinancialReporting() {
             currentAssets: prev.currentAssets.map(item => {
               if (item.id === 'debtors') {
                 const debtorsBalance = trialBalanceData
-                  .filter(entry => entry.accountCode === '1100')
-                  .reduce((sum, entry) => sum + (entry.debit - entry.credit), 0);
+                  .filter((entry: any) => entry.accountCode === '1100')
+                  .reduce((sum: number, entry: any) => sum + (entry.debit - entry.credit), 0);
                 return { ...item, amount: Math.max(0, debtorsBalance) };
               }
               if (item.id === 'cash_bank') {
                 // Calculate net cash position from all 1200 entries
-                const cashEntries = trialBalanceData.filter(entry => entry.accountCode === '1200');
-                const totalDebits = cashEntries.reduce((sum, entry) => sum + entry.debit, 0);
-                const totalCredits = cashEntries.reduce((sum, entry) => sum + entry.credit, 0);
+                const cashEntries = trialBalanceData.filter((entry: any) => entry.accountCode === '1200');
+                const totalDebits = cashEntries.reduce((sum: number, entry: any) => sum + entry.debit, 0);
+                const totalCredits = cashEntries.reduce((sum: number, entry: any) => sum + entry.credit, 0);
                 const netCashBalance = totalDebits - totalCredits;
                 
                 console.log('Cash balance calculation:', {

@@ -67,7 +67,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
   }
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-    apiVersion: "2023-10-16",
+    apiVersion: "2024-06-20",
   });
   
   // Register agent routes
@@ -84,7 +84,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metadata: {
           credits: credits.toString(),
           planId: planId,
-          userId: req.user?.id?.toString() || 'anonymous'
+          userId: (req as any).user?.id?.toString() || 'anonymous'
         }
       });
       
@@ -103,8 +103,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     let event;
 
     try {
-      event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-    } catch (err) {
+      event = stripe.webhooks.constructEvent(req.body, sig as string, process.env.STRIPE_WEBHOOK_SECRET!);
+    } catch (err: any) {
       console.log(`Webhook signature verification failed.`, err);
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }

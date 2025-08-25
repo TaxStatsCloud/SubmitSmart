@@ -209,6 +209,10 @@ export class MemStorage implements IStorage {
     this.users.delete(id);
   }
 
+  async getAllUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
+  }
+
   // Company methods
   async getCompany(id: number): Promise<Company | undefined> {
     return this.companies.get(id);
