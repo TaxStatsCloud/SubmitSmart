@@ -414,11 +414,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Update section data
+      // Update section data with proper typing
+      const filingData = taxFiling.data as any; // Type assertion for production
       const updatedData = {
-        ...taxFiling.data,
+        ...filingData,
         sections: {
-          ...taxFiling.data.sections,
+          ...filingData.sections,
           [sectionId]: data
         }
       };
@@ -452,16 +453,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get existing filing
       const existingFilings = await storage.getFilingsByCompany(Number(companyId));
-      const taxFiling = existingFilings.find(f => f.type === 'corporation_tax' && f.data?.period === period);
+      const taxFiling = existingFilings.find(f => f.type === 'corporation_tax' && (f.data as any)?.period === period);
       
-      if (taxFiling && taxFiling.data?.sections) {
+      if (taxFiling && (taxFiling.data as any)?.sections) {
         // Use AI to calculate tax liability
         const { generateCompletion } = await import('./services/openai');
         
         const calculationPrompt = `
           Calculate UK Corporation Tax for this company based on the following data:
           
-          Company Data: ${JSON.stringify(taxFiling.data.sections)}
+          Company Data: ${JSON.stringify((taxFiling.data as any).sections)}
           
           Please calculate:
           1. Taxable profit/loss
@@ -483,7 +484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Update filing with calculation results
         const updatedFiling = await storage.updateFiling(taxFiling.id, {
           data: {
-            ...taxFiling.data,
+            ...(taxFiling.data as any),
             calculation: JSON.parse(calculation)
           }
         });
@@ -503,7 +504,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get existing filing
       const existingFilings = await storage.getFilingsByCompany(Number(companyId));
-      const taxFiling = existingFilings.find(f => f.type === 'corporation_tax' && f.data?.period === period);
+      const taxFiling = existingFilings.find(f => f.type === 'corporation_tax' && (f.data as any)?.period === period);
       
       if (taxFiling) {
         // Update filing status to submitted
@@ -638,7 +639,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Process and store the filing history
       const results = [];
-      for (const filing of filingHistory) {
+      for (const filing of (filingHistory as unknown as any[])) {
         const filingData = {
           companyId,
           registrationNumber,
@@ -925,7 +926,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { aiDocumentProcessor } = await import('./services/aiDocumentProcessor');
       const extractedDataArray = processedDocuments.map(doc => 
-        JSON.parse(doc.metadata || '{}')
+        JSON.parse((doc.metadata as string) || '{}')
       );
 
       const aggregatedData = await aiDocumentProcessor.aggregateFinancialData(extractedDataArray);
@@ -952,12 +953,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Debug: Check what documents we have
       console.log(`Trial balance request for company ${companyId}:`, {
         totalDocuments: documents.length,
-        documentTypes: documents.map(d => ({ id: d.id, name: d.name, type: d.type, hasExtractedData: !!d.extractedData }))
+        documentTypes: documents.map(d => ({ id: d.id, name: d.name, type: d.type, hasExtractedData: !!(d as any).extractedData }))
       });
       
       // Filter for financial documents with extracted data
       const processedDocuments = documents.filter(doc => 
-        doc.extractedData && 
+        (doc as any).extractedData && 
         ['sales_invoices', 'purchase_invoices', 'expense_receipts', 'bank_statements'].includes(doc.type)
       );
       
@@ -968,8 +969,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Process each document and create trial balance entries
       for (const doc of processedDocuments) {
-        if (doc.extractedData?.totalAmount) {
-          const amount = parseFloat(doc.extractedData.totalAmount);
+        if ((doc as any).extractedData?.totalAmount) {
+          const amount = parseFloat((doc as any).extractedData.totalAmount);
           if (!isNaN(amount)) {
             if (doc.type === 'sales_invoices') {
               // Sales invoices go to revenue accounts
@@ -1307,8 +1308,8 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
         return res.status(400).json({ message: 'Invalid journal entry format' });
       }
       
-      const totalDebits = journalEntry.entries.reduce((sum, entry) => sum + (entry.debit || 0), 0);
-      const totalCredits = journalEntry.entries.reduce((sum, entry) => sum + (entry.credit || 0), 0);
+      const totalDebits = journalEntry.entries.reduce((sum: number, entry: any) => sum + (entry.debit || 0), 0);
+      const totalCredits = journalEntry.entries.reduce((sum: number, entry: any) => sum + (entry.credit || 0), 0);
       
       if (Math.abs(totalDebits - totalCredits) > 0.01) {
         return res.status(400).json({ message: 'Journal entry is not balanced' });
@@ -1368,7 +1369,7 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
       const updatedDocument = await storage.updateDocument(parseInt(id), {
         type,
         metadata: {
-          ...document.metadata,
+          ...(document.metadata as any),
           accountMapping: {
             accountCode,
             accountName,
@@ -1394,7 +1395,7 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
       const trialBalanceData = await trialBalanceResponse.json();
       
       // Find the account entry
-      const accountEntry = trialBalanceData.trialBalance.find(entry => entry.accountCode === accountCode);
+      const accountEntry = trialBalanceData.trialBalance.find((entry: any) => entry.accountCode === accountCode);
       
       if (!accountEntry || !accountEntry.breakdown) {
         return res.status(404).json({ message: 'Account breakdown not found' });
@@ -1475,7 +1476,7 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
           });
 
           console.log(`AI processing completed for ${document.name}:`, extractedData.summary);
-        } catch (aiError) {
+        } catch (aiError: any) {
           console.error('AI processing failed:', aiError);
           await storage.updateDocument(document.id, {
             processingStatus: 'failed',
