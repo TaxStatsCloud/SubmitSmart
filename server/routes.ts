@@ -68,7 +68,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
   }
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-    apiVersion: "2024-06-20",
+    apiVersion: "2024-06-20" as any,
   });
   
   // Register agent routes
