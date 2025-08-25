@@ -132,7 +132,7 @@ export function useFilings(): UseFilingsReturn {
     if (!filings) return;
 
     // Transform data for upcoming filings
-    const upcoming = filings
+    const upcoming = Array.isArray(filings) ? filings
       .filter((filing: Filing & { companyName?: string }) => 
         filing.status !== 'submitted' && filing.dueDate)
       .map((filing: Filing & { companyName?: string }) => ({
@@ -140,12 +140,12 @@ export function useFilings(): UseFilingsReturn {
         company: filing.companyName || 'Unknown Company',
       }))
       .sort((a: Filing, b: Filing) => 
-        new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime());
+        new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime()) : [];
 
     setUpcomingFilings(upcoming);
 
     // Transform data for draft filings
-    const drafts = filings
+    const drafts = Array.isArray(filings) ? filings
       .filter((filing: Filing & { companyName?: string }) => 
         filing.status === 'draft' || filing.status === 'in_progress')
       .map((filing: Filing & { companyName?: string }) => ({
@@ -153,7 +153,7 @@ export function useFilings(): UseFilingsReturn {
         title: `${filing.type.replace('_', ' ')} - ${filing.companyName || 'Unknown Company'}`,
         lastUpdated: getRelativeTimeString(new Date(filing.updatedAt)),
         progress: filing.progress || 0,
-      }));
+      })) : [];
 
     setDraftFilings(drafts);
   }, [filings]);

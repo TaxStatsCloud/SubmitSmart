@@ -35,8 +35,8 @@ const UpcomingFilings = () => {
     <section className="mb-8">
       <div className="flex justify-between items-center mb-3">
         <h2 className="text-lg font-semibold text-neutral-800">Upcoming Filings</h2>
-        <Link href="/filings">
-          <a className="text-sm text-[hsl(var(--primary-600))] hover:text-[hsl(var(--primary-700))] font-medium">View All</a>
+        <Link href="/filings" className="text-sm text-[hsl(var(--primary-600))] hover:text-[hsl(var(--primary-700))] font-medium">
+          View All
         </Link>
       </div>
       
@@ -89,8 +89,8 @@ const UpcomingFilings = () => {
                         <span className="text-sm text-neutral-700">{filing.company}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-neutral-700">{filing.dueDate}</span>
-                        {isDateSoon(filing.dueDate) && (
+                        <span className="text-sm text-neutral-700">{filing.dueDate?.toString() || 'N/A'}</span>
+                        {filing.dueDate && isDateSoon(filing.dueDate.toString()) && (
                           <span className="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-warning-100 text-warning-800">
                             Due Soon
                           </span>

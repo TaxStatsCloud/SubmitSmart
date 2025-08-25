@@ -24,7 +24,8 @@ export const signOutUser = async () => {
     console.log('User signed out successfully');
   } catch (error) {
     console.error('Error signing out:', error);
-    throw error;
+    // Don't rethrow to prevent unhandled rejections in calling code
+    return Promise.resolve();
   }
 };
 
