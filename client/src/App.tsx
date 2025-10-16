@@ -38,6 +38,8 @@ import OpeningTrialBalance from "@/pages/OpeningTrialBalance";
 import HMRCIntegration from "@/pages/HMRCIntegration";
 import ValidationDemo from "@/pages/ValidationDemo";
 import Landing from "@/pages/Landing";
+import Terms from "@/pages/Terms";
+import Privacy from "@/pages/Privacy";
 import { useAuth } from "@/contexts/AuthContext";
 
 function Router() {
@@ -49,6 +51,8 @@ function Router() {
       <Switch>
         <Route path="/" component={Landing} />
         <Route path="/login" component={Login} />
+        <Route path="/terms" component={Terms} />
+        <Route path="/privacy" component={Privacy} />
         <Route component={Landing} />
       </Switch>
     );
