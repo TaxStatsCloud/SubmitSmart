@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { taxFilingSectionDataSchema, getTaxFilingSectionSchema, eFilingCredentials } from "@shared/schema";
 import { z } from "zod";
 import { insertUserSchema, insertCompanySchema, insertDocumentSchema, insertFilingSchema, insertActivitySchema, insertAssistantMessageSchema } from "@shared/schema";
+import * as schema from "@shared/schema";
 import { processDocument } from "./services/documentService";
 import { generateResponse } from "./services/aiService";
 import { generateCompletion } from "./services/openai";
@@ -70,51 +71,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
   if (process.env.NODE_ENV !== 'production') {
     app.post('/api/dev-login', express.json(), async (req, res) => {
       try {
+        console.log('[DEV-LOGIN] Starting login for:', req.body.email);
         const { email, password } = req.body;
         
         if (!email || !password) {
+          console.error('[DEV-LOGIN] Missing credentials');
           return res.status(400).json({ error: 'Email and password required' });
         }
         
-        // For testing, accept any password - in production this would validate credentials
-        const testUserId = `test-${email.replace(/[^a-zA-Z0-9]/g, '-')}`;
+        console.log('[DEV-LOGIN] Looking up user by email:', email);
+        // Find user by email (users table has serial ID, not custom string IDs)
+        let user = await storage.db.query.users.findFirst({
+          where: (users, { eq }) => eq(users.email, email)
+        }).catch((err) => {
+          console.log('[DEV-LOGIN] User lookup error:', err.message);
+          return null;
+        });
         
-        // Create or find test user
-        let user = await storage.getUser(testUserId).catch(() => null);
         if (!user) {
-          await storage.createUser({
-            id: testUserId,
-            email: email,
-            name: email.split('@')[0],
-            credits: 1000, // Give test users credits
-            firebaseUid: testUserId // For backward compatibility
+          console.log('[DEV-LOGIN] Creating new company and user');
+          // New user - create company first
+          const testCompany = await storage.createCompany({
+            name: `Test Company for ${email}`,
+            registrationNumber: `TEST${Math.floor(Math.random() * 1000000)}`,
+            type: 'limited',
+            address: {
+              line1: 'Test Address',
+              postcode: 'TE1 1ST',
+              country: 'GB'
+            }
           });
-          user = await storage.getUser(testUserId);
+          console.log('[DEV-LOGIN] Company created:', testCompany.id);
+          
+          // Create user with company - DON'T pass ID, let DB auto-generate
+          const [newUser] = await storage.db.insert(schema.users).values({
+            email: email,
+            firstName: email.split('@')[0],
+            role: 'director',
+            credits: 1000,
+            companyId: testCompany.id
+          }).returning();
+          console.log('[DEV-LOGIN] User created with ID:', newUser.id, 'companyId:', newUser.companyId);
+          
+          user = newUser;
+        } else if (!user.companyId) {
+          // Existing user without company - create and assign company
+          console.log('[DEV-LOGIN] Backfilling company for existing user:', user.id);
+          const testCompany = await storage.createCompany({
+            name: `Test Company for ${email}`,
+            registrationNumber: `TEST${Math.floor(Math.random() * 1000000)}`,
+            type: 'limited',
+            address: {
+              line1: 'Test Address',
+              postcode: 'TE1 1ST',
+              country: 'GB'
+            }
+          });
+          console.log('[DEV-LOGIN] Backfill company created:', testCompany.id);
+          
+          // Update user with companyId
+          const [updated] = await storage.db.update(schema.users)
+            .set({ companyId: testCompany.id })
+            .where(eq(schema.users.id, user.id))
+            .returning();
+          console.log('[DEV-LOGIN] User updated with companyId:', updated.companyId);
+          
+          user = updated;
+        } else {
+          console.log('[DEV-LOGIN] Existing user found with company:', user.companyId);
         }
         
-        // Set up session like Replit Auth does
-        (req as any).user = {
+        // Create user object matching Replit Auth structure
+        // This must match what passport expects (see replitAuth.ts)
+        const passportUser = {
           claims: {
-            sub: testUserId,
-            email: email
+            sub: user.id.toString(), // Convert numeric ID to string for Replit Auth compatibility
+            email: email,
+            exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60) // 7 days from now
           },
-          email: email,
-          id: testUserId
+          access_token: 'dev-token',
+          refresh_token: 'dev-refresh-token',
+          expires_at: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60) // 7 days from now
         };
         
-        // Set session cookie manually
-        if (req.session) {
-          (req.session as any).userId = testUserId;
-          (req.session as any).user = (req as any).user;
-        }
-        
-        res.json({
-          success: true,
-          user: {
-            id: testUserId,
-            email: email,
-            name: email.split('@')[0]
+        console.log('[DEV-LOGIN] Establishing session for user ID:', user.id);
+        // Use Passport's login method to properly establish session
+        req.login(passportUser, (err) => {
+          if (err) {
+            console.error('[DEV-LOGIN] Passport login error:', err);
+            return res.status(500).json({ error: 'Failed to establish session', details: err.message });
           }
+          
+          console.log('[DEV-LOGIN] SUCCESS - session established, user ID:', user.id, 'companyId:', user.companyId);
+          // Session is now established
+          res.json({
+            success: true,
+            user: {
+              id: user.id,
+              email: user.email,
+              firstName: user.firstName,
+              companyId: user.companyId
+            }
+          });
         });
       } catch (error: any) {
         console.error('Dev login error:', error);
@@ -176,11 +234,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Replit Auth - User endpoint (REQUIRED for Replit Auth)
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = (req.user as any).claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
+      const userClaims = (req.user as any).claims;
+      const email = userClaims.email;
+      
+      if (!email) {
+        console.error('[AUTH-USER] No email in session claims');
+        return res.status(401).json({ error: 'Invalid session' });
+      }
+      
+      console.log('[AUTH-USER] Looking up user by email:', email);
+      
+      // Get user from database by email (works for both dev and production)
+      const user = await storage.db.query.users.findFirst({
+        where: (users, { eq }) => eq(users.email, email)
+      }).catch((error) => {
+        console.error('[AUTH-USER] Error getting user from storage:', error);
+        return null;
+      });
+      
+      // If user exists in storage, return it with all fields
+      if (user) {
+        console.log('[AUTH-USER] User found, ID:', user.id, 'companyId:', user.companyId);
+        res.json(user);
+        return;
+      }
+      
+      // If user not in storage but session exists, return error
+      console.error(`[AUTH-USER] User with email ${email} has session but not found in storage`);
+      res.status(404).json({
+        error: 'User not found in database',
+        message: 'Please log out and log in again'
+      });
     } catch (error) {
-      console.error("Error fetching user:", error);
+      console.error("[AUTH-USER] Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
     }
   });
