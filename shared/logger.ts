@@ -7,22 +7,27 @@ export class Logger {
     if (this.isDevelopment) {
       console.log(`[INFO] ${message}`, data || '');
     }
-    // In production, this would go to a logging service
+    if (this.isProduction) {
+      console.log(`[INFO] ${message}`, data || '');
+    }
   }
 
   static warn(message: string, data?: any): void {
     if (this.isDevelopment) {
       console.warn(`[WARN] ${message}`, data || '');
     }
-    // In production, this would go to a logging service
+    if (this.isProduction) {
+      console.warn(`[WARN] ${message}`, data || '');
+    }
   }
 
   static error(message: string, error?: any): void {
     if (this.isDevelopment) {
       console.error(`[ERROR] ${message}`, error || '');
     }
-    // In production, this would go to a logging service like Sentry
-    // TODO: Implement production error tracking
+    if (this.isProduction) {
+      console.error(`[ERROR] ${message}`, error || '');
+    }
   }
 
   static debug(message: string, data?: any): void {

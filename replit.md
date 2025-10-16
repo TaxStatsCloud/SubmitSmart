@@ -97,6 +97,15 @@ PromptSubmissions is an AI-powered platform for UK corporate compliance, special
 - **Documentation Guidance**: Provide hints and support for users to upload correct documentation
 - **Authority Compliance**: Ensure all filings meet the highest standards for HMRC and Companies House acceptance
 
+## Known Development Limitations
+
+### Vite HMR WebSocket Warning (Development Only)
+- **Issue**: Vite's Hot Module Replacement (HMR) WebSocket shows `wss://localhost:undefined` error in development console
+- **Cause**: Replit's proxy environment obscures the dev server port from Vite's HMR client
+- **Impact**: Development-only console warning; does NOT affect application functionality or production builds
+- **Resolution**: This is a known Vite + Replit infrastructure limitation. The application's WebSocket (/api/ws) works perfectly. Production builds do not include HMR, so this issue does not exist in production.
+- **Action**: No code changes required; documented for developer awareness
+
 ## Strategic Staged Rollout Plan
 
 ### Stage 1: Simple Filings (Immediate Launch)
