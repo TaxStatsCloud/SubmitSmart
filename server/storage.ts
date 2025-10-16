@@ -1,5 +1,5 @@
 import { 
-  users, type User, type InsertUser,
+  users, type User, type InsertUser, type UpsertUser,
   companies, type Company, type InsertCompany,
   documents, type Document, type InsertDocument,
   filings, type Filing, type InsertFiling,
@@ -16,12 +16,15 @@ import { eq } from "drizzle-orm";
 import { db } from "./db";
 
 export interface IStorage {
-  // User methods
-  getUser(id: number): Promise<User | undefined>;
+  // User methods (legacy - for backward compatibility)
+  getUser(id: number | string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, userData: Partial<User>): Promise<User>;
   deleteUser(id: number): Promise<void>;
+  
+  // Replit Auth methods (REQUIRED for Replit Auth)
+  upsertUser(user: UpsertUser): Promise<User>;
   
   // Company methods
   getCompany(id: number): Promise<Company | undefined>;
@@ -169,8 +172,8 @@ export class MemStorage implements IStorage {
   }
 
   // User methods
-  async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+  async getUser(id: number | string): Promise<User | undefined> {
+    return this.users.get(id as number);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
@@ -183,10 +186,21 @@ export class MemStorage implements IStorage {
     const id = this.userId++;
     const now = new Date();
     const user: User = { 
-      ...insertUser, 
+      ...insertUser,
       id,
-      credits: insertUser.credits ?? 50,
+      email: insertUser.email ?? null,
+      firstName: null,
+      lastName: null,
+      profileImageUrl: null,
+      username: insertUser.username ?? null,
+      password: insertUser.password ?? null,
+      fullName: insertUser.fullName ?? null,
+      profileImage: insertUser.profileImage ?? null,
+      companyId: insertUser.companyId ?? null,
+      credits: 50,
       role: insertUser.role ?? 'director',
+      createdAt: now,
+      updatedAt: now,
     };
     this.users.set(id, user);
     return user;
@@ -209,6 +223,33 @@ export class MemStorage implements IStorage {
     this.users.delete(id);
   }
 
+  // Replit Auth methods (REQUIRED for Replit Auth)
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const id = userData.id || this.userId++;
+    const existing = await this.getUser(id);
+    const now = new Date();
+    
+    const user: User = {
+      id,
+      email: userData.email ?? existing?.email ?? null,
+      firstName: userData.firstName ?? existing?.firstName ?? null,
+      lastName: userData.lastName ?? existing?.lastName ?? null,
+      profileImageUrl: userData.profileImageUrl ?? existing?.profileImageUrl ?? null,
+      username: userData.username ?? existing?.username ?? null,
+      password: userData.password ?? existing?.password ?? null,
+      fullName: userData.fullName ?? existing?.fullName ?? null,
+      profileImage: userData.profileImage ?? existing?.profileImage ?? null,
+      companyId: userData.companyId ?? existing?.companyId ?? null,
+      credits: userData.credits ?? existing?.credits ?? 50,
+      role: userData.role ?? existing?.role ?? 'director',
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now,
+    };
+    
+    this.users.set(id as number, user);
+    return user;
+  }
+
   async getAllUsers(): Promise<User[]> {
     return Array.from(this.users.values());
   }
@@ -224,7 +265,12 @@ export class MemStorage implements IStorage {
 
   async createCompany(insertCompany: InsertCompany): Promise<Company> {
     const id = this.companyId++;
-    const company: Company = { ...insertCompany, id };
+    const company: Company = { 
+      ...insertCompany, 
+      id,
+      accountingReference: insertCompany.accountingReference ?? null,
+      status: insertCompany.status ?? 'active'
+    };
     this.companies.set(id, company);
     return company;
   }
@@ -267,8 +313,10 @@ export class MemStorage implements IStorage {
       ...insertDocument, 
       id,
       uploadedAt: now,
+      processedAt: null,
       processingStatus: 'pending',
-      metadata: {}
+      processingError: null,
+      metadata: null
     };
     this.documents.set(id, document);
     return document;
@@ -317,10 +365,13 @@ export class MemStorage implements IStorage {
       ...insertFiling, 
       id,
       status: insertFiling.status || 'draft',
+      dueDate: insertFiling.dueDate ?? null,
       createdAt: now,
       updatedAt: now,
-      progress: insertFiling.progress || 0,
-      documentIds: insertFiling.documentIds || []
+      submitDate: null,
+      data: insertFiling.data ?? null,
+      documentIds: insertFiling.documentIds ?? null,
+      progress: insertFiling.progress || 0
     };
     this.filings.set(id, filing);
     return filing;
@@ -372,8 +423,9 @@ export class MemStorage implements IStorage {
     const activity: Activity = { 
       ...insertActivity, 
       id,
+      companyId: insertActivity.companyId ?? null,
       createdAt: now,
-      metadata: insertActivity.metadata || {}
+      metadata: insertActivity.metadata ?? null
     };
     this.activities.set(id, activity);
     return activity;
@@ -431,8 +483,9 @@ export class MemStorage implements IStorage {
     const creditPackage: CreditPackage = {
       ...packageData,
       id,
+      description: packageData.description ?? null,
       isActive: packageData.isActive ?? true,
-      isPopular: packageData.isPopular ?? false,
+      isPopular: packageData.isPopular ?? null,
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -482,6 +535,7 @@ export class MemStorage implements IStorage {
     const filingCost: FilingCost = {
       ...costData,
       id,
+      description: costData.description ?? null,
       isActive: costData.isActive ?? true,
       createdAt: new Date(),
       updatedAt: new Date()
@@ -524,6 +578,10 @@ export class MemStorage implements IStorage {
     const creditTransaction: CreditTransaction = {
       ...transaction,
       id,
+      metadata: transaction.metadata ?? null,
+      filingId: transaction.filingId ?? null,
+      packageId: transaction.packageId ?? null,
+      stripePaymentId: transaction.stripePaymentId ?? null,
       createdAt: new Date()
     };
     
@@ -613,16 +671,22 @@ export class MemStorage implements IStorage {
   // Initialize sample data for demonstration
   private initSampleData() {
     // Sample user
+    const now = new Date();
     const sampleUser: User = {
       id: this.userId++,
+      email: 'sarah@example.com',
+      firstName: null,
+      lastName: null,
+      profileImageUrl: null,
       username: 'sarah.thompson',
       password: 'password123',
-      email: 'sarah@example.com',
       fullName: 'Sarah Thompson',
+      profileImage: 'https://images.unsplash.com/photo-1502685104226-ee32379fefbe?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
       role: 'director',
       companyId: 1,
-      profileImage: 'https://images.unsplash.com/photo-1502685104226-ee32379fefbe?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-      credits: 72
+      credits: 72,
+      createdAt: now,
+      updatedAt: now
     };
     this.users.set(sampleUser.id, sampleUser);
 
@@ -672,8 +736,9 @@ export class MemStorage implements IStorage {
         dueDate: new Date('2023-08-15'),
         createdAt: new Date('2023-07-01'),
         updatedAt: new Date('2023-07-01'),
-        data: {},
-        documentIds: [],
+        submitDate: null,
+        data: null,
+        documentIds: null,
         progress: 0
       },
       {
@@ -685,7 +750,8 @@ export class MemStorage implements IStorage {
         dueDate: new Date('2023-09-30'),
         createdAt: new Date('2023-07-15'),
         updatedAt: new Date('2023-07-18'),
-        data: {},
+        submitDate: null,
+        data: null,
         documentIds: [1],
         progress: 60
       },
@@ -698,8 +764,9 @@ export class MemStorage implements IStorage {
         dueDate: new Date('2023-11-12'),
         createdAt: new Date('2023-07-20'),
         updatedAt: new Date('2023-07-20'),
-        data: {},
-        documentIds: [],
+        submitDate: null,
+        data: null,
+        documentIds: null,
         progress: 0
       }
     ];
@@ -985,6 +1052,8 @@ export class MemStorage implements IStorage {
     const priorYearData: PriorYearData = {
       ...insertData,
       id,
+      sourceReference: insertData.sourceReference ?? null,
+      isVerified: insertData.isVerified ?? false,
       createdAt: now,
       updatedAt: now
     };
@@ -1027,6 +1096,9 @@ export class MemStorage implements IStorage {
     const comparativePeriod: ComparativePeriod = {
       ...insertData,
       id,
+      isActive: insertData.isActive ?? false,
+      layoutTemplate: insertData.layoutTemplate ?? 'default',
+      mappingRules: insertData.mappingRules ?? null,
       createdAt: now,
       updatedAt: now
     };
@@ -1069,8 +1141,13 @@ export class MemStorage implements IStorage {
     const companiesHouseFiling: CompaniesHouseFiling = {
       ...insertData,
       id,
+      actionDate: insertData.actionDate ?? null,
+      paperFiled: insertData.paperFiled ?? false,
+      filingHistoryData: insertData.filingHistoryData ?? null,
+      accountsData: insertData.accountsData ?? null,
+      isImported: insertData.isImported ?? false,
       createdAt: now,
-      importedAt: insertData.isImported ? now : undefined
+      importedAt: insertData.isImported ? now : null
     };
     this.companiesHouseFilings.set(id, companiesHouseFiling);
     return companiesHouseFiling;
@@ -1089,65 +1166,13 @@ export class MemStorage implements IStorage {
   async deleteCompaniesHouseFiling(id: number): Promise<void> {
     this.companiesHouseFilings.delete(id);
   }
-
-  // Opening trial balance methods
-  async getOpeningTrialBalance(id: number): Promise<OpeningTrialBalance | undefined> {
-    return this.openingTrialBalances.get(id);
-  }
-
-  async getOpeningTrialBalancesByCompany(companyId: number): Promise<OpeningTrialBalance[]> {
-    return Array.from(this.openingTrialBalances.values()).filter(otb => otb.companyId === companyId);
-  }
-
-  async getOpeningTrialBalancesByCompanyAndPeriod(companyId: number, periodStartDate: string, periodEndDate: string): Promise<OpeningTrialBalance[]> {
-    return Array.from(this.openingTrialBalances.values()).filter(
-      otb => otb.companyId === companyId && 
-             otb.periodStartDate === periodStartDate && 
-             otb.periodEndDate === periodEndDate
-    );
-  }
-
-  async createOpeningTrialBalance(insertData: InsertOpeningTrialBalance): Promise<OpeningTrialBalance> {
-    const id = this.openingTrialBalanceId++;
-    const now = new Date();
-    const openingTrialBalance: OpeningTrialBalance = {
-      ...insertData,
-      id,
-      uploadedAt: now,
-      processingStatus: 'pending',
-      processedAt: undefined,
-      processingError: undefined,
-      totalDebits: insertData.totalDebits || 0,
-      totalCredits: insertData.totalCredits || 0,
-      accountCount: insertData.accountCount || 0,
-      isVerified: insertData.isVerified || false,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.openingTrialBalances.set(id, openingTrialBalance);
-    return openingTrialBalance;
-  }
-
-  async updateOpeningTrialBalance(id: number, updateData: Partial<OpeningTrialBalance>): Promise<OpeningTrialBalance> {
-    const existing = await this.getOpeningTrialBalance(id);
-    if (!existing) {
-      throw new Error(`Opening trial balance with id ${id} not found`);
-    }
-    const updated = { ...existing, ...updateData, updatedAt: new Date() };
-    this.openingTrialBalances.set(id, updated);
-    return updated;
-  }
-
-  async deleteOpeningTrialBalance(id: number): Promise<void> {
-    this.openingTrialBalances.delete(id);
-  }
 }
 
 // Database implementation of IStorage
 export class DatabaseStorage implements IStorage {
-  // User methods
-  async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
+  // User methods (supporting both legacy and Replit Auth)
+  async getUser(id: number | string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, Number(id)));
     return user;
   }
 
@@ -1180,6 +1205,22 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(id: number): Promise<void> {
     await db.delete(users).where(eq(users.id, id));
+  }
+
+  // Replit Auth methods (REQUIRED for Replit Auth)
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
   }
 
   // Company methods

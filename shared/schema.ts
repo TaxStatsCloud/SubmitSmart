@@ -1,19 +1,38 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, date, varchar, uniqueIndex, foreignKey, primaryKey, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, date, varchar, uniqueIndex, foreignKey, primaryKey, pgEnum, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
-// Users
+// Replit Auth - Session storage table (REQUIRED for Replit Auth)
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// Users - Updated for Replit Auth compatibility
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-  email: text("email").notNull().unique(),
-  fullName: text("full_name").notNull(),
+  // Replit Auth fields
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  // Legacy Firebase fields (kept for backward compatibility)
+  username: text("username").unique(),
+  password: text("password"),
+  fullName: text("full_name"),
+  profileImage: text("profile_image"),
+  // Common fields
   role: text("role").notNull().default("director"), // director, accountant, admin
   companyId: integer("company_id").references(() => companies.id),
-  profileImage: text("profile_image"),
   credits: integer("credits").notNull().default(50),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -25,6 +44,11 @@ export const insertUserSchema = createInsertSchema(users).pick({
   companyId: true,
   profileImage: true,
 });
+
+// Replit Auth - UpsertUser type for Replit Auth operations
+export type UpsertUser = typeof users.$inferInsert;
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
 
 // Companies
 export const companies = pgTable("companies", {
@@ -191,9 +215,6 @@ export const insertAssistantMessageSchema = createInsertSchema(assistantMessages
 });
 
 // Type exports
-export type User = typeof users.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
-
 export type Company = typeof companies.$inferSelect;
 export type InsertCompany = z.infer<typeof insertCompanySchema>;
 
