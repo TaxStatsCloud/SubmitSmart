@@ -6,20 +6,21 @@ import { APP_CONFIG } from '@shared/constants';
  * HMRC Corporation Tax API Service
  * Handles XML submission and polling for CT600 returns
  * 
- * Official HMRC Test Credentials:
- * - Vendor ID: 9233
+ * CONFIRMED HMRC Credentials (from SDSTeam@hmrc.gov.uk):
+ * - Vendor ID: 9233 (TaxStats Cloud / PromptSubmissions)
  * - Sender ID: CTUser100
  * - Test UTR: 8596148860
+ * - Test Passwords: See HMRC test password list
  */
 
 export class HMRCCTService {
-  private readonly vendorId = APP_CONFIG.HMRC.VENDOR_ID;
-  private readonly testSenderID = APP_CONFIG.HMRC.TEST_SENDER_ID;
-  private readonly testUTR = APP_CONFIG.HMRC.TEST_UTR;
+  private readonly vendorId = '9233'; // ACTUAL Vendor ID from HMRC
+  private readonly testSenderID = 'CTUser100'; // ACTUAL Test Sender ID
+  private readonly testUTR = '8596148860'; // ACTUAL Test UTR
   
-  // Test environment endpoints
-  private readonly testSubmissionEndpoint = APP_CONFIG.HMRC.ENDPOINTS.TEST_SUBMISSION;
-  private readonly testPollingEndpoint = APP_CONFIG.HMRC.ENDPOINTS.TEST_POLLING;
+  // HMRC Government Gateway endpoints
+  private readonly testSubmissionEndpoint = 'https://www.tax.service.gov.uk/submission';
+  private readonly testPollingEndpoint = 'https://www.tax.service.gov.uk/poll';
   
   private xmlBuilder: XMLBuilder;
   private xmlParser: XMLParser;
@@ -40,9 +41,13 @@ export class HMRCCTService {
   }
 
   /**
-   * Generate CT600 XML submission for HMRC
+   * Generate CT600 XML submission for HMRC with iXBRL embedding
    */
-  async generateCT600XML(corporationTaxData: any): Promise<string> {
+  async generateCT600XML(corporationTaxData: any, options?: {
+    includeIXBRL?: boolean;
+    ixbrlAccounts?: string;
+    ixbrlComputations?: string;
+  }): Promise<string> {
     const submissionData = {
       '?xml': {
         '@_version': '1.0',
@@ -66,13 +71,16 @@ export class HMRCCTService {
             '#text': 'HMRC-CT-1.0'
           },
           'Sender': {
-            'SenderID': this.testSenderID,
-            'Password': 'password1', // From HMRC test credentials
-            'Vendor': {
-              'VendorID': this.vendorId,
-              'VendorName': 'PromptSubmissions'
+            'IDAuthentication': {
+              'SenderID': this.testSenderID,
+              'Authentication': {
+                'Method': 'clear',
+                'Role': 'principal',
+                'Value': 'fGuR34fAOEJf' // Test password [1] from HMRC
+              }
             }
-          }
+          },
+          'VendorID': this.vendorId
         },
         
         'IRbody': {
@@ -133,7 +141,25 @@ export class HMRCCTService {
               'ct:DeclarationDate': new Date().toISOString().split('T')[0],
               'ct:DeclarationText': 'The information given in this return is correct and complete to the best of my knowledge and belief.'
             }
-          }
+          },
+          
+          // Add iXBRL attachments if provided (HMRC mandatory for accurate filings)
+          ...(options?.includeIXBRL && (options.ixbrlAccounts || options.ixbrlComputations) ? {
+            'ct:Attachments': {
+              ...(options.ixbrlAccounts ? {
+                'ct:Accounts': {
+                  '@_format': 'iXBRL',
+                  '#cdata': options.ixbrlAccounts
+                }
+              } : {}),
+              ...(options.ixbrlComputations ? {
+                'ct:Computations': {
+                  '@_format': 'iXBRL',
+                  '#cdata': options.ixbrlComputations
+                }
+              } : {})
+            }
+          } : {})
         }
       }
     };

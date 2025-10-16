@@ -37,6 +37,7 @@ import ComparativePeriods from "@/pages/ComparativePeriods";
 import OpeningTrialBalance from "@/pages/OpeningTrialBalance";
 import HMRCIntegration from "@/pages/HMRCIntegration";
 import ValidationDemo from "@/pages/ValidationDemo";
+import HMRCTest from "@/pages/HMRCTest";
 import Landing from "@/pages/Landing";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
@@ -84,6 +85,9 @@ function Router() {
         
         {/* HMRC Integration */}
         <Route path="/hmrc-integration" component={HMRCIntegration} />
+        
+        {/* HMRC Test Submission */}
+        <Route path="/hmrc-test" component={HMRCTest} />
         
         {/* Validation Demo */}
         <Route path="/validation-demo" component={ValidationDemo} />
