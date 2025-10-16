@@ -1,14 +1,22 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Shield, FileText, Calculator } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Shield, FileText, Calculator, TestTube2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Login() {
   const [, setLocation] = useLocation();
   const { user, loading } = useAuth();
+  const { toast } = useToast();
+  const [devEmail, setDevEmail] = useState('');
+  const [devPassword, setDevPassword] = useState('');
+  const [devLoading, setDevLoading] = useState(false);
+  const isDevelopment = import.meta.env.DEV;
 
   useEffect(() => {
     if (user && !loading) {
@@ -18,6 +26,49 @@ export default function Login() {
 
   const handleSignIn = () => {
     window.location.href = '/api/login';
+  };
+
+  const handleDevLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDevLoading(true);
+
+    try {
+      const response = await fetch('/api/dev-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: devEmail,
+          password: devPassword,
+        }),
+        credentials: 'include', // Important for session cookies
+      });
+
+      if (response.ok) {
+        toast({
+          title: 'Success',
+          description: 'Development login successful',
+        });
+        // Reload to trigger auth state update
+        window.location.href = '/dashboard';
+      } else {
+        const error = await response.json();
+        toast({
+          title: 'Error',
+          description: error.error || 'Login failed',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to connect to server',
+        variant: 'destructive',
+      });
+    } finally {
+      setDevLoading(false);
+    }
   };
 
   if (loading) {
@@ -65,6 +116,64 @@ export default function Login() {
               </svg>
               Sign In with Google
             </Button>
+
+            {isDevelopment && (
+              <>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white px-2 text-muted-foreground">Or test with</span>
+                  </div>
+                </div>
+
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <TestTube2 className="h-4 w-4 text-yellow-600" />
+                    <span className="text-sm font-medium text-yellow-800">Development Login</span>
+                  </div>
+                  <form onSubmit={handleDevLogin} className="space-y-3">
+                    <div>
+                      <Label htmlFor="dev-email">Email</Label>
+                      <Input
+                        id="dev-email"
+                        type="email"
+                        placeholder="test@example.com"
+                        value={devEmail}
+                        onChange={(e) => setDevEmail(e.target.value)}
+                        required
+                        data-testid="input-dev-email"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="dev-password">Password</Label>
+                      <Input
+                        id="dev-password"
+                        type="password"
+                        placeholder="Any password"
+                        value={devPassword}
+                        onChange={(e) => setDevPassword(e.target.value)}
+                        required
+                        data-testid="input-dev-password"
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      variant="outline"
+                      disabled={devLoading}
+                      data-testid="button-dev-login"
+                    >
+                      {devLoading ? 'Logging in...' : 'Dev Login'}
+                    </Button>
+                  </form>
+                  <p className="text-xs text-yellow-700 mt-2">
+                    For testing only • Accepts any password
+                  </p>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 

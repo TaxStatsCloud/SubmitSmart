@@ -65,6 +65,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Replit Auth - Setup authentication middleware (REQUIRED)
   await setupAuth(app);
   
+  // Development authentication endpoint for testing (bypasses OAuth)
+  // WARNING: Only use in development/test environments
+  if (process.env.NODE_ENV !== 'production') {
+    app.post('/api/dev-login', express.json(), async (req, res) => {
+      try {
+        const { email, password } = req.body;
+        
+        if (!email || !password) {
+          return res.status(400).json({ error: 'Email and password required' });
+        }
+        
+        // For testing, accept any password - in production this would validate credentials
+        const testUserId = `test-${email.replace(/[^a-zA-Z0-9]/g, '-')}`;
+        
+        // Create or find test user
+        let user = await storage.getUser(testUserId).catch(() => null);
+        if (!user) {
+          await storage.createUser({
+            id: testUserId,
+            email: email,
+            name: email.split('@')[0],
+            credits: 1000, // Give test users credits
+            firebaseUid: testUserId // For backward compatibility
+          });
+          user = await storage.getUser(testUserId);
+        }
+        
+        // Set up session like Replit Auth does
+        (req as any).user = {
+          claims: {
+            sub: testUserId,
+            email: email
+          },
+          email: email,
+          id: testUserId
+        };
+        
+        // Set session cookie manually
+        if (req.session) {
+          (req.session as any).userId = testUserId;
+          (req.session as any).user = (req as any).user;
+        }
+        
+        res.json({
+          success: true,
+          user: {
+            id: testUserId,
+            email: email,
+            name: email.split('@')[0]
+          }
+        });
+      } catch (error: any) {
+        console.error('Dev login error:', error);
+        res.status(500).json({ error: 'Login failed', details: error.message });
+      }
+    });
+  }
+  
   // Initialize OpenAI client
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
