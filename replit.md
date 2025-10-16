@@ -45,23 +45,36 @@ The platform implements Companies House mandatory software filing requirements e
   - Complete balance sheet and P&L tagging
 - **Input Validation**: Required fields validated before generation (directors, principal activities, approval date, average employees)
 
-**iXBRL Validation Service** (`server/services/ixbrlValidationService.ts`):
-- Pre-submission validation against Companies House requirements
-- XML parsing with error detection
-- Namespace declaration verification (string-based)
-- Required element presence checking per entity size (regex-based)
-- Context and unit exact ID matching
-- QName format validation (no spaces, valid prefixes)
-- April 2027 mandatory requirements checking (regex-based)
-- Validation report generation with error codes and messages
-- **Note**: Current validation uses regex/string matching for basic pre-checks
+**iXBRL Validation Services**:
+
+*Legacy Service* (`server/services/ixbrlValidationService.ts`):
+- Basic regex-based validation for backwards compatibility
+- String pattern matching for quick pre-checks
+- Context/unit reference verification
+- Maintained for legacy integrations
+
+*Enhanced Service* (`server/services/ixbrlEnhancedValidationService.ts`) - **PRODUCTION READY**:
+- **DOM/XPath Validation**: Proper XML parsing with element queries
+- **Comprehensive Placeholder Detection**: 
+  - Pattern matching ([placeholder], {template}, XXX, TBD, etc.)
+  - Invalid date detection (DD/MM/YYYY, 00/00/0000, etc.)
+  - Repeated character detection (suspicious patterns)
+  - Generic name detection (Company Name, Director Name)
+- **Fact Value Validation**: Numeric format checking, zero value warnings
+- **Cross-Reference Verification**: Context and unit ID validation using DOM
+- **Namespace Validation**: Proper DOM-based namespace declaration checking
+- **Schema Reference Validation**: FRC 2025 taxonomy verification
+- **Statistics Reporting**: Total facts, tagged elements, contexts, units
+- **Detailed Reporting**: Error codes, warnings, placeholder locations, validation time
 
 **Implementation Status**:
 - ✅ **Complete**: FRC 2025 taxonomy, entity size detection, mandatory P&L inclusion, Directors' Report templates, audit exemption tags
 - ✅ **Complete**: Full iXBRL tagging structure, namespace URIs, schema references
 - ✅ **Complete**: Input field validation (required data must be provided)
-- ⚠️ **Basic**: Regex-based validation provides pre-checks for common issues
-- 📋 **Planned**: DOM/XPath-based validation, schema-aware fact verification, comprehensive placeholder detection
+- ✅ **Complete**: DOM/XPath-based validation with comprehensive element checking
+- ✅ **Complete**: Comprehensive placeholder detection (patterns, dates, repeated characters)
+- ⚠️ **Basic**: Legacy regex-based validation (ixbrlValidationService.ts) for backwards compatibility
+- 🚀 **Production**: Enhanced validation service (ixbrlEnhancedValidationService.ts) with DOM parsing, fact validation, cross-reference checking
 
 ## External Dependencies
 - **OpenAI**: For AI-driven document processing and financial data extraction.
