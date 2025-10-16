@@ -1,4 +1,5 @@
 import { XMLBuilder } from 'fast-xml-parser';
+import { IXBRLValidationService, ValidationResult } from './ixbrlValidationService';
 
 /**
  * iXBRL Generation Service
@@ -36,10 +37,12 @@ interface iXBRLDocument {
   size: number;
   contextRefs: string[];
   unitRefs: string[];
+  validation?: ValidationResult;
 }
 
 export class IXBRLGenerationService {
   private taxonomyVersion = '2025-01-01';
+  private validationService = new IXBRLValidationService();
   private namespace = {
     html: 'http://www.w3.org/1999/xhtml',
     ix: 'http://www.xbrl.org/2013/inlineXBRL',
@@ -130,11 +133,29 @@ export class IXBRLGenerationService {
       
       const htmlContent = this.buildHTMLStructure(accountsData, contextRefs, unitRefs);
       
+      // Validate the generated iXBRL document
+      console.log('Validating iXBRL document against Companies House requirements...');
+      const validation = await this.validationService.validateiXBRLDocument(
+        htmlContent,
+        accountsData.accountsType
+      );
+
+      // Log validation results
+      const validationReport = this.validationService.generateValidationReport(validation);
+      console.log(validationReport);
+
+      // If validation fails, throw error with details
+      if (!validation.isValid) {
+        const errorDetails = validation.errors.map(e => `${e.code}: ${e.message}`).join('\n');
+        throw new Error(`iXBRL validation failed:\n${errorDetails}`);
+      }
+      
       return {
         html: htmlContent,
         size: Buffer.from(htmlContent).length,
         contextRefs: contextRefs.map(c => c.id),
         unitRefs: unitRefs.map(u => u.id),
+        validation,
       };
     } catch (error: any) {
       console.error('iXBRL generation failed:', error);
