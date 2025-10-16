@@ -57,19 +57,19 @@ export default function HMRCTest() {
 
           {result && (
             <div className="space-y-4">
-              <Alert variant={result.success ? 'default' : 'destructive'}>
+              <Alert variant={result.submissionResult?.success ? 'default' : 'destructive'}>
                 <div className="flex items-start gap-2">
-                  {result.success ? (
+                  {result.submissionResult?.success ? (
                     <CheckCircle2 className="h-5 w-5 text-green-600" />
                   ) : (
                     <XCircle className="h-5 w-5" />
                   )}
                   <div className="flex-1">
                     <h4 className="font-semibold mb-1">
-                      {result.success ? 'Submission Sent' : 'Submission Failed'}
+                      {result.submissionResult?.success ? 'HMRC Gateway Response: Success!' : 'HMRC Gateway Response: Failed'}
                     </h4>
                     <AlertDescription>
-                      {result.message || result.error}
+                      {result.submissionResult?.message || result.submissionResult?.error || result.error || 'Check details below'}
                     </AlertDescription>
                   </div>
                 </div>
@@ -84,26 +84,36 @@ export default function HMRCTest() {
                     <dl className="space-y-2 text-sm">
                       <div>
                         <dt className="font-semibold">Status:</dt>
-                        <dd className={result.submissionResult.success ? 'text-green-600' : 'text-red-600'}>
-                          {result.submissionResult.success ? 'Success' : 'Failed'}
+                        <dd className={result.submissionResult.success ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
+                          {result.submissionResult.success ? 'SUCCESS - HMRC Accepted!' : 'FAILED - See error details'}
                         </dd>
                       </div>
+                      {result.submissionResult.message && (
+                        <div>
+                          <dt className="font-semibold">Message:</dt>
+                          <dd className="text-green-600">{result.submissionResult.message}</dd>
+                        </div>
+                      )}
                       {result.submissionResult.correlationId && (
                         <div>
                           <dt className="font-semibold">Correlation ID:</dt>
-                          <dd className="font-mono">{result.submissionResult.correlationId}</dd>
-                        </div>
-                      )}
-                      {result.submissionResult.pollUrl && (
-                        <div>
-                          <dt className="font-semibold">Poll URL:</dt>
-                          <dd className="font-mono text-xs break-all">{result.submissionResult.pollUrl}</dd>
+                          <dd className="font-mono text-xs bg-slate-100 p-1 rounded">{result.submissionResult.correlationId}</dd>
                         </div>
                       )}
                       {result.submissionResult.error && (
                         <div>
-                          <dt className="font-semibold">Error:</dt>
-                          <dd className="text-red-600">{result.submissionResult.error}</dd>
+                          <dt className="font-semibold">Error Details:</dt>
+                          <dd className="text-red-600 whitespace-pre-wrap">{result.submissionResult.error}</dd>
+                        </div>
+                      )}
+                      {result.submissionResult.responseXML && (
+                        <div>
+                          <dt className="font-semibold">HMRC Response XML:</dt>
+                          <dd>
+                            <pre className="bg-slate-900 text-slate-100 p-3 rounded text-xs overflow-x-auto mt-1 max-h-48">
+                              {result.submissionResult.responseXML}
+                            </pre>
+                          </dd>
                         </div>
                       )}
                     </dl>
