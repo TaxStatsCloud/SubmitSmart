@@ -2,6 +2,7 @@ import { ixbrlGenerationService } from './ixbrlGenerationService';
 import { companiesHouseXMLGatewayService } from './companiesHouseXMLGatewayService';
 import { XMLBuilder } from 'fast-xml-parser';
 import { db } from '../db';
+import { storage } from '../storage';
 import { eFilingCredentials } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 
@@ -108,9 +109,32 @@ class CompaniesHouseFilingService {
         submissionId: gatewayResponse.submissionId,
       });
 
-      // 5. Return standardized response
+      // 5. Persist filing record to database
+      const submissionId = gatewayResponse.submissionId || transactionId;
+      const filingStatus = gatewayResponse.success ? 'submitted' : 'failed';
+      
+      await storage.createFiling({
+        type: 'annual_accounts',
+        companyId: request.companyId,
+        userId: request.userId,
+        status: filingStatus,
+        data: {
+          submissionId,
+          transactionId,
+          gatewayResponse,
+          accounts: request.accounts,
+          companyNumber: request.companyNumber,
+          companyName: request.companyName,
+          directors: request.directors,
+        },
+        progress: gatewayResponse.success ? 100 : 0,
+      });
+
+      console.info('[CH Filing] Filing record persisted with ID:', submissionId);
+
+      // 6. Return standardized response
       return {
-        submissionId: gatewayResponse.submissionId || transactionId,
+        submissionId,
         status: gatewayResponse.status,
         filingDate: new Date().toISOString(),
         barcode: gatewayResponse.barcode,
@@ -195,8 +219,32 @@ class CompaniesHouseFilingService {
         packageNumber: credentials.testMode ? '0012' : undefined,
       });
 
+      // 5. Persist filing record to database
+      const submissionId = gatewayResponse.submissionId || transactionId;
+      const filingStatus = gatewayResponse.success ? 'submitted' : 'failed';
+      
+      await storage.createFiling({
+        type: 'confirmation_statement',
+        companyId: request.companyId,
+        userId: request.userId,
+        status: filingStatus,
+        data: {
+          submissionId,
+          transactionId,
+          gatewayResponse,
+          confirmationData: request.confirmationData,
+          companyNumber: request.companyNumber,
+          statementDate: request.statementDate,
+          madeUpToDate: request.madeUpToDate,
+        },
+        progress: gatewayResponse.success ? 100 : 0,
+      });
+
+      console.info('[CH Filing] CS01 filing record persisted with ID:', submissionId);
+
+      // 6. Return standardized response
       return {
-        submissionId: gatewayResponse.submissionId || transactionId,
+        submissionId,
         status: gatewayResponse.status,
         filingDate: new Date().toISOString(),
         barcode: gatewayResponse.barcode,

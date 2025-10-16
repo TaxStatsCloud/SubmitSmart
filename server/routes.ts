@@ -2045,7 +2045,7 @@ Generate the note content:`;
         });
       }
 
-      // Submit to Companies House
+      // Submit to Companies House (service now handles filing record persistence)
       const submissionResult = await companiesHouseFilingService.submitAnnualAccounts({
         companyNumber,
         companyName,
@@ -2060,20 +2060,6 @@ Generate the note content:`;
         directors: directors || [],
         userId,
         companyId
-      });
-
-      // Store filing record in database
-      await storage.createFiling({
-        type: 'annual_accounts',
-        companyId: parseInt(companyNumber), // In production, you'd map this properly
-        userId: 1, // Get from authenticated user
-        status: 'submitted',
-        data: {
-          submissionId: submissionResult.submissionId,
-          submissionResult,
-          accounts
-        },
-        progress: 100
       });
 
       res.json({
@@ -2116,7 +2102,7 @@ Generate the note content:`;
         });
       }
 
-      // Submit to Companies House
+      // Submit to Companies House (service now handles filing record persistence)
       const submissionResult = await companiesHouseFilingService.submitConfirmationStatement({
         companyNumber,
         statementDate,
@@ -2130,20 +2116,6 @@ Generate the note content:`;
         },
         userId,
         companyId
-      });
-
-      // Store filing record
-      await storage.createFiling({
-        type: 'confirmation_statement',
-        companyId: parseInt(companyNumber),
-        userId: 1, // Get from authenticated user
-        status: 'submitted',
-        data: {
-          submissionId: submissionResult.submissionId,
-          submissionResult,
-          confirmationData
-        },
-        progress: 100
       });
 
       res.json({
