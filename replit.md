@@ -13,6 +13,7 @@ PromptSubmissions is an AI-powered platform for UK corporate compliance, special
 - Agent-based outreach system
 
 ## Recent Changes
+- **October 16, 2025**: COMPANIES HOUSE XML GATEWAY COMPLETE - Implemented full XML Gateway integration for direct filing of Annual Accounts (iXBRL) and Confirmation Statements (CS01). Created iXBRL generation service with UK GAAP taxonomy tagging, XML Gateway submission service with GovTalk envelope and MD5 authentication, E-Filing credentials management (database schema, API routes, UI), and complete integration with existing filing workflows. Platform now supports both HMRC and Companies House submissions.
 - **October 16, 2025**: COMPREHENSIVE PRODUCTION TESTING COMPLETE - Full system assessment reveals 65% production readiness. Backend 100% functional, HMRC CT600 test mode working, but Companies House filing completely blocked without API key. Created detailed production readiness report (COMPREHENSIVE_TESTING_REPORT.md).
 - **October 16, 2025**: REPLIT AUTH FRONTEND MIGRATION COMPLETE - Successfully migrated from Firebase to Replit Auth with Google OAuth, fixed all authentication flows, created SEO-optimized landing page with pricing visibility, passed all E2E tests for public features.
 - **October 16, 2025**: PRODUCTION CODE CLEANUP - Removed all TODO comments from production code, enhanced logging for production (info/warn/error enabled), updated Browserslist database

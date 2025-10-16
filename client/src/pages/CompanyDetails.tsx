@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { formatDate } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { EFilingCredentialsDialog } from "@/components/EFilingCredentialsDialog";
 
 const CompanyDetails = () => {
   const { toast } = useToast();
@@ -33,11 +34,18 @@ const CompanyDetails = () => {
       
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Building2 className="h-6 w-6 mr-2" />
-            {isLoading ? <Skeleton className="h-8 w-64" /> : company?.name || "Your Company"}
-          </CardTitle>
-          <CardDescription>Manage your company information</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center">
+                <Building2 className="h-6 w-6 mr-2" />
+                {isLoading ? <Skeleton className="h-8 w-64" /> : company?.name || "Your Company"}
+              </CardTitle>
+              <CardDescription>Manage your company information</CardDescription>
+            </div>
+            {!isLoading && user?.companyId && (
+              <EFilingCredentialsDialog companyId={user.companyId} />
+            )}
+          </div>
         </CardHeader>
         
         <CardContent>

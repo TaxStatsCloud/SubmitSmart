@@ -2,7 +2,7 @@ import type { Express } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { taxFilingSectionDataSchema, getTaxFilingSectionSchema } from "@shared/schema";
+import { taxFilingSectionDataSchema, getTaxFilingSectionSchema, eFilingCredentials } from "@shared/schema";
 import { z } from "zod";
 import { insertUserSchema, insertCompanySchema, insertDocumentSchema, insertFilingSchema, insertActivitySchema, insertAssistantMessageSchema } from "@shared/schema";
 import { processDocument } from "./services/documentService";
@@ -23,6 +23,8 @@ import agentRoutes from "./routes/agentRoutes";
 import billingRoutes from "./routes/billingRoutes";
 import Stripe from "stripe";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { db } from "./db";
+import { eq, and } from "drizzle-orm";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -116,7 +118,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Replit Auth - User endpoint (REQUIRED for Replit Auth)
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -2022,23 +2024,31 @@ Generate the note content:`;
    */
   app.post('/api/companies-house/submit/annual-accounts', async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
       const { 
-        companyNumber, 
+        companyNumber,
+        companyName,
+        companyId,
         accounts, 
-        directors, 
-        authenticatedUser 
+        directors
       } = req.body;
 
+      const userId = (req.user as any).claims.sub;
+
       // Validate required data
-      if (!companyNumber || !accounts || !authenticatedUser) {
+      if (!companyNumber || !companyName || !companyId || !accounts) {
         return res.status(400).json({ 
-          error: 'Missing required fields: companyNumber, accounts, and authenticatedUser' 
+          error: 'Missing required fields: companyNumber, companyName, companyId, and accounts' 
         });
       }
 
       // Submit to Companies House
       const submissionResult = await companiesHouseFilingService.submitAnnualAccounts({
         companyNumber,
+        companyName,
         accounts: {
           balanceSheet: accounts.balanceSheet,
           profitLoss: accounts.profitLoss,
@@ -2048,7 +2058,8 @@ Generate the note content:`;
           accountingPeriodStart: accounts.accountingPeriodStart
         },
         directors: directors || [],
-        authenticatedUser
+        userId,
+        companyId
       });
 
       // Store filing record in database
@@ -2084,18 +2095,24 @@ Generate the note content:`;
    */
   app.post('/api/companies-house/submit/confirmation-statement', async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
       const { 
-        companyNumber, 
+        companyNumber,
+        companyId,
         statementDate, 
         madeUpToDate, 
-        confirmationData, 
-        authenticatedUser 
+        confirmationData
       } = req.body;
 
+      const userId = (req.user as any).claims.sub;
+
       // Validate required data
-      if (!companyNumber || !statementDate || !madeUpToDate || !authenticatedUser) {
+      if (!companyNumber || !companyId || !statementDate || !madeUpToDate) {
         return res.status(400).json({ 
-          error: 'Missing required fields: companyNumber, statementDate, madeUpToDate, and authenticatedUser' 
+          error: 'Missing required fields: companyNumber, companyId, statementDate, and madeUpToDate' 
         });
       }
 
@@ -2111,7 +2128,8 @@ Generate the note content:`;
           tradingStatus: confirmationData.tradingStatus || 'trading',
           registeredOffice: confirmationData.registeredOffice
         },
-        authenticatedUser
+        userId,
+        companyId
       });
 
       // Store filing record
@@ -2196,6 +2214,183 @@ Generate the note content:`;
       console.error('Fee calculation error:', error);
       res.status(500).json({ 
         error: 'Failed to calculate fees',
+        details: error.message 
+      });
+    }
+  });
+
+  /**
+   * E-Filing Credentials Management Routes
+   * Manage Companies House presenter credentials for XML Gateway submission
+   */
+
+  /**
+   * Get E-Filing credentials for a company
+   */
+  app.get('/api/efiling-credentials/:companyId', async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const companyId = parseInt(req.params.companyId);
+      const userId = (req.user as any).claims.sub;
+
+      const credentials = await db
+        .select()
+        .from(eFilingCredentials)
+        .where(
+          and(
+            eq(eFilingCredentials.userId, userId),
+            eq(eFilingCredentials.companyId, companyId),
+            eq(eFilingCredentials.isActive, true)
+          )
+        )
+        .limit(1);
+
+      if (!credentials || credentials.length === 0) {
+        return res.json({ 
+          success: true,
+          credentials: null,
+          message: 'No E-Filing credentials configured for this company'
+        });
+      }
+
+      // Return credentials without the auth code for security
+      res.json({
+        success: true,
+        credentials: {
+          id: credentials[0].id,
+          companyId: credentials[0].companyId,
+          presenterIdNumber: credentials[0].presenterIdNumber,
+          testMode: credentials[0].testMode,
+          createdAt: credentials[0].createdAt,
+        }
+      });
+
+    } catch (error: any) {
+      console.error('[E-Filing Credentials] Get error:', error);
+      res.status(500).json({ 
+        error: 'Failed to fetch E-Filing credentials',
+        details: error.message 
+      });
+    }
+  });
+
+  /**
+   * Create or update E-Filing credentials
+   */
+  app.post('/api/efiling-credentials', async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const { companyId, presenterIdNumber, presenterAuthenticationCode, testMode } = req.body;
+      const userId = (req.user as any).claims.sub;
+
+      if (!companyId || !presenterIdNumber || !presenterAuthenticationCode) {
+        return res.status(400).json({ 
+          error: 'Missing required fields',
+          details: 'companyId, presenterIdNumber, and presenterAuthenticationCode are required'
+        });
+      }
+
+      // Validate presenter ID format (test IDs start with 666)
+      if (testMode && !presenterIdNumber.startsWith('666')) {
+        return res.status(400).json({
+          error: 'Invalid test presenter ID',
+          details: 'Test presenter IDs must start with 666'
+        });
+      }
+
+      // Deactivate any existing credentials for this user/company
+      await db
+        .update(eFilingCredentials)
+        .set({ isActive: false })
+        .where(
+          and(
+            eq(eFilingCredentials.userId, userId),
+            eq(eFilingCredentials.companyId, companyId)
+          )
+        );
+
+      // Insert new credentials
+      const newCredentials = await db
+        .insert(eFilingCredentials)
+        .values({
+          userId,
+          companyId,
+          presenterIdNumber,
+          presenterAuthenticationCode,
+          testMode: testMode || false,
+          isActive: true,
+        })
+        .returning();
+
+      res.json({
+        success: true,
+        message: 'E-Filing credentials saved successfully',
+        credentials: {
+          id: newCredentials[0].id,
+          companyId: newCredentials[0].companyId,
+          presenterIdNumber: newCredentials[0].presenterIdNumber,
+          testMode: newCredentials[0].testMode,
+        }
+      });
+
+    } catch (error: any) {
+      console.error('[E-Filing Credentials] Save error:', error);
+      res.status(500).json({ 
+        error: 'Failed to save E-Filing credentials',
+        details: error.message 
+      });
+    }
+  });
+
+  /**
+   * Delete E-Filing credentials
+   */
+  app.delete('/api/efiling-credentials/:id', async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const credentialId = parseInt(req.params.id);
+      const userId = (req.user as any).claims.sub;
+
+      // Verify ownership before deletion
+      const credential = await db
+        .select()
+        .from(eFilingCredentials)
+        .where(
+          and(
+            eq(eFilingCredentials.id, credentialId),
+            eq(eFilingCredentials.userId, userId)
+          )
+        )
+        .limit(1);
+
+      if (!credential || credential.length === 0) {
+        return res.status(404).json({ error: 'Credentials not found' });
+      }
+
+      // Soft delete by marking as inactive
+      await db
+        .update(eFilingCredentials)
+        .set({ isActive: false })
+        .where(eq(eFilingCredentials.id, credentialId));
+
+      res.json({
+        success: true,
+        message: 'E-Filing credentials deleted successfully'
+      });
+
+    } catch (error: any) {
+      console.error('[E-Filing Credentials] Delete error:', error);
+      res.status(500).json({ 
+        error: 'Failed to delete E-Filing credentials',
         details: error.message 
       });
     }
