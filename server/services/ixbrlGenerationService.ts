@@ -33,6 +33,8 @@ export class IXBRLGenerationService {
   private namespace = {
     html: 'http://www.w3.org/1999/xhtml',
     ix: 'http://www.xbrl.org/2013/inlineXBRL',
+    xbrli: 'http://www.xbrl.org/2003/instance',
+    link: 'http://www.xbrl.org/2003/linkbase',
     'uk-gaap': 'http://www.xbrl.org/uk/fr/gaap/pt/2025-01-01',
     'uk-core': 'http://www.xbrl.org/uk/cd/2025-01-01',
     iso4217: 'http://www.xbrl.org/2003/iso4217',
