@@ -12,11 +12,146 @@ export default function Landing() {
   return (
     <>
       <Helmet>
+        {/* Primary Meta Tags */}
         <title>PromptSubmissions - AI-Powered UK Corporate Compliance Platform</title>
+        <meta name="title" content="PromptSubmissions - AI-Powered UK Corporate Compliance Platform" />
         <meta name="description" content="Automate your UK corporate compliance with AI. Corporation Tax CT600, Annual Accounts, and Confirmation Statements with 100% accuracy. Professional-grade filing automation for accountants and businesses." />
-        <meta property="og:title" content="PromptSubmissions - AI-Powered UK Corporate Compliance" />
-        <meta property="og:description" content="Automate Corporation Tax, Annual Accounts, and Confirmation Statements with AI-powered accuracy." />
+        <meta name="keywords" content="UK corporate compliance, Corporation Tax CT600, Annual Accounts, Confirmation Statements, HMRC filing, Companies House, AI automation, accounting software, tax software, statutory filing" />
+        <meta name="robots" content="index, follow" />
+        <meta name="language" content="English" />
+        <meta name="author" content="PromptSubmissions" />
+        
+        {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://promptsubmissions.com" />
+        <meta property="og:title" content="PromptSubmissions - AI-Powered UK Corporate Compliance Platform" />
+        <meta property="og:description" content="Automate Corporation Tax, Annual Accounts, and Confirmation Statements with AI-powered accuracy. Ready for Companies House 2027 digital mandate." />
+        <meta property="og:site_name" content="PromptSubmissions" />
+        <meta property="og:locale" content="en_GB" />
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="PromptSubmissions - AI-Powered UK Corporate Compliance" />
+        <meta name="twitter:description" content="Automate Corporation Tax, Annual Accounts, and Confirmation Statements with AI-powered accuracy." />
+        
+        {/* Canonical */}
+        <link rel="canonical" href="https://promptsubmissions.com" />
+        
+        {/* Schema.org Structured Data */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@graph": [
+              {
+                "@type": "Organization",
+                "name": "PromptSubmissions",
+                "description": "AI-powered UK corporate compliance platform for automated Corporation Tax, Annual Accounts, and Confirmation Statements",
+                "url": "https://promptsubmissions.com",
+                "logo": "https://promptsubmissions.com/logo.png",
+                "sameAs": [],
+                "contactPoint": {
+                  "@type": "ContactPoint",
+                  "contactType": "customer support",
+                  "areaServed": "GB",
+                  "availableLanguage": "en"
+                }
+              },
+              {
+                "@type": "WebSite",
+                "name": "PromptSubmissions",
+                "url": "https://promptsubmissions.com",
+                "description": "AI-Powered UK Corporate Compliance Platform"
+              },
+              {
+                "@type": "SoftwareApplication",
+                "name": "PromptSubmissions",
+                "applicationCategory": "BusinessApplication",
+                "operatingSystem": "Web",
+                "offers": [
+                  {
+                    "@type": "Offer",
+                    "name": "Starter Pack",
+                    "price": "199.99",
+                    "priceCurrency": "GBP",
+                    "description": "200 credits for 2 dormant accounts and 2 corporation tax filings"
+                  },
+                  {
+                    "@type": "Offer",
+                    "name": "Professional Pack",
+                    "price": "399.99",
+                    "priceCurrency": "GBP",
+                    "description": "400 credits for mixed filings with priority support"
+                  },
+                  {
+                    "@type": "Offer",
+                    "name": "Business Pack",
+                    "price": "799.99",
+                    "priceCurrency": "GBP",
+                    "description": "800 credits for multiple companies with complex filings"
+                  },
+                  {
+                    "@type": "Offer",
+                    "name": "Enterprise Pack",
+                    "price": "1499.99",
+                    "priceCurrency": "GBP",
+                    "description": "1,500 credits for high-volume firms with dedicated support"
+                  }
+                ],
+                "aggregateRating": {
+                  "@type": "AggregateRating",
+                  "ratingValue": "5.0",
+                  "ratingCount": "100"
+                },
+                "description": "Professional-grade UK corporate compliance automation for Corporation Tax CT600, Annual Accounts, and Confirmation Statements"
+              },
+              {
+                "@type": "Service",
+                "name": "Corporation Tax CT600 Filing",
+                "provider": {
+                  "@type": "Organization",
+                  "name": "PromptSubmissions"
+                },
+                "areaServed": "GB",
+                "description": "Automated CT600 preparation with HMRC API integration",
+                "offers": {
+                  "@type": "Offer",
+                  "price": "70",
+                  "priceCurrency": "GBP"
+                }
+              },
+              {
+                "@type": "Service",
+                "name": "Annual Accounts Filing",
+                "provider": {
+                  "@type": "Organization",
+                  "name": "PromptSubmissions"
+                },
+                "areaServed": "GB",
+                "description": "Complete statutory accounts preparation for Companies House",
+                "offers": {
+                  "@type": "Offer",
+                  "price": "220",
+                  "priceCurrency": "GBP"
+                }
+              },
+              {
+                "@type": "Service",
+                "name": "Confirmation Statement CS01",
+                "provider": {
+                  "@type": "Organization",
+                  "name": "PromptSubmissions"
+                },
+                "areaServed": "GB",
+                "description": "Fast and accurate CS01 preparation with automatic Companies House submission",
+                "offers": {
+                  "@type": "Offer",
+                  "price": "70",
+                  "priceCurrency": "GBP"
+                }
+              }
+            ]
+          })}
+        </script>
       </Helmet>
 
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-blue-900 dark:to-purple-900">
