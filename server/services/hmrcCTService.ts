@@ -19,6 +19,7 @@ import crypto from 'crypto';
 import { DOMParser } from '@xmldom/xmldom';
 import { select } from 'xpath';
 import { C14nCanonicalization } from 'xml-crypto';
+import { IXBRLEnhancedValidationService } from './ixbrlEnhancedValidationService';
 
 export class HMRCCTService {
   // CONFIRMED credentials from HMRC SDSTeam
@@ -34,16 +35,17 @@ export class HMRCCTService {
   
   private xmlBuilder: XMLBuilder;
   private xmlParser: XMLParser;
+  private enhancedValidator: IXBRLEnhancedValidationService;
 
   constructor() {
+    this.enhancedValidator = new IXBRLEnhancedValidationService();
     this.xmlBuilder = new XMLBuilder({
       ignoreAttributes: false,
       format: true,
       attributeNamePrefix: '@_',
       textNodeName: '#text',
       cdataPropName: '#cdata',
-      suppressEmptyNode: true,
-      parseAttributeValue: true
+      suppressEmptyNode: true
     });
 
     this.xmlParser = new XMLParser({
@@ -65,6 +67,54 @@ export class HMRCCTService {
   }): Promise<string> {
     const correlationId = this.generateCorrelationId();
     const currentDate = new Date().toISOString().split('T')[0];
+    
+    // Validate iXBRL attachments if provided (enhanced validation)
+    if (options?.includeIXBRL && options.ixbrlAccounts) {
+      console.log('[HMRC CT] Validating iXBRL accounts attachment...');
+      const validation = await this.enhancedValidator.validateiXBRLDocument(
+        options.ixbrlAccounts,
+        corporationTaxData.accountsType || 'small'
+      );
+      
+      if (!validation.isValid) {
+        const errors = validation.errors.map(e => `${e.code}: ${e.message}`).join('\n');
+        throw new Error(`iXBRL accounts validation failed:\n${errors}`);
+      }
+      
+      const criticalPlaceholders = validation.placeholders.filter(p => p.severity === 'error');
+      if (criticalPlaceholders.length > 0) {
+        const placeholderDetails = criticalPlaceholders.map(p => 
+          `${p.type}: ${p.message}`
+        ).join('\n');
+        throw new Error(`iXBRL accounts contain critical placeholders:\n${placeholderDetails}`);
+      }
+      
+      console.log('[HMRC CT] iXBRL accounts validation passed');
+    }
+    
+    if (options?.includeIXBRL && options.ixbrlComputations) {
+      console.log('[HMRC CT] Validating iXBRL computations attachment...');
+      const validation = await this.enhancedValidator.validateiXBRLDocument(
+        options.ixbrlComputations,
+        corporationTaxData.accountsType || 'small'
+      );
+      
+      if (!validation.isValid) {
+        const errors = validation.errors.map(e => `${e.code}: ${e.message}`).join('\n');
+        throw new Error(`iXBRL computations validation failed:\n${errors}`);
+      }
+      
+      // Check for critical placeholders in computations
+      const criticalPlaceholders = validation.placeholders.filter(p => p.severity === 'error');
+      if (criticalPlaceholders.length > 0) {
+        const placeholderDetails = criticalPlaceholders.map(p => 
+          `${p.type}: ${p.message}`
+        ).join('\n');
+        throw new Error(`iXBRL computations contain critical placeholders:\n${placeholderDetails}`);
+      }
+      
+      console.log('[HMRC CT] iXBRL computations validation passed');
+    }
     
     const govTalkMessage = {
       '?xml': {

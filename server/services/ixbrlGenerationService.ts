@@ -1,5 +1,6 @@
 import { XMLBuilder } from 'fast-xml-parser';
 import { IXBRLValidationService, ValidationResult } from './ixbrlValidationService';
+import { IXBRLEnhancedValidationService, EnhancedValidationResult } from './ixbrlEnhancedValidationService';
 
 /**
  * iXBRL Generation Service
@@ -42,7 +43,9 @@ interface iXBRLDocument {
 
 export class IXBRLGenerationService {
   private taxonomyVersion = '2025-01-01';
-  private validationService = new IXBRLValidationService();
+  private legacyValidationService = new IXBRLValidationService();
+  private enhancedValidationService = new IXBRLEnhancedValidationService();
+  private useEnhancedValidation = process.env.USE_LEGACY_VALIDATION !== 'true'; // Default to enhanced
   private namespace = {
     html: 'http://www.w3.org/1999/xhtml',
     ix: 'http://www.xbrl.org/2013/inlineXBRL',
@@ -133,21 +136,54 @@ export class IXBRLGenerationService {
       
       const htmlContent = this.buildHTMLStructure(accountsData, contextRefs, unitRefs);
       
-      // Validate the generated iXBRL document
-      console.log('Validating iXBRL document against Companies House requirements...');
-      const validation = await this.validationService.validateiXBRLDocument(
-        htmlContent,
-        accountsData.accountsType
-      );
-
-      // Log validation results
-      const validationReport = this.validationService.generateValidationReport(validation);
-      console.log(validationReport);
-
-      // If validation fails, throw error with details
-      if (!validation.isValid) {
-        const errorDetails = validation.errors.map(e => `${e.code}: ${e.message}`).join('\n');
-        throw new Error(`iXBRL validation failed:\n${errorDetails}`);
+      // Validate the generated iXBRL document using enhanced validator (production-ready)
+      console.log(`[iXBRL Validation] Using ${this.useEnhancedValidation ? 'ENHANCED' : 'LEGACY'} validation service`);
+      
+      let validation: ValidationResult | EnhancedValidationResult;
+      let validationReport: string;
+      
+      if (this.useEnhancedValidation) {
+        // Use enhanced DOM/XPath-based validation (production-ready)
+        const enhancedResult = await this.enhancedValidationService.validateiXBRLDocument(
+          htmlContent,
+          accountsData.accountsType
+        );
+        
+        validationReport = this.enhancedValidationService.generateValidationReport(enhancedResult);
+        console.log(validationReport);
+        
+        // Check for critical placeholders that must be fixed
+        const criticalPlaceholders = enhancedResult.placeholders.filter(p => p.severity === 'error');
+        if (criticalPlaceholders.length > 0) {
+          const placeholderDetails = criticalPlaceholders.map(p => 
+            `${p.type}: ${p.message} (Location: ${p.location || 'unknown'})`
+          ).join('\n');
+          throw new Error(`iXBRL contains critical placeholders:\n${placeholderDetails}`);
+        }
+        
+        // If validation fails, throw error with details
+        if (!enhancedResult.isValid) {
+          const errorDetails = enhancedResult.errors.map(e => `${e.code}: ${e.message}`).join('\n');
+          throw new Error(`iXBRL validation failed:\n${errorDetails}`);
+        }
+        
+        validation = enhancedResult as any;
+      } else {
+        // Use legacy regex-based validation (backwards compatibility)
+        const legacyResult = await this.legacyValidationService.validateiXBRLDocument(
+          htmlContent,
+          accountsData.accountsType
+        );
+        
+        validationReport = this.legacyValidationService.generateValidationReport(legacyResult);
+        console.log(validationReport);
+        
+        if (!legacyResult.isValid) {
+          const errorDetails = legacyResult.errors.map(e => `${e.code}: ${e.message}`).join('\n');
+          throw new Error(`iXBRL validation failed:\n${errorDetails}`);
+        }
+        
+        validation = legacyResult;
       }
       
       return {

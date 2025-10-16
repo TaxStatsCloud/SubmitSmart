@@ -1,5 +1,6 @@
 import { ixbrlGenerationService } from './ixbrlGenerationService';
 import { companiesHouseXMLGatewayService } from './companiesHouseXMLGatewayService';
+import { IXBRLEnhancedValidationService } from './ixbrlEnhancedValidationService';
 import { XMLBuilder } from 'fast-xml-parser';
 import { db } from '../db';
 import { storage } from '../storage';
@@ -33,9 +34,11 @@ interface FilingSubmissionResponse {
  */
 class CompaniesHouseFilingService {
   private testMode: boolean;
+  private enhancedValidator: IXBRLEnhancedValidationService;
 
   constructor() {
     this.testMode = process.env.NODE_ENV !== 'production';
+    this.enhancedValidator = new IXBRLEnhancedValidationService();
   }
 
   /**
@@ -52,6 +55,13 @@ class CompaniesHouseFilingService {
       accountsType: 'micro' | 'small' | 'medium' | 'large';
       accountingPeriodEnd: string;
       accountingPeriodStart: string;
+      averageNumberOfEmployees?: number; // MANDATORY for all filings
+      accountingStandard?: 'FRS102' | 'FRS105' | 'FRS101' | 'UKIFRS';
+      turnover?: number;
+      balanceSheetTotal?: number;
+      principalActivities?: string;
+      approvalDate?: string;
+      signatoryDirector?: string;
     };
     directors: string[];
     userId: number;
@@ -68,7 +78,12 @@ class CompaniesHouseFilingService {
 
       console.info('[CH Filing] Generating iXBRL accounts for', request.companyNumber);
 
-      // 2. Generate iXBRL-tagged accounts document
+      // 2. Validate mandatory fields before generation
+      if (request.accounts.averageNumberOfEmployees === undefined || request.accounts.averageNumberOfEmployees === null) {
+        throw new Error('Average number of employees is mandatory for all Companies House filings (required since October 2020)');
+      }
+
+      // 3. Generate iXBRL-tagged accounts document
       const ixbrlDocument = await ixbrlGenerationService.generateiXBRLAccounts({
         balanceSheet: request.accounts.balanceSheet,
         profitLoss: request.accounts.profitLoss,
@@ -78,14 +93,48 @@ class CompaniesHouseFilingService {
         accountingPeriodEnd: request.accounts.accountingPeriodEnd,
         companyName: request.companyName,
         companyNumber: request.companyNumber,
+        averageNumberOfEmployees: request.accounts.averageNumberOfEmployees,
+        directors: request.directors,
+        accountingStandard: request.accounts.accountingStandard,
+        turnover: request.accounts.turnover,
+        balanceSheetTotal: request.accounts.balanceSheetTotal,
+        principalActivities: request.accounts.principalActivities,
+        approvalDate: request.accounts.approvalDate,
+        signatoryDirector: request.accounts.signatoryDirector,
       });
 
       console.info('[CH Filing] iXBRL generated successfully, size:', ixbrlDocument.size, 'bytes');
 
-      // 3. Calculate filing fees
+      // 4. Final validation check before submission (enhanced validator)
+      console.info('[CH Filing] Running final enhanced validation before submission...');
+      const finalValidation = await this.enhancedValidator.validateiXBRLDocument(
+        ixbrlDocument.html,
+        request.accounts.accountsType
+      );
+
+      // Log validation results
+      const validationReport = this.enhancedValidator.generateValidationReport(finalValidation);
+      console.info('[CH Filing] Final validation results:\n', validationReport);
+
+      // Block submission if critical errors exist
+      if (!finalValidation.isValid) {
+        const errorDetails = finalValidation.errors.map(e => `${e.code}: ${e.message}`).join('\n');
+        throw new Error(`Cannot submit - iXBRL validation failed:\n${errorDetails}`);
+      }
+
+      // Warn about placeholders but allow submission if warnings only
+      const criticalPlaceholders = finalValidation.placeholders.filter(p => p.severity === 'error');
+      if (criticalPlaceholders.length > 0) {
+        const placeholderDetails = criticalPlaceholders.map(p => 
+          `${p.type}: ${p.message} (Location: ${p.location || 'unknown'})`
+        ).join('\n');
+        throw new Error(`Cannot submit - critical placeholders detected:\n${placeholderDetails}`);
+      }
+
+      // 5. Calculate filing fees
       const fees = this.calculateFilingFees('annual_accounts', request.accounts.accountsType);
       
-      // 4. Submit to Companies House XML Gateway
+      // 6. Submit to Companies House XML Gateway
       const transactionId = companiesHouseXMLGatewayService.generateTransactionId('ACC');
       
       const gatewayResponse = await companiesHouseXMLGatewayService.submitToGateway({
@@ -109,7 +158,7 @@ class CompaniesHouseFilingService {
         submissionId: gatewayResponse.submissionId,
       });
 
-      // 5. Persist filing record to database
+      // 7. Persist filing record to database (include full validation results)
       const submissionId = gatewayResponse.submissionId || transactionId;
       const filingStatus = gatewayResponse.success ? 'submitted' : 'failed';
       
@@ -126,13 +175,40 @@ class CompaniesHouseFilingService {
           companyNumber: request.companyNumber,
           companyName: request.companyName,
           directors: request.directors,
+          validationResults: {
+            isValid: finalValidation.isValid,
+            errorCount: finalValidation.errors.length,
+            warningCount: finalValidation.warnings.length,
+            placeholderCount: finalValidation.placeholders.length,
+            errors: finalValidation.errors.map(e => ({ 
+              code: e.code, 
+              message: e.message, 
+              element: e.element,
+              location: e.location,
+              severity: e.severity || 'error'
+            })),
+            warnings: finalValidation.warnings.map(w => ({ 
+              code: w.code, 
+              message: w.message, 
+              element: w.element,
+              location: w.location,
+              severity: w.severity || 'warning'
+            })),
+            placeholders: finalValidation.placeholders.map(p => ({ 
+              type: p.type, 
+              severity: p.severity, 
+              message: p.message, 
+              location: p.location 
+            })),
+            statistics: finalValidation.statistics,
+          },
         },
         progress: gatewayResponse.success ? 100 : 0,
       });
 
       console.info('[CH Filing] Filing record persisted with ID:', submissionId);
 
-      // 6. Return standardized response
+      // 8. Return standardized response with validation data
       return {
         submissionId,
         status: gatewayResponse.status,

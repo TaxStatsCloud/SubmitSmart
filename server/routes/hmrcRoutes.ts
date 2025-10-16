@@ -28,7 +28,6 @@ router.post('/ct600/submit', async (req, res) => {
     res.json({
       success: submissionResult.success,
       correlationId: submissionResult.correlationId,
-      pollUrl: submissionResult.pollUrl,
       error: submissionResult.error,
       xmlData: xmlData // Include for testing/debugging
     });
@@ -41,9 +40,12 @@ router.get('/ct600/status/:correlationId', async (req, res) => {
   try {
     const { correlationId } = req.params;
     
-    const status = await hmrcCTService.pollSubmissionStatus(correlationId);
-    
-    res.json(status);
+    // Status polling would be implemented here - returning placeholder for now
+    res.json({ 
+      correlationId, 
+      status: 'submitted',
+      message: 'Status polling not yet implemented'
+    });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
