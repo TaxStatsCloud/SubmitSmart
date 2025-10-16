@@ -12,7 +12,7 @@ export default function Privacy() {
 
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
         <div className="max-w-4xl mx-auto px-4 py-12">
-          <Link href="/" className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 mb-8 transition-colors">
+          <Link href="/" className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 mb-8 transition-colors" data-testid="link-back-home">
             <ArrowLeft className="w-4 h-4" />
             Back to Home
           </Link>
@@ -193,7 +193,7 @@ export default function Privacy() {
                 <div className="space-y-2">
                   <p><strong className="text-white">Data Protection Officer</strong></p>
                   <p><strong className="text-white">Email:</strong> privacy@promptsubmissions.com</p>
-                  <p><strong className="text-white">Address:</strong> 56 Oldham Road, TaxStats, Ashton Under Lyne OL6 7AP</p>
+                  <p><strong className="text-white">Address:</strong> 56 Oldham Road, PromptSubmissions, Ashton Under Lyne OL6 7AP</p>
                   <p><strong className="text-white">Website:</strong> https://promptsubmissions.com</p>
                 </div>
                 <p className="leading-relaxed mt-4">
