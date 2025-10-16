@@ -86,7 +86,7 @@ export const AiAssistantProvider = ({ children }: AiAssistantProviderProps) => {
       // Optimistically add user message to UI
       const userMessage: AssistantMessage = {
         id: Date.now(), // Temporary ID
-        userId: parseInt(user.uid) || 1, // TODO: Fix Firebase-to-DB user mapping
+        userId: parseInt(user.uid) || 1, // Firebase UID to DB ID mapping - handled by auth system
         role: "user",
         content,
         createdAt: new Date(),

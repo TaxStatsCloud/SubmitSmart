@@ -3,7 +3,7 @@ import OpenAI from "openai";
 // Note: In production, API calls should go through the backend for security
 // This is a demo setup - the API key should be handled server-side
 const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY || 'placeholder-key',
+  apiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
   dangerouslyAllowBrowser: true
 });
 
@@ -92,11 +92,11 @@ Always provide accurate, helpful guidance on UK regulations and platform usage. 
         timestamp: new Date()
       });
 
-      // Keep conversation history manageable (last 20 messages)
-      if (this.conversation.length > 21) {
+      // Keep conversation history manageable using app constants
+      if (this.conversation.length > APP_CONFIG.LIMITS.MAX_CONVERSATION_LENGTH) {
         this.conversation = [
           this.conversation[0], // Keep system message
-          ...this.conversation.slice(-20)
+          ...this.conversation.slice(APP_CONFIG.LIMITS.CONVERSATION_HISTORY_LIMIT)
         ];
       }
 
