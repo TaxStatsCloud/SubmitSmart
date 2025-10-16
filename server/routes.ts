@@ -81,7 +81,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log('[DEV-LOGIN] Looking up user by email:', email);
         // Find user by email (users table has serial ID, not custom string IDs)
-        let user = await storage.db.query.users.findFirst({
+        let user = await db.query.users.findFirst({
           where: (users, { eq }) => eq(users.email, email)
         }).catch((err) => {
           console.log('[DEV-LOGIN] User lookup error:', err.message);
@@ -104,7 +104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('[DEV-LOGIN] Company created:', testCompany.id);
           
           // Create user with company - DON'T pass ID, let DB auto-generate
-          const [newUser] = await storage.db.insert(schema.users).values({
+          const [newUser] = await db.insert(schema.users).values({
             email: email,
             firstName: email.split('@')[0],
             role: 'director',
@@ -130,7 +130,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('[DEV-LOGIN] Backfill company created:', testCompany.id);
           
           // Update user with companyId
-          const [updated] = await storage.db.update(schema.users)
+          const [updated] = await db.update(schema.users)
             .set({ companyId: testCompany.id })
             .where(eq(schema.users.id, user.id))
             .returning();
@@ -245,7 +245,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('[AUTH-USER] Looking up user by email:', email);
       
       // Get user from database by email (works for both dev and production)
-      const user = await storage.db.query.users.findFirst({
+      const user = await db.query.users.findFirst({
         where: (users, { eq }) => eq(users.email, email)
       }).catch((error) => {
         console.error('[AUTH-USER] Error getting user from storage:', error);
