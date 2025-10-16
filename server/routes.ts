@@ -90,18 +90,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (!user) {
           console.log('[DEV-LOGIN] Creating new company and user');
-          // New user - create company first
-          const testCompany = await storage.createCompany({
+          // Create company in DATABASE (not MemStorage!)
+          const [testCompany] = await db.insert(schema.companies).values({
             name: `Test Company for ${email}`,
             registrationNumber: `TEST${Math.floor(Math.random() * 1000000)}`,
-            type: 'limited',
-            address: {
-              line1: 'Test Address',
-              postcode: 'TE1 1ST',
-              country: 'GB'
-            }
-          });
-          console.log('[DEV-LOGIN] Company created:', testCompany.id);
+            registeredAddress: 'Test Address, TE1 1ST, United Kingdom',
+            incorporationDate: new Date('2020-01-01'),
+            accountingReference: '31 December',
+            status: 'active'
+          }).returning();
+          console.log('[DEV-LOGIN] Company created in DB:', testCompany.id);
           
           // Create user with company - DON'T pass ID, let DB auto-generate
           const [newUser] = await db.insert(schema.users).values({
@@ -117,17 +115,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else if (!user.companyId) {
           // Existing user without company - create and assign company
           console.log('[DEV-LOGIN] Backfilling company for existing user:', user.id);
-          const testCompany = await storage.createCompany({
+          // Create company in DATABASE (not MemStorage!)
+          const [testCompany] = await db.insert(schema.companies).values({
             name: `Test Company for ${email}`,
             registrationNumber: `TEST${Math.floor(Math.random() * 1000000)}`,
-            type: 'limited',
-            address: {
-              line1: 'Test Address',
-              postcode: 'TE1 1ST',
-              country: 'GB'
-            }
-          });
-          console.log('[DEV-LOGIN] Backfill company created:', testCompany.id);
+            registeredAddress: 'Test Address, TE1 1ST, United Kingdom',
+            incorporationDate: new Date('2020-01-01'),
+            accountingReference: '31 December',
+            status: 'active'
+          }).returning();
+          console.log('[DEV-LOGIN] Backfill company created in DB:', testCompany.id);
           
           // Update user with companyId
           const [updated] = await db.update(schema.users)
@@ -175,8 +172,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         });
       } catch (error: any) {
-        console.error('Dev login error:', error);
-        res.status(500).json({ error: 'Login failed', details: error.message });
+        console.error('[DEV-LOGIN] Error:', error);
+        
+        // Provide structured error responses for debugging
+        if (error.code === '23505') {
+          // Duplicate key violation (e.g., registration number collision)
+          return res.status(409).json({ 
+            error: 'Registration conflict',
+            details: 'A company with this registration number already exists',
+            code: 'DUPLICATE_REGISTRATION'
+          });
+        }
+        
+        if (error.code === '23503') {
+          // Foreign key violation
+          return res.status(500).json({
+            error: 'Database integrity error',
+            details: 'Company reference not found',
+            code: 'FK_VIOLATION'
+          });
+        }
+        
+        // Generic error with useful details
+        res.status(500).json({ 
+          error: 'Login failed', 
+          details: error.message,
+          code: error.code || 'UNKNOWN_ERROR'
+        });
       }
     });
   }
