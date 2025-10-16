@@ -37,14 +37,27 @@ import ComparativePeriods from "@/pages/ComparativePeriods";
 import OpeningTrialBalance from "@/pages/OpeningTrialBalance";
 import HMRCIntegration from "@/pages/HMRCIntegration";
 import ValidationDemo from "@/pages/ValidationDemo";
+import Landing from "@/pages/Landing";
+import { useAuth } from "@/contexts/AuthContext";
 
 function Router() {
+  const { user, loading } = useAuth();
+
+  // Show landing page for logged-out users or loading state
+  if (loading || !user) {
+    return (
+      <Switch>
+        <Route path="/" component={Landing} />
+        <Route path="/login" component={Login} />
+        <Route component={Landing} />
+      </Switch>
+    );
+  }
+
+  // Show app layout with protected routes for logged-in users
   return (
     <AppLayout>
       <Switch>
-        {/* Authentication */}
-        <Route path="/login" component={Login} />
-        
         {/* Dashboard */}
         <Route path="/" component={Dashboard} />
         
