@@ -18,7 +18,7 @@
 **Critical Blockers:**
 - ❌ E2E testing blocked by Google OAuth (cannot automate)
 - ❌ Missing production API keys for live submissions
-- ⚠️ Services work in TEST MODE but need production credentials
+- ❌ **Companies House COMPLETELY BLOCKED** - zero functionality without API key
 
 ---
 
@@ -67,11 +67,11 @@
 **Production Requirement:**
 - ⚠️ Needs production HMRC API credentials (currently only test mode)
 
-### 3. ✅ **COMPANIES HOUSE FILING SERVICE - FULLY IMPLEMENTED**
+### 3. ❌ **COMPANIES HOUSE FILING SERVICE - CODE EXISTS BUT BLOCKED**
 
 **Service:** `server/services/companiesHouseFilingService.ts`
 
-**Implementation Status:** COMPLETE ✅
+**Implementation Status:** CODE COMPLETE ⚠️ BUT ZERO FUNCTIONALITY ❌
 - ✅ **Annual Accounts**: `submitAnnualAccounts()` - Full implementation
 - ✅ **Confirmation Statements**: `submitConfirmationStatement()` - Full implementation
 - ✅ **iXBRL Generation**: `generateiXBRLAccounts()` - Inline XBRL tagging
@@ -79,21 +79,20 @@
 - ✅ **Filing Package**: `createFilingPackage()` - Package creation
 - ✅ **Submission**: `submitToCompaniesHouse()` - EWF API submission
 
-**Test Mode Behavior:**
+**Critical Blocker:**
 ```javascript
-// In test mode, returns mock successful response:
-{
-  submissionId: "TEST_1729069234567",
-  status: "accepted",
-  barcode: "TESTXYZ123ABC",
-  warnings: ["This is a test submission - no actual filing has been made"]
+// Service IMMEDIATELY throws error without API key:
+if (!this.apiKey || this.apiKey === 'disabled') {
+  throw new Error('Companies House Filing API not configured - cannot submit accounts');
 }
+// Test mode code exists but is NEVER REACHED without API key
 ```
 
 **Production Requirement:**
 - ❌ **COMPANIES_HOUSE_FILING_API_KEY** not configured
-- ⚠️ Service will throw error: "Companies House Filing API not configured"
-- ✅ Test mode works without API key
+- ❌ **COMPLETELY BLOCKED** - Service throws error before any submission attempt
+- ❌ **NO TEST MODE AVAILABLE** - Test mode code unreachable without API key
+- ❌ **ZERO FUNCTIONALITY** - Cannot submit ANY filings (accounts or CS01)
 
 ### 4. ✅ **AI DOCUMENT PROCESSING - IMPLEMENTED**
 
@@ -200,11 +199,11 @@
 
 ### **Required for Live Operations:**
 
-1. **Companies House Filing API Key**
+1. **Companies House Filing API Key** ⚠️ **CRITICAL BLOCKER**
    - Environment Variable: `COMPANIES_HOUSE_FILING_API_KEY`
    - Purpose: Submit annual accounts and confirmation statements
    - Status: ❌ **NOT CONFIGURED**
-   - Impact: Cannot file to Companies House (test mode works)
+   - Impact: **COMPLETELY BLOCKED** - Service throws error immediately, no submissions possible (test mode unreachable)
 
 2. **Production HMRC Credentials** (Optional - Test Mode Available)
    - Current: Test credentials (Vendor ID 9233)
@@ -232,8 +231,8 @@
 | **Trial Balance** | ✅ Complete | ✅ Working | ❌ OAuth blocked | ⚠️ **Manual Test** |
 | **Financial Reports** | ✅ Complete | ✅ Working | ❌ OAuth blocked | ⚠️ **Manual Test** |
 | **CT600 Submission** | ✅ Complete | ✅ Test Mode | ❌ OAuth blocked | ⚠️ **Test Mode** |
-| **Annual Accounts** | ✅ Complete | ⚠️ No API Key | ❌ OAuth blocked | ❌ **API Key Needed** |
-| **Confirmation Statements** | ✅ Complete | ⚠️ No API Key | ❌ OAuth blocked | ❌ **API Key Needed** |
+| **Annual Accounts** | ✅ Complete | ❌ **BLOCKED** | ❌ OAuth blocked | ❌ **0% READY** |
+| **Confirmation Statements** | ✅ Complete | ❌ **BLOCKED** | ❌ OAuth blocked | ❌ **0% READY** |
 | **Credit System** | ✅ Complete | ✅ Working | ❌ OAuth blocked | ⚠️ **Manual Test** |
 | **Stripe Billing** | ✅ Complete | ✅ Working | ❌ OAuth blocked | ⚠️ **Manual Test** |
 
@@ -245,7 +244,7 @@
 1. ✅ All REST API endpoints operational
 2. ✅ Database queries returning correct data
 3. ✅ HMRC CT600 service with test submissions
-4. ✅ Companies House service with test mode
+4. ❌ Companies House service **BLOCKED** (no API key - throws error immediately)
 5. ✅ AI document processing with OpenAI
 6. ✅ Authentication system (Replit Auth)
 7. ✅ Email service (SendGrid)
@@ -271,8 +270,8 @@
 
 2. **API Key Requirements**
    - Companies House Filing API key missing
-   - Cannot submit actual filings without it
-   - Test mode available as fallback
+   - **ZERO functionality** - service throws error immediately
+   - No test mode or fallback available
 
 3. **Production Readiness**
    - HMRC in test mode only
@@ -296,14 +295,15 @@
 3. **Deployment Strategy:**
    - Deploy landing page immediately
    - Enable authenticated features after manual QA
-   - Use test mode for initial HMRC/Companies House
+   - HMRC: Use test mode for initial testing (available)
+   - **Companies House: BLOCKED until API key obtained**
    - Obtain production APIs before live filings
 
 ---
 
 ## 📈 PRODUCTION READINESS SCORE
 
-**Overall: 75% Ready**
+**Overall: 65% Ready** (Downgraded due to Companies House complete blocker)
 
 | Component | Score | Status |
 |-----------|-------|--------|
@@ -312,7 +312,7 @@
 | Database | 100% | ✅ Ready |
 | Frontend UI | 100% | ✅ Ready |
 | Authentication | 90% | ⚠️ Works but untested |
-| Filing Services | 75% | ⚠️ Test mode only |
+| Filing Services | 50% | ❌ CH blocked, HMRC test only |
 | E2E Testing | 25% | ❌ OAuth blocker |
 | API Integration | 60% | ⚠️ Missing keys |
 
@@ -331,9 +331,11 @@
 2. ⚠️ **Payment Flow** - Stripe integration
 3. ⚠️ **Credit System** - Purchase and consumption
 
-### **Needs API Keys Before Production:**
-1. ❌ **Companies House Filings** - Requires COMPANIES_HOUSE_FILING_API_KEY
-2. ⚠️ **HMRC Live Submissions** - Currently test mode only
+### **Completely Blocked Without API Keys:**
+1. ❌ **Companies House Filings** - ZERO FUNCTIONALITY without COMPANIES_HOUSE_FILING_API_KEY
+
+### **Functional in Test Mode:**
+2. ✅ **HMRC CT600** - Test mode works with official test credentials (Vendor ID 9233)
 
 ---
 
@@ -365,12 +367,12 @@
 - [ ] Submit to HMRC (test mode)
 - [ ] Check submission status
 
-**Journey 4: Annual Accounts**
+**Journey 4: Annual Accounts** ❌ **BLOCKED - Cannot Test Without API Key**
 - [ ] Navigate to Annual Accounts
 - [ ] Generate financial statements
 - [ ] Verify P&L and Balance Sheet
 - [ ] Generate iXBRL
-- [ ] Submit to Companies House (test mode)
+- ❌ **Submit to Companies House** - BLOCKED: Service throws error without COMPANIES_HOUSE_FILING_API_KEY
 
 **Journey 5: Credit Purchase**
 - [ ] Navigate to Credits
