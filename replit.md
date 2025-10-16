@@ -18,6 +18,51 @@ PromptSubmissions is an AI-powered platform for UK corporate compliance, special
 ## System Architecture
 The platform features a React frontend with TypeScript, a Node.js/Express backend, and a PostgreSQL database with Drizzle ORM. UI/UX emphasizes a Silicon Valley-level design system with glass morphism, gradient backgrounds, and intuitive quick actions. Core technical implementations include AI-driven document processing using OpenAI, comprehensive financial reporting (P&L, Balance Sheet, Cash Flow), and an Extended Trial Balance system. Filing automation supports both HMRC and Companies House via XML Gateway integrations for iXBRL and CT600 submissions. The system also includes an agent orchestration system for proactive outreach and a credit-based billing system. Authentication is handled via Replit Auth with Google OAuth.
 
+### Companies House April 2027 Compliance
+The platform implements Companies House mandatory software filing requirements effective April 2027 (4.8M UK companies affected):
+
+**iXBRL Generation Service** (`server/services/ixbrlGenerationService.ts`):
+- **FRC 2025 Taxonomy**: Official namespace URIs (xbrl.frc.org.uk) with schema reference in ix:header
+- **Entity Size Auto-Detection**: Automatic classification (micro/small/medium/large) based on April 2025 thresholds:
+  - Micro: Turnover ≤ £1m, Balance Sheet ≤ £500k, Employees ≤ 10
+  - Small: Turnover ≤ £15m, Balance Sheet ≤ £7.5m, Employees ≤ 50
+  - Medium: Turnover ≤ £54m, Balance Sheet ≤ £27m, Employees ≤ 250
+  - Large: Exceeds medium thresholds (2-of-3 criteria rule applies)
+- **Mandatory P&L for Micro-Entities**: P&L privacy abolished - all entities must file profit & loss from April 2027
+- **Directors' Report**: Mandatory for small/medium/large companies with required fields:
+  - Principal activities description (required input field)
+  - Directors list with iXBRL tagging
+  - Financial results summary
+  - Approval date and signatory director (required input fields)
+- **Audit Exemption Statements**: Proper FRC 2025 tags for Section 477 compliance:
+  - uk-bus:StatementOnComplianceWithAuditExemptionProvisions
+  - uk-bus:StatementOfDirectorsResponsibilities
+  - uk-bus:StatementThatMembersHaveNotRequiredCompanyToObtainAnAudit
+- **Full Tagging Mandate**: Comprehensive notes and disclosures:
+  - Accounting policies (FRS102/FRS105/FRS101/UKIFRS)
+  - Measurement convention and basis of preparation
+  - Average employees (mandatory for ALL companies since Oct 2020)
+  - Complete balance sheet and P&L tagging
+- **Input Validation**: Required fields validated before generation (directors, principal activities, approval date, average employees)
+
+**iXBRL Validation Service** (`server/services/ixbrlValidationService.ts`):
+- Pre-submission validation against Companies House requirements
+- XML parsing with error detection
+- Namespace declaration verification (string-based)
+- Required element presence checking per entity size (regex-based)
+- Context and unit exact ID matching
+- QName format validation (no spaces, valid prefixes)
+- April 2027 mandatory requirements checking (regex-based)
+- Validation report generation with error codes and messages
+- **Note**: Current validation uses regex/string matching for basic pre-checks
+
+**Implementation Status**:
+- ✅ **Complete**: FRC 2025 taxonomy, entity size detection, mandatory P&L inclusion, Directors' Report templates, audit exemption tags
+- ✅ **Complete**: Full iXBRL tagging structure, namespace URIs, schema references
+- ✅ **Complete**: Input field validation (required data must be provided)
+- ⚠️ **Basic**: Regex-based validation provides pre-checks for common issues
+- 📋 **Planned**: DOM/XPath-based validation, schema-aware fact verification, comprehensive placeholder detection
+
 ## External Dependencies
 - **OpenAI**: For AI-driven document processing and financial data extraction.
 - **PostgreSQL**: Primary database for all application data.
