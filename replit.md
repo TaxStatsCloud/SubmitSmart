@@ -73,8 +73,47 @@ The platform implements Companies House mandatory software filing requirements e
 - ✅ **Complete**: Input field validation (required data must be provided)
 - ✅ **Complete**: DOM/XPath-based validation with comprehensive element checking
 - ✅ **Complete**: Comprehensive placeholder detection (patterns, dates, repeated characters)
+- ✅ **Complete**: Enhanced validation integrated into Companies House and HMRC filing workflows (production default)
+- ✅ **Complete**: Admin dashboard with validation results display (errors, warnings, placeholders, statistics)
+- ✅ **Complete**: Professional accountant review dashboard with approval workflow
 - ⚠️ **Basic**: Legacy regex-based validation (ixbrlValidationService.ts) for backwards compatibility
 - 🚀 **Production**: Enhanced validation service (ixbrlEnhancedValidationService.ts) with DOM parsing, fact validation, cross-reference checking
+
+### Professional Review Dashboard
+The platform includes a dedicated accountant-facing review dashboard (`/filings/review`) for professional oversight:
+
+**FilingReview Page** (`client/src/pages/FilingReview.tsx`):
+- **Summary Metrics**: Real-time cards showing total filings awaiting review, warnings count, errors count, ready-to-approve count
+- **Filing Cards**: Color-coded borders (red for errors, amber for warnings, green for valid) with company information, entity size badges, and validation status
+- **Validation Details**: Expandable accordion with tabs for:
+  - Summary: Overall status, error/warning/placeholder counts
+  - Errors: Detailed list of validation errors with code, message, element, location
+  - Warnings: Detailed list of warnings with full context
+  - Statistics: iXBRL metrics (total facts, tagged elements, contexts, units)
+- **Approval Workflow**: 
+  - Approve button disabled for filings with errors or placeholders (client-side enforcement)
+  - Server-side validation prevents approval bypass (400/409 status codes)
+  - Reject button allows returning filings for revision with reason
+  - Activity logging for all approval/rejection actions
+  - Toast notifications for success/error feedback
+
+**Review API Endpoints** (`server/routes.ts`):
+- `GET /api/filings/awaiting-approval` - Fetches filings with status 'awaiting_approval', sorted by creation date
+- `POST /api/filings/:id/approve` - Approves filing with server-side validation enforcement:
+  - Blocks if errorCount > 0 (returns 400)
+  - Blocks if placeholderCount > 0 (returns 400)
+  - Requires validation results to exist (returns 409)
+  - Creates activity log on success
+- `POST /api/filings/:id/reject` - Rejects filing with required reason validation:
+  - Validates reason is non-empty string (returns 400 if invalid)
+  - Stores rejection reason in filing metadata
+  - Creates activity log with rejection details
+
+**Security & Validation**:
+- Dual-layer validation: Client-side UX + Server-side enforcement
+- Prevents approval bypass via direct API calls
+- Detailed error responses for debugging
+- Activity audit trail for compliance
 
 ## External Dependencies
 - **OpenAI**: For AI-driven document processing and financial data extraction.
