@@ -70,6 +70,33 @@ export const insertCompanySchema = createInsertSchema(companies).pick({
   status: true,
 });
 
+// E-Filing Credentials for Companies House XML Gateway
+export const eFilingCredentials = pgTable("efiling_credentials", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  companyId: integer("company_id").references(() => companies.id),
+  presenterIdNumber: text("presenter_id_number").notNull(), // 11 alphanumeric chars (e.g., E1234567890)
+  presenterAuthenticationCode: text("presenter_authentication_code").notNull(), // Stored encrypted, MD5 hashed for submission
+  companyAuthenticationCode: text("company_authentication_code"), // 6-8 digits, company-specific
+  testMode: boolean("test_mode").notNull().default(true),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertEFilingCredentialsSchema = createInsertSchema(eFilingCredentials).pick({
+  userId: true,
+  companyId: true,
+  presenterIdNumber: true,
+  presenterAuthenticationCode: true,
+  companyAuthenticationCode: true,
+  testMode: true,
+  isActive: true,
+});
+
+export type EFilingCredentials = typeof eFilingCredentials.$inferSelect;
+export type InsertEFilingCredentials = z.infer<typeof insertEFilingCredentialsSchema>;
+
 // Document types: trial_balance, invoice, bank_statement, accounting_export
 export const documents = pgTable("documents", {
   id: serial("id").primaryKey(),
