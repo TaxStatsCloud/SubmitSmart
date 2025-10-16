@@ -1,12 +1,11 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User } from 'firebase/auth';
-import { onAuthStateChange, signOutUser } from '@/lib/firebase';
-import { handleRedirectResult } from '@/lib/firebase-redirect';
+import React, { createContext, useContext } from 'react';
+import { useAuth as useReplitAuth } from '@/hooks/useAuth';
+import type { User } from '@shared/schema';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signOut: () => Promise<void>;
+  signOut: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -20,51 +19,15 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, isLoading } = useReplitAuth();
 
-  useEffect(() => {
-    // Handle Firebase redirect result first
-    const initAuth = async () => {
-      try {
-        const result = await handleRedirectResult();
-        if (result?.user) {
-          setUser(result.user);
-          setLoading(false);
-        }
-      } catch (error) {
-        // Handle redirect result errors silently
-        // Ensure loading is still set to false even on error
-        setLoading(false);
-      }
-    };
-    
-    initAuth().catch((error) => {
-      // Handle auth initialization errors silently
-      setLoading(false);
-    });
-
-    const unsubscribe = onAuthStateChange((user) => {
-      setUser(user);
-      setLoading(false);
-    });
-
-    return unsubscribe;
-  }, []);
-
-  const signOut = async () => {
-    try {
-      await signOutUser();
-      // Redirect to login page after successful logout
-      window.location.href = '/login';
-    } catch (error) {
-      // Handle sign out errors silently
-    }
+  const signOut = () => {
+    window.location.href = '/api/logout';
   };
 
   const value = {
-    user,
-    loading,
+    user: user || null,
+    loading: isLoading,
     signOut,
   };
 
