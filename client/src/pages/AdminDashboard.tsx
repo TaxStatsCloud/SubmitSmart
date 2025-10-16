@@ -11,7 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDate } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend, PieChart, Pie, Cell } from "recharts";
-import { AlertCircle, BarChart3, CheckCircle2, Clock, MailCheck, MailX, MonitorCheck, Users2 } from "lucide-react";
+import { AlertCircle, BarChart3, CheckCircle2, Clock, FileText, MailCheck, MailX, MonitorCheck, ShieldAlert, ShieldCheck, Users2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import type { Filing } from "@shared/schema";
 
 // Sample data for charts - to be replaced with actual data from API
 const activityData = [
@@ -32,13 +35,322 @@ const conversionData = [
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28"];
 
+// Filings Tab Component
+function FilingsTab({ dateRange }: { dateRange: string }) {
+  const { toast } = useToast();
+  
+  // Fetch all filings with validation results
+  const { data: filings, isLoading: isLoadingFilings } = useQuery<Filing[]>({
+    queryKey: ['/api/admin/filings', dateRange],
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+  
+  return (
+    <div className="grid grid-cols-1 gap-6">
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+            <div>
+              <CardTitle>Filing Submissions & Validation Results</CardTitle>
+              <CardDescription>Monitor Companies House and HMRC submissions with enhanced validation</CardDescription>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <Input placeholder="Search by company..." className="w-full md:w-auto" />
+              <Select defaultValue="all">
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter by type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Filings</SelectItem>
+                  <SelectItem value="annual_accounts">Annual Accounts</SelectItem>
+                  <SelectItem value="confirmation_statement">Confirmation Statement</SelectItem>
+                  <SelectItem value="ct600">CT600 Tax Return</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardHeader>
+        
+        <CardContent>
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex justify-between items-center">
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Total Filings</p>
+                    <p className="text-2xl font-bold">
+                      {isLoadingFilings ? <Skeleton className="h-8 w-16" /> : filings?.length || 0}
+                    </p>
+                  </div>
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <FileText className="h-5 w-5 text-primary" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex justify-between items-center">
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Validation Passed</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {isLoadingFilings ? <Skeleton className="h-8 w-16" /> : 
+                        filings?.filter((f: any) => f.metadata?.validationResults?.isValid).length || 0}
+                    </p>
+                  </div>
+                  <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                    <ShieldCheck className="h-5 w-5 text-green-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex justify-between items-center">
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Has Errors</p>
+                    <p className="text-2xl font-bold text-red-600">
+                      {isLoadingFilings ? <Skeleton className="h-8 w-16" /> : 
+                        filings?.filter((f: any) => f.metadata?.validationResults?.errorCount > 0).length || 0}
+                    </p>
+                  </div>
+                  <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+                    <ShieldAlert className="h-5 w-5 text-red-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex justify-between items-center">
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Placeholders Found</p>
+                    <p className="text-2xl font-bold text-amber-600">
+                      {isLoadingFilings ? <Skeleton className="h-8 w-16" /> : 
+                        filings?.filter((f: any) => f.metadata?.validationResults?.placeholderCount > 0).length || 0}
+                    </p>
+                  </div>
+                  <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center">
+                    <AlertCircle className="h-5 w-5 text-amber-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Filings Table */}
+          {isLoadingFilings ? (
+            <div className="space-y-4">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filings && filings.length > 0 ? (
+                filings.map((filing: any) => (
+                  <FilingCard key={filing.id} filing={filing} />
+                ))
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  No filings found for the selected date range
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// Filing Card Component with Validation Details
+function FilingCard({ filing }: { filing: any }) {
+  const validation = filing.metadata?.validationResults;
+  const hasErrors = validation?.errorCount > 0;
+  const hasWarnings = validation?.warningCount > 0;
+  const hasPlaceholders = validation?.placeholderCount > 0;
+  
+  return (
+    <Card className={hasErrors ? "border-red-200" : hasPlaceholders ? "border-amber-200" : "border-green-200"}>
+      <CardContent className="pt-6">
+        <div className="flex flex-col md:flex-row justify-between md:items-start gap-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <h3 className="font-semibold text-lg">{filing.metadata?.companyName || "Unknown Company"}</h3>
+              <Badge variant={filing.status === "submitted" ? "default" : filing.status === "failed" ? "destructive" : "outline"}>
+                {filing.status}
+              </Badge>
+              {validation?.isValid && (
+                <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 hover:bg-green-200">
+                  <ShieldCheck className="h-3 w-3 mr-1" />
+                  Valid
+                </Badge>
+              )}
+            </div>
+            
+            <div className="text-sm text-muted-foreground space-y-1">
+              <p><span className="font-medium">Type:</span> {filing.filingType?.replace(/_/g, ' ')}</p>
+              <p><span className="font-medium">Company:</span> {filing.metadata?.companyNumber}</p>
+              <p><span className="font-medium">Submitted:</span> {formatDate(new Date(filing.createdAt))}</p>
+              {filing.submissionId && <p><span className="font-medium">Submission ID:</span> {filing.submissionId}</p>}
+            </div>
+          </div>
+          
+          {/* Validation Summary */}
+          {validation && (
+            <div className="flex gap-2">
+              {hasErrors && (
+                <div className="px-3 py-2 rounded-md bg-red-50 border border-red-200">
+                  <p className="text-xs text-red-600 font-medium">Errors</p>
+                  <p className="text-2xl font-bold text-red-700">{validation.errorCount}</p>
+                </div>
+              )}
+              {hasWarnings && (
+                <div className="px-3 py-2 rounded-md bg-amber-50 border border-amber-200">
+                  <p className="text-xs text-amber-600 font-medium">Warnings</p>
+                  <p className="text-2xl font-bold text-amber-700">{validation.warningCount}</p>
+                </div>
+              )}
+              {hasPlaceholders && (
+                <div className="px-3 py-2 rounded-md bg-orange-50 border border-orange-200">
+                  <p className="text-xs text-orange-600 font-medium">Placeholders</p>
+                  <p className="text-2xl font-bold text-orange-700">{validation.placeholderCount}</p>
+                </div>
+              )}
+              {validation.isValid && !hasErrors && !hasWarnings && !hasPlaceholders && (
+                <div className="px-3 py-2 rounded-md bg-green-50 border border-green-200">
+                  <p className="text-xs text-green-600 font-medium">Status</p>
+                  <p className="text-sm font-bold text-green-700">All Clear</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        
+        {/* Validation Details Accordion */}
+        {validation && (hasErrors || hasWarnings || hasPlaceholders) && (
+          <Accordion type="single" collapsible className="mt-4">
+            <AccordionItem value="validation-details" className="border-none">
+              <AccordionTrigger className="text-sm hover:no-underline">
+                <span className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4" />
+                  View Validation Details
+                </span>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4 pt-2">
+                  {/* Errors */}
+                  {hasErrors && validation.errors && validation.errors.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-sm text-red-700 flex items-center gap-2">
+                        <ShieldAlert className="h-4 w-4" />
+                        Errors ({validation.errorCount})
+                      </h4>
+                      <div className="space-y-1">
+                        {validation.errors.map((error: any, idx: number) => (
+                          <Alert key={idx} variant="destructive" className="py-2">
+                            <AlertDescription className="text-xs">
+                              <span className="font-medium">{error.code}:</span> {error.message}
+                              {error.element && <span className="block mt-1 text-muted-foreground">Element: {error.element}</span>}
+                              {error.location && <span className="block text-muted-foreground">Location: {error.location}</span>}
+                            </AlertDescription>
+                          </Alert>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Warnings */}
+                  {hasWarnings && validation.warnings && validation.warnings.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-sm text-amber-700 flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4" />
+                        Warnings ({validation.warningCount})
+                      </h4>
+                      <div className="space-y-1">
+                        {validation.warnings.map((warning: any, idx: number) => (
+                          <Alert key={idx} className="py-2 border-amber-200 bg-amber-50">
+                            <AlertDescription className="text-xs">
+                              <span className="font-medium">{warning.code}:</span> {warning.message}
+                              {warning.element && <span className="block mt-1 text-muted-foreground">Element: {warning.element}</span>}
+                              {warning.location && <span className="block text-muted-foreground">Location: {warning.location}</span>}
+                            </AlertDescription>
+                          </Alert>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Placeholders */}
+                  {hasPlaceholders && validation.placeholders && validation.placeholders.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-sm text-orange-700 flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4" />
+                        Placeholders Detected ({validation.placeholderCount})
+                      </h4>
+                      <div className="space-y-1">
+                        {validation.placeholders.map((placeholder: any, idx: number) => (
+                          <Alert key={idx} className={`py-2 ${placeholder.severity === 'error' ? 'border-red-200 bg-red-50' : 'border-orange-200 bg-orange-50'}`}>
+                            <AlertDescription className="text-xs">
+                              <span className="font-medium uppercase">{placeholder.type}:</span> {placeholder.message}
+                              {placeholder.location && <span className="block text-muted-foreground">Location: {placeholder.location}</span>}
+                              <Badge variant={placeholder.severity === 'error' ? 'destructive' : 'outline'} className="mt-1">
+                                {placeholder.severity}
+                              </Badge>
+                            </AlertDescription>
+                          </Alert>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Statistics */}
+                  {validation.statistics && (
+                    <div className="bg-muted/50 p-3 rounded-md">
+                      <h4 className="font-semibold text-sm mb-2">iXBRL Statistics</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                        <div>
+                          <span className="text-muted-foreground">Total Facts:</span>
+                          <span className="font-medium ml-1">{validation.statistics.totalFacts || 0}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Tagged Elements:</span>
+                          <span className="font-medium ml-1">{validation.statistics.taggedElements || 0}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Contexts:</span>
+                          <span className="font-medium ml-1">{validation.statistics.totalContexts || 0}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Units:</span>
+                          <span className="font-medium ml-1">{validation.statistics.totalUnits || 0}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 const AdminDashboard = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
   const [dateRange, setDateRange] = useState("7days");
   
   // Fetch agent stats
-  const { data: agentStats, isLoading: isLoadingStats } = useQuery({
+  const { data: agentStats, isLoading: isLoadingStats } = useQuery<any>({
     queryKey: ['/api/admin/agent-stats', dateRange],
     refetchInterval: 60000, // Refresh every minute
   });
@@ -87,10 +399,11 @@ const AdminDashboard = () => {
       </div>
       
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-4 mb-6">
+        <TabsList className="grid grid-cols-5 mb-6">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="prospects">Company Prospects</TabsTrigger>
           <TabsTrigger value="outreach">Outreach Activity</TabsTrigger>
+          <TabsTrigger value="filings">Filings & Validation</TabsTrigger>
           <TabsTrigger value="user-usage">User Activity</TabsTrigger>
         </TabsList>
         
@@ -347,7 +660,7 @@ const AdminDashboard = () => {
                       <TableCell>56781234</TableCell>
                       <TableCell>{formatDate(new Date(2024, 4, 1))}</TableCell>
                       <TableCell>
-                        <Badge variant="success">Converted</Badge>
+                        <Badge className="bg-green-100 text-green-800 border-green-300">Converted</Badge>
                       </TableCell>
                       <TableCell>Yes</TableCell>
                       <TableCell>Account created (Today)</TableCell>
@@ -504,7 +817,7 @@ const AdminDashboard = () => {
                         <TableCell>Initial Outreach</TableCell>
                         <TableCell>{formatDate(new Date(2024, 4, 7))}</TableCell>
                         <TableCell>
-                          <Badge variant="success">Responded</Badge>
+                          <Badge className="bg-green-100 text-green-800 border-green-300">Responded</Badge>
                         </TableCell>
                         <TableCell>
                           <Button variant="ghost" size="sm">View</Button>
@@ -533,6 +846,11 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+        
+        {/* Filings & Validation Tab */}
+        <TabsContent value="filings">
+          <FilingsTab dateRange={dateRange} />
         </TabsContent>
         
         {/* User Activity Tab */}
@@ -690,7 +1008,7 @@ const AdminDashboard = () => {
                             <TableCell>Uploaded financial documents</TableCell>
                             <TableCell>Today, 14:32</TableCell>
                             <TableCell>
-                              <Badge variant="success">Completed</Badge>
+                              <Badge className="bg-green-100 text-green-800 border-green-300">Completed</Badge>
                             </TableCell>
                           </TableRow>
                           <TableRow>
@@ -716,7 +1034,7 @@ const AdminDashboard = () => {
                             <TableCell>Purchased Premium Credit Package</TableCell>
                             <TableCell>Yesterday, 16:45</TableCell>
                             <TableCell>
-                              <Badge variant="success">Completed</Badge>
+                              <Badge className="bg-green-100 text-green-800 border-green-300">Completed</Badge>
                             </TableCell>
                           </TableRow>
                           <TableRow>

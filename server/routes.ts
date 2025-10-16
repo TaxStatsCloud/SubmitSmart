@@ -524,6 +524,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.get('/api/admin/filings', async (req, res) => {
+    try {
+      const { dateRange } = req.query;
+      
+      // Calculate date filter based on date range
+      const now = new Date();
+      let startDate = new Date();
+      
+      switch (dateRange) {
+        case '24h':
+          startDate.setHours(now.getHours() - 24);
+          break;
+        case '7days':
+          startDate.setDate(now.getDate() - 7);
+          break;
+        case '30days':
+          startDate.setDate(now.getDate() - 30);
+          break;
+        case '90days':
+          startDate.setDate(now.getDate() - 90);
+          break;
+        default:
+          startDate.setDate(now.getDate() - 7); // Default to 7 days
+      }
+      
+      // Fetch all filings from database (direct database query for admin access)
+      const filings = await db.select()
+        .from(schema.filings)
+        .where(schema.filings.createdAt >= startDate.toISOString())
+        .orderBy(schema.filings.createdAt)
+        .limit(100);
+      
+      res.json(filings);
+    } catch (error: any) {
+      console.error('[Admin Filings API] Error:', error);
+      res.status(500).json({ error: 'Failed to fetch filings data' });
+    }
+  });
+  
   // Tax Engine API endpoints
   app.get('/api/tax-filings/:companyId/:period', async (req, res) => {
     try {
