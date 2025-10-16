@@ -1930,6 +1930,128 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
     }
   });
 
+  // Filing review routes
+  app.get('/api/filings/awaiting-approval', async (req, res) => {
+    try {
+      const allFilings = await storage.getAllFilings();
+      const awaitingApproval = allFilings.filter(f => f.status === 'awaiting_approval');
+      
+      // Sort by creation date, newest first
+      awaitingApproval.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      
+      res.json(awaitingApproval);
+    } catch (error: any) {
+      res.status(500).json({ message: 'Failed to fetch filings awaiting approval' });
+    }
+  });
+
+  app.post('/api/filings/:id/approve', async (req, res) => {
+    try {
+      const filingId = parseInt(req.params.id);
+      const filing = await storage.getFiling(filingId);
+      
+      if (!filing) {
+        return res.status(404).json({ message: 'Filing not found' });
+      }
+      
+      // SERVER-SIDE VALIDATION: Check validation results before approval
+      const metadata = filing.data as any;
+      const validation = metadata?.validationResults;
+      
+      if (validation) {
+        // Block approval if there are errors or placeholders
+        if (validation.errorCount > 0) {
+          return res.status(400).json({ 
+            message: 'Cannot approve filing with validation errors',
+            errorCount: validation.errorCount,
+            errors: validation.errors
+          });
+        }
+        
+        if (validation.placeholderCount > 0) {
+          return res.status(400).json({ 
+            message: 'Cannot approve filing with placeholder data',
+            placeholderCount: validation.placeholderCount,
+            placeholders: validation.placeholders
+          });
+        }
+      } else {
+        // If no validation results exist, require validation first
+        return res.status(409).json({ 
+          message: 'Filing must be validated before approval'
+        });
+      }
+      
+      // Update filing status to approved
+      const updatedFiling = await storage.updateFiling(filingId, {
+        status: 'approved'
+      });
+      
+      // In a real app, would get user ID from session
+      const userId = filing.userId || 1;
+      
+      // Create activity for filing approval
+      await storage.createActivity({
+        userId,
+        companyId: filing.companyId,
+        type: 'filing_approval',
+        description: `Approved ${filing.type} filing`,
+        metadata: { filingId: filing.id }
+      });
+      
+      res.json(updatedFiling);
+    } catch (error: any) {
+      res.status(500).json({ message: 'Failed to approve filing' });
+    }
+  });
+
+  app.post('/api/filings/:id/reject', async (req, res) => {
+    try {
+      const filingId = parseInt(req.params.id);
+      const { reason } = req.body;
+      
+      // Validate required fields
+      if (!reason || typeof reason !== 'string' || reason.trim().length === 0) {
+        return res.status(400).json({ 
+          message: 'Rejection reason is required and must be a non-empty string'
+        });
+      }
+      
+      const filing = await storage.getFiling(filingId);
+      
+      if (!filing) {
+        return res.status(404).json({ message: 'Filing not found' });
+      }
+      
+      // Update filing status to rejected with reason
+      const updatedFiling = await storage.updateFiling(filingId, {
+        status: 'rejected',
+        data: {
+          ...(filing.data as any || {}),
+          rejectionReason: reason.trim()
+        }
+      });
+      
+      // In a real app, would get user ID from session
+      const userId = filing.userId || 1;
+      
+      // Create activity for filing rejection
+      await storage.createActivity({
+        userId,
+        companyId: filing.companyId,
+        type: 'filing_rejection',
+        description: `Rejected ${filing.type} filing: ${reason.trim()}`,
+        metadata: { filingId: filing.id, reason: reason.trim() }
+      });
+      
+      res.json(updatedFiling);
+    } catch (error: any) {
+      res.status(500).json({ message: 'Failed to reject filing' });
+    }
+  });
+
   // Activity routes
   app.get('/api/activities', async (req, res) => {
     try {

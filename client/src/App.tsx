@@ -38,6 +38,7 @@ import OpeningTrialBalance from "@/pages/OpeningTrialBalance";
 import HMRCIntegration from "@/pages/HMRCIntegration";
 import ValidationDemo from "@/pages/ValidationDemo";
 import HMRCTest from "@/pages/HMRCTest";
+import FilingReview from "@/pages/FilingReview";
 import Landing from "@/pages/Landing";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
@@ -71,6 +72,7 @@ function Router() {
         <Route path="/filings/confirmation-statements" component={ConfirmationStatement} />
         <Route path="/filings/annual-accounts" component={AnnualAccounts} />
         <Route path="/filings/corporation-tax" component={CorporationTax} />
+        <Route path="/filings/review" component={FilingReview} />
         
         {/* Real-world filing demo */}
         <Route path="/real-world-filing" component={RealWorldFiling} />
