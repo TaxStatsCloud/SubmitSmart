@@ -265,4 +265,116 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+/**
+ * Run automated outreach campaigns
+ * POST /api/agents/outreach
+ */
+router.post('/outreach', async (req, res) => {
+  try {
+    const { runAutomatedOutreach } = await import('../services/prospectOutreachService');
+    const { dryRun = false } = req.body;
+
+    agentRoutesLogger.info(`Running automated outreach campaigns (dryRun: ${dryRun})`);
+
+    const results = await runAutomatedOutreach(dryRun);
+
+    res.json({
+      success: true,
+      results: {
+        initial: {
+          sent: results.initial.sent,
+          failed: results.initial.failed,
+          skipped: results.initial.skipped
+        },
+        followUp: {
+          sent: results.followUp.sent,
+          failed: results.followUp.failed,
+          skipped: results.followUp.skipped
+        },
+        warnings: {
+          sent: results.warnings.sent,
+          failed: results.warnings.failed,
+          skipped: results.warnings.skipped
+        },
+        total: {
+          sent: results.initial.sent + results.followUp.sent + results.warnings.sent,
+          failed: results.initial.failed + results.followUp.failed + results.warnings.failed
+        }
+      }
+    });
+  } catch (error) {
+    agentRoutesLogger.error('Error running outreach campaigns:', error);
+    res.status(500).json({ error: 'Failed to run outreach campaigns' });
+  }
+});
+
+/**
+ * Send initial outreach to high-priority prospects
+ * POST /api/agents/outreach/initial
+ */
+router.post('/outreach/initial', async (req, res) => {
+  try {
+    const { sendInitialOutreach } = await import('../services/prospectOutreachService');
+    const { minScore = 60, maxProspects = 50, dryRun = false } = req.body;
+
+    agentRoutesLogger.info(`Sending initial outreach (minScore: ${minScore}, maxProspects: ${maxProspects}, dryRun: ${dryRun})`);
+
+    const result = await sendInitialOutreach({ minScore, maxProspects, dryRun });
+
+    res.json({
+      success: true,
+      result
+    });
+  } catch (error) {
+    agentRoutesLogger.error('Error sending initial outreach:', error);
+    res.status(500).json({ error: 'Failed to send initial outreach' });
+  }
+});
+
+/**
+ * Send follow-up emails
+ * POST /api/agents/outreach/followup
+ */
+router.post('/outreach/followup', async (req, res) => {
+  try {
+    const { sendFollowUpEmails } = await import('../services/prospectOutreachService');
+    const { daysSinceLastContact = 7, maxProspects = 30, dryRun = false } = req.body;
+
+    agentRoutesLogger.info(`Sending follow-up emails (days: ${daysSinceLastContact}, max: ${maxProspects}, dryRun: ${dryRun})`);
+
+    const result = await sendFollowUpEmails({ daysSinceLastContact, maxProspects, dryRun });
+
+    res.json({
+      success: true,
+      result
+    });
+  } catch (error) {
+    agentRoutesLogger.error('Error sending follow-up emails:', error);
+    res.status(500).json({ error: 'Failed to send follow-up emails' });
+  }
+});
+
+/**
+ * Send deadline warning emails
+ * POST /api/agents/outreach/warnings
+ */
+router.post('/outreach/warnings', async (req, res) => {
+  try {
+    const { sendDeadlineWarnings } = await import('../services/prospectOutreachService');
+    const { daysThreshold = 14, maxProspects = 50, dryRun = false } = req.body;
+
+    agentRoutesLogger.info(`Sending deadline warnings (threshold: ${daysThreshold}, max: ${maxProspects}, dryRun: ${dryRun})`);
+
+    const result = await sendDeadlineWarnings({ daysThreshold, maxProspects, dryRun });
+
+    res.json({
+      success: true,
+      result
+    });
+  } catch (error) {
+    agentRoutesLogger.error('Error sending deadline warnings:', error);
+    res.status(500).json({ error: 'Failed to send deadline warnings' });
+  }
+});
+
 export default router;

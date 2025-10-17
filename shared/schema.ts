@@ -355,6 +355,9 @@ export const prospects = pgTable("prospects", {
   agentRunId: integer("agent_run_id").references(() => agentRuns.id),
   discoverySource: text("discovery_source").notNull(), // companies_house_api, manual, import
   
+  // Additional metadata for tracking outreach history
+  metadata: jsonb("metadata"),
+  
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
