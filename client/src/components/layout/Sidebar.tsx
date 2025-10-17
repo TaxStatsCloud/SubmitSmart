@@ -159,6 +159,11 @@ const Sidebar = () => {
                   Analytics
                 </Link>
                 
+                <Link href="/admin/monitoring" className={`sidebar-link ${isActive("/admin/monitoring") ? "active" : ""}`} data-testid="link-monitoring">
+                  <span className="material-icons sidebar-icon">monitor_heart</span>
+                  System Monitoring
+                </Link>
+                
                 <Link href="/agent-control" className={`sidebar-link ${isActive("/agent-control") ? "active" : ""}`}>
                   <span className="material-icons sidebar-icon">settings</span>
                   Agent Control

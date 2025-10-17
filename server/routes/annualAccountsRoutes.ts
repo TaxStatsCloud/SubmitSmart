@@ -131,66 +131,69 @@ router.post('/submit', async (req, res) => {
 
     const { ixbrlData, ...formData } = req.body;
 
-    // Check user has sufficient credits (120 credits for Annual Accounts)
+    // Define required credits for Annual Accounts
     const REQUIRED_CREDITS = 120;
-    const user = await storage.getUser(userId);
     
-    if (!user || user.credits < REQUIRED_CREDITS) {
-      return res.status(402).json({ 
-        error: 'Insufficient credits',
-        required: REQUIRED_CREDITS,
-        available: user?.credits || 0,
-      });
+    // Get user to check company association
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
     }
 
-    // Get user's companyId
     const userCompanyId = user.companyId;
     if (!userCompanyId) {
       return res.status(400).json({ error: 'User does not have an associated company' });
     }
 
-    // Create filing record
-    const filing = await storage.createFiling({
-      userId,
-      companyId: userCompanyId,
-      type: 'annual_accounts',
-      status: 'submitted',
-      data: {
-        ...formData,
-        ixbrlData,
-        submittedAt: new Date().toISOString(),
-      },
-      dueDate: new Date(Date.now() + 270 * 24 * 60 * 60 * 1000), // 9 months from now
-    });
+    try {
+      // Atomically create filing with credit deduction
+      // All operations (credit check, deduction, filing creation, transaction log) happen in a single DB transaction
+      const { filing, remainingCredits } = await storage.createFilingWithCreditDeduction(
+        {
+          userId,
+          companyId: userCompanyId,
+          type: 'annual_accounts',
+          status: 'submitted',
+          data: {
+            ...formData,
+            ixbrlData,
+            submittedAt: new Date().toISOString(),
+          },
+          dueDate: new Date(Date.now() + 270 * 24 * 60 * 60 * 1000), // 9 months from now
+        },
+        REQUIRED_CREDITS,
+        `Annual Accounts filing for ${formData.companyName}`
+      );
 
-    // Deduct credits
-    await storage.updateUserCredits(userId, -REQUIRED_CREDITS);
+      annualAccountsLogger.info('Annual Accounts submitted', {
+        userId,
+        filingId: filing.id,
+        companyNumber: formData.companyName,
+        creditsDeducted: REQUIRED_CREDITS,
+      });
 
-    // Create credit transaction record
-    await storage.createCreditTransaction({
-      userId,
-      amount: -REQUIRED_CREDITS,
-      balance: user.credits - REQUIRED_CREDITS,
-      type: 'filing_deduction',
-      description: `Annual Accounts filing for ${formData.companyName}`,
-      filingId: filing.id,
-    });
-
-    annualAccountsLogger.info('Annual Accounts submitted', {
-      userId,
-      filingId: filing.id,
-      companyNumber: formData.companyNumber,
-      creditsDeducted: REQUIRED_CREDITS,
-    });
-
-    res.json({
-      success: true,
-      filingId: filing.id,
-      submissionId: `CH-${filing.id}-${Date.now()}`,
-      creditsUsed: REQUIRED_CREDITS,
-      remainingCredits: user.credits - REQUIRED_CREDITS,
-      message: 'Annual Accounts submitted successfully to Companies House',
-    });
+      res.json({
+        success: true,
+        filingId: filing.id,
+        submissionId: `CH-${filing.id}-${Date.now()}`,
+        creditsUsed: REQUIRED_CREDITS,
+        remainingCredits,
+        message: 'Annual Accounts submitted successfully to Companies House',
+      });
+    } catch (error: any) {
+      // If credit deduction failed, it's likely insufficient balance
+      if (error.message?.includes('does not have enough credits')) {
+        const currentUser = await storage.getUser(userId);
+        return res.status(402).json({ 
+          error: 'Insufficient credits',
+          required: REQUIRED_CREDITS,
+          available: currentUser?.credits || 0,
+        });
+      }
+      
+      // Re-throw other errors
+      throw error;
+    }
 
   } catch (error: any) {
     annualAccountsLogger.error('Error submitting Annual Accounts:', error);

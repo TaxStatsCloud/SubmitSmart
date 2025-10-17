@@ -37,16 +37,18 @@ router.post('/submit', async (req, res) => {
       return res.status(400).json({ error: 'Missing required PSC or director information' });
     }
 
-    // Check user has sufficient credits (50 credits for CS01)
+    // Define required credits for CS01
     const REQUIRED_CREDITS = 50;
-    const user = await storage.getUser(userId);
     
-    if (!user || user.credits < REQUIRED_CREDITS) {
-      return res.status(402).json({ 
-        error: 'Insufficient credits',
-        required: REQUIRED_CREDITS,
-        available: user?.credits || 0,
-      });
+    // Get user to check company association
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    const userCompanyId = user.companyId;
+    if (!userCompanyId) {
+      return res.status(400).json({ error: 'User does not have an associated company' });
     }
 
     // Build CS01 submission data
@@ -82,51 +84,52 @@ router.post('/submit', async (req, res) => {
       submittedAt: new Date().toISOString(),
     };
 
-    // Get user's companyId
-    const userCompanyId = user.companyId;
-    if (!userCompanyId) {
-      return res.status(400).json({ error: 'User does not have an associated company' });
+    try {
+      // Atomically create filing with credit deduction
+      // All operations (credit check, deduction, filing creation, transaction log) happen in a single DB transaction
+      const { filing, remainingCredits } = await storage.createFilingWithCreditDeduction(
+        {
+          userId,
+          companyId: userCompanyId,
+          type: 'confirmation_statement',
+          status: 'submitted',
+          data: cs01Data,
+          dueDate: new Date(formData.madeUpToDate), // Due date is the made up to date + 14 days
+        },
+        REQUIRED_CREDITS,
+        `Confirmation Statement (CS01) for ${formData.companyName}`
+      );
+
+      cs01Logger.info('Confirmation Statement submitted', {
+        userId,
+        filingId: filing.id,
+        companyNumber: formData.companyNumber,
+        creditsDeducted: REQUIRED_CREDITS,
+      });
+
+      res.json({
+        success: true,
+        filingId: filing.id,
+        submissionId: `CS01-${filing.id}-${Date.now()}`,
+        creditsUsed: REQUIRED_CREDITS,
+        remainingCredits,
+        companiesHouseFee: 34.00, // £34 Companies House fee
+        message: 'Confirmation Statement submitted successfully to Companies House',
+      });
+    } catch (error: any) {
+      // If credit deduction failed, it's likely insufficient balance
+      if (error.message?.includes('does not have enough credits')) {
+        const currentUser = await storage.getUser(userId);
+        return res.status(402).json({ 
+          error: 'Insufficient credits',
+          required: REQUIRED_CREDITS,
+          available: currentUser?.credits || 0,
+        });
+      }
+      
+      // Re-throw other errors
+      throw error;
     }
-
-    // Create filing record
-    const filing = await storage.createFiling({
-      userId,
-      companyId: userCompanyId,
-      type: 'confirmation_statement',
-      status: 'submitted',
-      data: cs01Data,
-      dueDate: new Date(formData.madeUpToDate), // Due date is the made up to date + 14 days
-    });
-
-    // Deduct credits
-    await storage.updateUserCredits(userId, -REQUIRED_CREDITS);
-
-    // Create credit transaction record
-    await storage.createCreditTransaction({
-      userId,
-      amount: -REQUIRED_CREDITS,
-      balance: user.credits - REQUIRED_CREDITS,
-      type: 'filing_deduction',
-      description: `Confirmation Statement (CS01) for ${formData.companyName}`,
-      filingId: filing.id,
-    });
-
-    cs01Logger.info('Confirmation Statement submitted', {
-      userId,
-      filingId: filing.id,
-      companyNumber: formData.companyNumber,
-      creditsDeducted: REQUIRED_CREDITS,
-    });
-
-    res.json({
-      success: true,
-      filingId: filing.id,
-      submissionId: `CS01-${filing.id}-${Date.now()}`,
-      creditsUsed: REQUIRED_CREDITS,
-      remainingCredits: user.credits - REQUIRED_CREDITS,
-      companiesHouseFee: 34.00, // £34 Companies House fee
-      message: 'Confirmation Statement submitted successfully to Companies House',
-    });
 
   } catch (error: any) {
     cs01Logger.error('Error submitting Confirmation Statement:', error);

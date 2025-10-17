@@ -47,7 +47,9 @@ export interface IStorage {
   getAllFilings(): Promise<Filing[]>;
   getFilingsByCompany(companyId: number): Promise<Filing[]>;
   getFilingsByUser(userId: number): Promise<Filing[]>;
+  getUpcomingFilings(daysAhead: number): Promise<Filing[]>;
   createFiling(filing: InsertFiling): Promise<Filing>;
+  createFilingWithCreditDeduction(filing: InsertFiling, creditCost: number, description: string): Promise<{ filing: Filing; remainingCredits: number }>;
   updateFiling(id: number, filingData: Partial<Filing>): Promise<Filing>;
   deleteFiling(id: number): Promise<void>;
   
@@ -1342,6 +1344,21 @@ export class DatabaseStorage implements IStorage {
       .where(eq(filings.userId, userId));
   }
 
+  async getUpcomingFilings(daysAhead: number): Promise<Filing[]> {
+    const now = new Date();
+    const futureDate = new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+    
+    return await db
+      .select()
+      .from(filings)
+      .where(
+        and(
+          gte(filings.dueDate, now),
+          sql`${filings.dueDate} <= ${futureDate}`
+        )
+      );
+  }
+
   async createFiling(insertFiling: InsertFiling): Promise<Filing> {
     const now = new Date();
     const [filing] = await db
@@ -1355,6 +1372,64 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return filing;
+  }
+
+  async createFilingWithCreditDeduction(
+    insertFiling: InsertFiling, 
+    creditCost: number, 
+    description: string
+  ): Promise<{ filing: Filing; remainingCredits: number }> {
+    // Wrap credit deduction, filing creation, and transaction logging in a single transaction
+    return await db.transaction(async (tx) => {
+      const userId = insertFiling.userId;
+
+      // 1. Atomically deduct credits (fails if insufficient balance)
+      const [updatedUser] = await tx
+        .update(users)
+        .set({ credits: sql`${users.credits} - ${creditCost}` })
+        .where(
+          and(
+            eq(users.id, userId),
+            gte(users.credits, creditCost)
+          )
+        )
+        .returning();
+
+      if (!updatedUser) {
+        throw new Error(`User ${userId} does not have enough credits (required: ${creditCost})`);
+      }
+
+      // 2. Create filing record
+      const now = new Date();
+      const [filing] = await tx
+        .insert(filings)
+        .values({
+          ...insertFiling,
+          status: insertFiling.status || 'draft',
+          createdAt: now,
+          updatedAt: now,
+          progress: 0
+        })
+        .returning();
+
+      // 3. Create credit transaction record
+      await tx.insert(creditTransactions).values({
+        userId,
+        type: 'filing_deduction',
+        amount: -creditCost,
+        balance: updatedUser.credits,
+        description,
+        filingId: filing.id,
+        metadata: { filingType: filing.type },
+        createdAt: now
+      });
+
+      // Return both filing and remaining credits
+      return {
+        filing,
+        remainingCredits: updatedUser.credits
+      };
+    });
   }
 
   async updateFiling(id: number, filingData: Partial<Filing>): Promise<Filing> {
