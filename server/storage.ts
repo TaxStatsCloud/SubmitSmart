@@ -12,7 +12,7 @@ import {
   comparativePeriods, type ComparativePeriod, type InsertComparativePeriod,
   companiesHouseFilings, type CompaniesHouseFiling, type InsertCompaniesHouseFiling
 } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, gte, sql } from "drizzle-orm";
 import { db } from "./db";
 
 export interface IStorage {
@@ -1442,6 +1442,382 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(assistantMessages)
       .where(eq(assistantMessages.userId, userId));
+  }
+
+  // Credit package methods
+  async getCreditPackage(id: number): Promise<CreditPackage | undefined> {
+    const [pkg] = await db.select().from(creditPackages).where(eq(creditPackages.id, id));
+    return pkg;
+  }
+
+  async getAllCreditPackages(): Promise<CreditPackage[]> {
+    return await db.select().from(creditPackages);
+  }
+
+  async getActiveCreditPackages(): Promise<CreditPackage[]> {
+    return await db
+      .select()
+      .from(creditPackages)
+      .where(eq(creditPackages.isActive, true));
+  }
+
+  async createCreditPackage(packageData: InsertCreditPackage): Promise<CreditPackage> {
+    const [pkg] = await db
+      .insert(creditPackages)
+      .values({
+        ...packageData,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return pkg;
+  }
+
+  async updateCreditPackage(id: number, packageData: Partial<CreditPackage>): Promise<CreditPackage> {
+    const [updatedPackage] = await db
+      .update(creditPackages)
+      .set({
+        ...packageData,
+        updatedAt: new Date()
+      })
+      .where(eq(creditPackages.id, id))
+      .returning();
+    
+    if (!updatedPackage) {
+      throw new Error(`Credit package with ID ${id} not found`);
+    }
+    
+    return updatedPackage;
+  }
+
+  async deleteCreditPackage(id: number): Promise<void> {
+    await db.delete(creditPackages).where(eq(creditPackages.id, id));
+  }
+
+  // Filing cost methods
+  async getFilingCost(id: number): Promise<FilingCost | undefined> {
+    const [cost] = await db.select().from(filingCosts).where(eq(filingCosts.id, id));
+    return cost;
+  }
+
+  async getFilingCostByType(filingType: string): Promise<FilingCost | undefined> {
+    const [cost] = await db
+      .select()
+      .from(filingCosts)
+      .where(eq(filingCosts.filingType, filingType));
+    return cost;
+  }
+
+  async getAllFilingCosts(): Promise<FilingCost[]> {
+    return await db.select().from(filingCosts);
+  }
+
+  async createFilingCost(costData: InsertFilingCost): Promise<FilingCost> {
+    const [cost] = await db
+      .insert(filingCosts)
+      .values({
+        ...costData,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return cost;
+  }
+
+  async updateFilingCost(id: number, costData: Partial<FilingCost>): Promise<FilingCost> {
+    const [updatedCost] = await db
+      .update(filingCosts)
+      .set({
+        ...costData,
+        updatedAt: new Date()
+      })
+      .where(eq(filingCosts.id, id))
+      .returning();
+    
+    if (!updatedCost) {
+      throw new Error(`Filing cost with ID ${id} not found`);
+    }
+    
+    return updatedCost;
+  }
+
+  // Credit transaction methods
+  async getCreditTransaction(id: number): Promise<CreditTransaction | undefined> {
+    const [transaction] = await db.select().from(creditTransactions).where(eq(creditTransactions.id, id));
+    return transaction;
+  }
+
+  async getCreditTransactionsByUser(userId: number): Promise<CreditTransaction[]> {
+    return await db
+      .select()
+      .from(creditTransactions)
+      .where(eq(creditTransactions.userId, userId));
+  }
+
+  async createCreditTransaction(transaction: InsertCreditTransaction): Promise<CreditTransaction> {
+    const [newTransaction] = await db
+      .insert(creditTransactions)
+      .values({
+        ...transaction,
+        createdAt: new Date()
+      })
+      .returning();
+    return newTransaction;
+  }
+
+  // User credit methods
+  async getUserCredits(userId: number): Promise<number> {
+    const user = await this.getUser(userId);
+    
+    if (!user) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+    
+    return user.credits;
+  }
+
+  async updateUserCredits(userId: number, amount: number, description?: string, metadata?: any, filingId?: number): Promise<User> {
+    // Use database transaction with conditional update for atomicity and race prevention
+    return await db.transaction(async (tx) => {
+      // For positive amounts (adding credits), no need to check minimum
+      // For negative amounts (deducting credits), use guarded update
+      const [updatedUser] = await tx
+        .update(users)
+        .set({ credits: sql`${users.credits} + ${amount}` })
+        .where(
+          amount >= 0 
+            ? eq(users.id, userId)
+            : and(
+                eq(users.id, userId),
+                gte(users.credits, Math.abs(amount))
+              )
+        )
+        .returning();
+      
+      if (!updatedUser) {
+        throw new Error(
+          amount >= 0 
+            ? `User with ID ${userId} not found`
+            : `User ${userId} does not have enough credits`
+        );
+      }
+      
+      // Create a transaction record
+      await tx.insert(creditTransactions).values({
+        userId,
+        type: amount > 0 ? 'purchase' : 'usage',
+        amount,
+        balance: updatedUser.credits,
+        description: description || (amount > 0 
+          ? `Added ${amount} credits to account` 
+          : `Used ${Math.abs(amount)} credits for service`),
+        filingId: filingId ?? null,
+        metadata: metadata ?? {},
+        createdAt: new Date()
+      });
+      
+      return updatedUser;
+    });
+  }
+
+  async deductCreditsForFiling(userId: number, filingType: string, filingId: number): Promise<boolean> {
+    // Use database transaction with guarded update to prevent race conditions
+    return await db.transaction(async (tx) => {
+      const [filingCost] = await tx
+        .select()
+        .from(filingCosts)
+        .where(eq(filingCosts.filingType, filingType));
+      
+      if (!filingCost) {
+        throw new Error(`Filing cost for type ${filingType} not found`);
+      }
+      
+      // Atomic guarded update: only succeeds if user has enough credits
+      const [updatedUser] = await tx
+        .update(users)
+        .set({ credits: sql`${users.credits} - ${filingCost.creditCost}` })
+        .where(and(
+          eq(users.id, userId),
+          gte(users.credits, filingCost.creditCost)
+        ))
+        .returning();
+      
+      // If update failed, user doesn't exist or has insufficient credits
+      if (!updatedUser) {
+        return false;
+      }
+      
+      // Create single transaction record with actual balance
+      await tx.insert(creditTransactions).values({
+        userId,
+        type: 'usage',
+        amount: -filingCost.creditCost,
+        balance: updatedUser.credits,
+        description: `Used ${filingCost.creditCost} credits for ${filingType} filing`,
+        filingId,
+        metadata: { 
+          filingType,
+          actualCost: filingCost.actualCost
+        },
+        createdAt: new Date()
+      });
+      
+      return true;
+    });
+  }
+
+  // Prior year data methods
+  async getPriorYearData(id: number): Promise<PriorYearData | undefined> {
+    const [data] = await db.select().from(priorYearData).where(eq(priorYearData.id, id));
+    return data;
+  }
+
+  async getPriorYearDataByCompany(companyId: number): Promise<PriorYearData[]> {
+    return await db
+      .select()
+      .from(priorYearData)
+      .where(eq(priorYearData.companyId, companyId));
+  }
+
+  async getPriorYearDataByCompanyAndYear(companyId: number, yearEnding: string): Promise<PriorYearData[]> {
+    return await db
+      .select()
+      .from(priorYearData)
+      .where(and(
+        eq(priorYearData.companyId, companyId),
+        eq(priorYearData.yearEnding, yearEnding)
+      ));
+  }
+
+  async createPriorYearData(data: InsertPriorYearData): Promise<PriorYearData> {
+    const [newData] = await db
+      .insert(priorYearData)
+      .values({
+        ...data,
+        createdAt: new Date()
+      })
+      .returning();
+    return newData;
+  }
+
+  async updatePriorYearData(id: number, data: Partial<PriorYearData>): Promise<PriorYearData> {
+    const [updatedData] = await db
+      .update(priorYearData)
+      .set(data)
+      .where(eq(priorYearData.id, id))
+      .returning();
+    
+    if (!updatedData) {
+      throw new Error(`Prior year data with ID ${id} not found`);
+    }
+    
+    return updatedData;
+  }
+
+  async deletePriorYearData(id: number): Promise<void> {
+    await db.delete(priorYearData).where(eq(priorYearData.id, id));
+  }
+
+  // Comparative period methods
+  async getComparativePeriod(id: number): Promise<ComparativePeriod | undefined> {
+    const [period] = await db.select().from(comparativePeriods).where(eq(comparativePeriods.id, id));
+    return period;
+  }
+
+  async getComparativePeriodByCompany(companyId: number): Promise<ComparativePeriod[]> {
+    return await db
+      .select()
+      .from(comparativePeriods)
+      .where(eq(comparativePeriods.companyId, companyId));
+  }
+
+  async getActiveComparativePeriod(companyId: number): Promise<ComparativePeriod | undefined> {
+    const [period] = await db
+      .select()
+      .from(comparativePeriods)
+      .where(and(
+        eq(comparativePeriods.companyId, companyId),
+        eq(comparativePeriods.isActive, true)
+      ));
+    return period;
+  }
+
+  async createComparativePeriod(data: InsertComparativePeriod): Promise<ComparativePeriod> {
+    const [period] = await db
+      .insert(comparativePeriods)
+      .values({
+        ...data,
+        createdAt: new Date()
+      })
+      .returning();
+    return period;
+  }
+
+  async updateComparativePeriod(id: number, data: Partial<ComparativePeriod>): Promise<ComparativePeriod> {
+    const [updatedPeriod] = await db
+      .update(comparativePeriods)
+      .set(data)
+      .where(eq(comparativePeriods.id, id))
+      .returning();
+    
+    if (!updatedPeriod) {
+      throw new Error(`Comparative period with ID ${id} not found`);
+    }
+    
+    return updatedPeriod;
+  }
+
+  async deleteComparativePeriod(id: number): Promise<void> {
+    await db.delete(comparativePeriods).where(eq(comparativePeriods.id, id));
+  }
+
+  // Companies House filing methods
+  async getCompaniesHouseFiling(id: number): Promise<CompaniesHouseFiling | undefined> {
+    const [filing] = await db.select().from(companiesHouseFilings).where(eq(companiesHouseFilings.id, id));
+    return filing;
+  }
+
+  async getCompaniesHouseFilingsByCompany(companyId: number): Promise<CompaniesHouseFiling[]> {
+    return await db
+      .select()
+      .from(companiesHouseFilings)
+      .where(eq(companiesHouseFilings.companyId, companyId));
+  }
+
+  async getCompaniesHouseFilingsByRegistrationNumber(registrationNumber: string): Promise<CompaniesHouseFiling[]> {
+    return await db
+      .select()
+      .from(companiesHouseFilings)
+      .where(eq(companiesHouseFilings.registrationNumber, registrationNumber));
+  }
+
+  async createCompaniesHouseFiling(data: InsertCompaniesHouseFiling): Promise<CompaniesHouseFiling> {
+    const [filing] = await db
+      .insert(companiesHouseFilings)
+      .values({
+        ...data,
+        createdAt: new Date()
+      })
+      .returning();
+    return filing;
+  }
+
+  async updateCompaniesHouseFiling(id: number, data: Partial<CompaniesHouseFiling>): Promise<CompaniesHouseFiling> {
+    const [updatedFiling] = await db
+      .update(companiesHouseFilings)
+      .set(data)
+      .where(eq(companiesHouseFilings.id, id))
+      .returning();
+    
+    if (!updatedFiling) {
+      throw new Error(`Companies House filing with ID ${id} not found`);
+    }
+    
+    return updatedFiling;
+  }
+
+  async deleteCompaniesHouseFiling(id: number): Promise<void> {
+    await db.delete(companiesHouseFilings).where(eq(companiesHouseFilings.id, id));
   }
 }
 
