@@ -441,6 +441,65 @@ router.patch('/prospects/:id/status', async (req, res) => {
 });
 
 /**
+ * Enrich a single prospect with contact email
+ * POST /api/agents/prospects/:id/enrich
+ */
+router.post('/prospects/:id/enrich', async (req, res) => {
+  try {
+    const { emailEnrichmentService } = await import('../services/emailEnrichmentService');
+    const prospectId = parseInt(req.params.id);
+
+    if (isNaN(prospectId)) {
+      return res.status(400).json({ error: 'Invalid prospect ID' });
+    }
+
+    const result = await emailEnrichmentService.enrichProspect(prospectId);
+    res.json(result);
+  } catch (error) {
+    agentRoutesLogger.error('Error enriching prospect:', error);
+    res.status(500).json({ error: 'Failed to enrich prospect' });
+  }
+});
+
+/**
+ * Bulk enrich prospects without emails
+ * POST /api/agents/prospects/enrich-bulk
+ */
+router.post('/prospects/enrich-bulk', async (req, res) => {
+  try {
+    const { emailEnrichmentService } = await import('../services/emailEnrichmentService');
+    const { limit = 50 } = req.body;
+
+    agentRoutesLogger.info(`Starting bulk email enrichment (limit: ${limit})`);
+
+    const result = await emailEnrichmentService.enrichProspectsWithoutEmails(limit);
+
+    res.json({
+      success: true,
+      result
+    });
+  } catch (error) {
+    agentRoutesLogger.error('Error in bulk enrichment:', error);
+    res.status(500).json({ error: 'Failed to enrich prospects' });
+  }
+});
+
+/**
+ * Get enrichment statistics
+ * GET /api/agents/enrichment-stats
+ */
+router.get('/enrichment-stats', async (req, res) => {
+  try {
+    const { emailEnrichmentService } = await import('../services/emailEnrichmentService');
+    const stats = await emailEnrichmentService.getEnrichmentStats();
+    res.json(stats);
+  } catch (error) {
+    agentRoutesLogger.error('Error fetching enrichment stats:', error);
+    res.status(500).json({ error: 'Failed to fetch enrichment stats' });
+  }
+});
+
+/**
  * Get conversion analytics
  * GET /api/agents/analytics
  */
