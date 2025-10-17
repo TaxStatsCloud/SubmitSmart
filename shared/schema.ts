@@ -36,13 +36,14 @@ export const users = pgTable("users", {
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
   email: true,
+  password: true,
   fullName: true,
   role: true,
   companyId: true,
-  profileImage: true,
+}).extend({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 // Replit Auth - UpsertUser type for Replit Auth operations
