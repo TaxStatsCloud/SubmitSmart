@@ -14,8 +14,7 @@ import {
   type ProspectEmailData 
 } from './emailTemplates';
 import { logger } from '../utils/logger';
-
-const sgMail = require('@sendgrid/mail');
+import sgMail from '@sendgrid/mail';
 
 // Initialize SendGrid
 if (process.env.SENDGRID_API_KEY) {
