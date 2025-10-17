@@ -20,6 +20,7 @@ import { DOMParser } from '@xmldom/xmldom';
 import { select } from 'xpath';
 import { C14nCanonicalization } from 'xml-crypto';
 import { IXBRLEnhancedValidationService } from './ixbrlEnhancedValidationService';
+import { TaxComputationService, type FinancialData } from './taxComputationService';
 
 export class HMRCCTService {
   // CONFIRMED credentials from HMRC SDSTeam
@@ -36,9 +37,11 @@ export class HMRCCTService {
   private xmlBuilder: XMLBuilder;
   private xmlParser: XMLParser;
   private enhancedValidator: IXBRLEnhancedValidationService;
+  private taxComputationService: TaxComputationService;
 
   constructor() {
     this.enhancedValidator = new IXBRLEnhancedValidationService();
+    this.taxComputationService = new TaxComputationService();
     this.xmlBuilder = new XMLBuilder({
       ignoreAttributes: false,
       format: true,
@@ -402,6 +405,147 @@ export class HMRCCTService {
   }
 
   /**
+   * Poll HMRC Gateway for submission status
+   * HMRC returns different qualifiers: acknowledgement, response, error
+   */
+  async pollSubmissionStatus(correlationId: string): Promise<{
+    status: 'pending' | 'acknowledged' | 'processed' | 'rejected' | 'error';
+    message: string;
+    details?: any;
+    responseXML?: string;
+  }> {
+    try {
+      // Build poll request XML
+      const pollRequest = {
+        '?xml': {
+          '@_version': '1.0',
+          '@_encoding': 'UTF-8'
+        },
+        'GovTalkMessage': {
+          '@_xmlns': 'http://www.govtalk.gov.uk/CM/envelope',
+          
+          'EnvelopeVersion': '2.0',
+          
+          'Header': {
+            'MessageDetails': {
+              'Class': 'HMRC-CT-CT600',
+              'Qualifier': 'poll',
+              'Function': 'submit',
+              'CorrelationID': correlationId,
+              'Transformation': 'XML'
+            },
+            'SenderDetails': {
+              'IDAuthentication': {
+                'SenderID': this.testSenderID,
+                'Authentication': {
+                  'Method': 'clear',
+                  'Role': 'Principal',
+                  'Value': this.testPassword
+                }
+              }
+            }
+          },
+          
+          'GovTalkDetails': {
+            'Keys': {
+              'Key': {
+                '@_Type': 'UTR',
+                '#text': this.testUTR
+              }
+            }
+          },
+          
+          'Body': {} // Empty body for poll requests
+        }
+      };
+      
+      const pollXML = this.xmlBuilder.build(pollRequest);
+      
+      console.log('Polling HMRC Gateway for correlationId:', correlationId);
+      
+      const response = await fetch(this.testSubmissionEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/xml; charset=utf-8',
+          'SOAPAction': 'http://www.govtalk.gov.uk/CM/envelope',
+          'User-Agent': `${this.productName}/${this.productVersion}`
+        },
+        body: pollXML
+      });
+      
+      const responseText = await response.text();
+      console.log('HMRC Poll Response Status:', response.status);
+      
+      if (response.ok) {
+        const parsedResponse = this.xmlParser.parse(responseText);
+        const govTalkResponse = parsedResponse?.GovTalkMessage;
+        
+        if (govTalkResponse) {
+          const qualifier = govTalkResponse?.Header?.MessageDetails?.Qualifier;
+          const responseBody = govTalkResponse?.Body;
+          
+          // Check for error responses
+          if (responseBody?.ErrorResponse) {
+            const errors = responseBody.ErrorResponse.Error;
+            const errorArray = Array.isArray(errors) ? errors : [errors];
+            return {
+              status: 'rejected',
+              message: 'Submission rejected by HMRC',
+              details: errorArray,
+              responseXML: responseText
+            };
+          }
+          
+          // Check qualifier for status
+          switch (qualifier) {
+            case 'acknowledgement':
+              return {
+                status: 'acknowledged',
+                message: 'Submission acknowledged by HMRC, processing in progress',
+                responseXML: responseText
+              };
+              
+            case 'response':
+              return {
+                status: 'processed',
+                message: 'Submission successfully processed by HMRC',
+                details: responseBody,
+                responseXML: responseText
+              };
+              
+            case 'error':
+              return {
+                status: 'error',
+                message: 'HMRC returned an error response',
+                details: responseBody,
+                responseXML: responseText
+              };
+              
+            default:
+              return {
+                status: 'pending',
+                message: 'Submission still being processed',
+                responseXML: responseText
+              };
+          }
+        }
+      }
+      
+      return {
+        status: 'error',
+        message: `HTTP ${response.status}: ${response.statusText}`,
+        responseXML: responseText
+      };
+    } catch (error) {
+      console.error('HMRC poll error:', error);
+      return {
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Failed to poll submission status'
+      };
+    }
+  }
+
+  /**
    * Generate test CT600 submission with mock data
    */
   async generateTestSubmission(): Promise<{
@@ -522,6 +666,50 @@ export class HMRCCTService {
    */
   private generateCorrelationId(): string {
     return `CT600-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  }
+
+  /**
+   * Compute corporation tax from financial data and generate CT600 XML
+   * This is the main integration point for the tax computation engine
+   */
+  async computeAndGenerateCT600(
+    financialData: FinancialData,
+    companyData: {
+      companyName: string;
+      companyNumber: string;
+    },
+    options?: {
+      includeIXBRL?: boolean;
+      ixbrlAccounts?: string;
+      ixbrlComputations?: string;
+    }
+  ): Promise<{
+    computation: any;
+    xmlData: string;
+  }> {
+    // Step 1: Validate financial data
+    const validation = this.taxComputationService.validateFinancialData(financialData);
+    if (!validation.valid) {
+      throw new Error(`Invalid financial data: ${validation.errors.join(', ')}`);
+    }
+    
+    // Step 2: Compute corporation tax
+    const computation = this.taxComputationService.computeTax(financialData);
+    
+    // Step 3: Format for CT600
+    const ct600Data = this.taxComputationService.formatForCT600(computation, {
+      ...companyData,
+      accountingPeriodStart: financialData.accountingPeriodStart,
+      accountingPeriodEnd: financialData.accountingPeriodEnd
+    });
+    
+    // Step 4: Generate CT600 XML
+    const xmlData = await this.generateCT600XML(ct600Data, options);
+    
+    return {
+      computation,
+      xmlData
+    };
   }
 
   /**
