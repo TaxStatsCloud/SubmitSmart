@@ -15,7 +15,7 @@ import CreditTransactions from "@/pages/CreditTransactions";
 import AppLayout from "@/components/layout/AppLayout";
 import Login from "@/pages/Login";
 import Subscription from "@/pages/Subscription";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { AiAssistantProvider } from "@/contexts/AiAssistantContext";
 import { AIChatbot } from "@/components/chat/AIChatbot";
 import { useEffect } from "react";
@@ -43,20 +43,19 @@ import Landing from "@/pages/Landing";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
 import ProspectsDashboard from "@/pages/ProspectsDashboard";
-import SignUp from "@/pages/SignUp";
 import AnalyticsDashboard from "@/pages/AnalyticsDashboard";
-import { useAuth } from "@/contexts/AuthContext";
+import AuthPage from "@/pages/AuthPage";
+import { ProtectedRoute } from "@/lib/protected-route";
 
 function Router() {
-  const { user, loading } = useAuth();
+  const { user, isLoading } = useAuth();
 
   // Show landing page for logged-out users or loading state
-  if (loading || !user) {
+  if (isLoading || !user) {
     return (
       <Switch>
         <Route path="/" component={Landing} />
-        <Route path="/login" component={Login} />
-        <Route path="/signup" component={SignUp} />
+        <Route path="/auth" component={AuthPage} />
         <Route path="/terms" component={Terms} />
         <Route path="/privacy" component={Privacy} />
         <Route component={Landing} />
@@ -69,7 +68,7 @@ function Router() {
     <AppLayout>
       <Switch>
         {/* Dashboard */}
-        <Route path="/" component={Dashboard} />
+        <ProtectedRoute path="/" component={Dashboard} />
         
         {/* Filing routes */}
         <Route path="/new-filing" component={NewFiling} />

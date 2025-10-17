@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { AssistantMessage } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
-import { useAuth } from "./AuthContext";
+import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 
 interface AiAssistantContextType {

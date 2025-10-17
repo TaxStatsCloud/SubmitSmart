@@ -23,7 +23,7 @@ import { WebSocketServer } from "ws";
 import agentRoutes from "./routes/agentRoutes";
 import billingRoutes from "./routes/billingRoutes";
 import Stripe from "stripe";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated } from "./auth";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
 
@@ -63,8 +63,8 @@ const upload = multer({
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   
-  // Replit Auth - Setup authentication middleware (REQUIRED)
-  await setupAuth(app);
+  // Setup email/password authentication middleware
+  setupAuth(app);
   
   // Development authentication endpoint for testing (bypasses OAuth)
   // WARNING: Only use in development/test environments
@@ -2363,7 +2363,7 @@ Generate the note content:`;
         directors
       } = req.body;
 
-      const userId = (req.user as any).claims.sub;
+      const userId = (req.user as any).id;
 
       // Validate required data
       if (!companyNumber || !companyName || !companyId || !accounts) {
@@ -2420,7 +2420,7 @@ Generate the note content:`;
         confirmationData
       } = req.body;
 
-      const userId = (req.user as any).claims.sub;
+      const userId = (req.user as any).id;
 
       // Validate required data
       if (!companyNumber || !companyId || !statementDate || !madeUpToDate) {
@@ -2533,7 +2533,7 @@ Generate the note content:`;
       }
 
       const companyId = parseInt(req.params.companyId);
-      const userId = (req.user as any).claims.sub;
+      const userId = (req.user as any).id;
 
       const credentials = await db
         .select()
@@ -2586,7 +2586,7 @@ Generate the note content:`;
       }
 
       const { companyId, presenterIdNumber, presenterAuthenticationCode, testMode } = req.body;
-      const userId = (req.user as any).claims.sub;
+      const userId = (req.user as any).id;
 
       if (!companyId || !presenterIdNumber || !presenterAuthenticationCode) {
         return res.status(400).json({ 
@@ -2657,7 +2657,7 @@ Generate the note content:`;
       }
 
       const credentialId = parseInt(req.params.id);
-      const userId = (req.user as any).claims.sub;
+      const userId = (req.user as any).id;
 
       // Verify ownership before deletion
       const credential = await db
@@ -2769,7 +2769,7 @@ Generate the note content:`;
       console.log('[CT600] Generated XML for submission');
 
       // Save filing record
-      const userId = parseInt((req.user as any).claims.sub);
+      const userId = (req.user as any).id;
       const user = await db.query.users.findFirst({
         where: (users, { eq }) => eq(users.id, userId),
       });
@@ -2812,7 +2812,7 @@ Generate the note content:`;
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      const userId = parseInt((req.user as any).claims.sub);
+      const userId = (req.user as any).id;
       const user = await db.query.users.findFirst({
         where: (users, { eq }) => eq(users.id, userId),
       });
