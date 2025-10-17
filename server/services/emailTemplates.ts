@@ -156,8 +156,26 @@ export function getInitialOutreachTemplate(data: ProspectEmailData): EmailTempla
   `;
 
   const textGreeting = data.decisionMakerName ? `Hello ${data.decisionMakerName},` : 'Hello,';
-  const textPersonalization = data.employeeCount || data.fundingStage ? 
-    `As ${data.employeeCount ? `a company with ${data.employeeCount} employees` : 'a growing business'}${data.fundingStage && data.fundingStage !== 'Unknown' ? ` in the ${data.fundingStage} stage` : ''}, we understand the importance of efficient compliance management.\n\n` : '';
+  
+  // Build text personalization with all enriched data (employee count, funding, news)
+  const textParts: string[] = [];
+  if (data.employeeCount) {
+    const sizeDesc = data.employeeCount < 10 ? 'a growing small business' : 
+                     data.employeeCount < 50 ? 'an established SME' :
+                     data.employeeCount < 250 ? 'a mid-sized company' : 'a large organization';
+    textParts.push(`As ${sizeDesc} with ${data.employeeCount} employees`);
+  }
+  if (data.fundingStage && data.fundingStage !== 'Unknown') {
+    const fundingDesc = data.fundingStage === 'Seed' || data.fundingStage === 'Series A' ? 'in a growth phase' :
+                        data.fundingStage === 'Series B' || data.fundingStage === 'Series C' ? 'scaling rapidly' : 'well-established';
+    textParts.push(fundingDesc);
+  }
+  if (data.recentNews && data.recentNews.length > 0 && data.recentNews[0].length < 120) {
+    textParts.push(`we noticed: "${data.recentNews[0]}"`);
+  }
+  
+  const textPersonalization = textParts.length > 0 ? 
+    `${textParts.join(', ')}, we understand the importance of efficient compliance management.\n\n` : '';
 
   const text = `
 PromptSubmissions - AI-Powered UK Corporate Compliance
