@@ -4,6 +4,8 @@ import UpcomingFilings from "./UpcomingFilings";
 import DraftFilings from "./DraftFilings";
 import RecentActivity from "./RecentActivity";
 import FilingAnalytics from "./FilingAnalytics";
+import DeadlineWarnings from "./DeadlineWarnings";
+import CreditUsageChart from "./CreditUsageChart";
 
 const DashboardView = () => {
   const { user } = useAuth();
@@ -19,8 +21,14 @@ const DashboardView = () => {
         </p>
       </div>
 
+      {/* Deadline Warnings - Shows urgent filings prominently */}
+      <DeadlineWarnings />
+
       {/* Filing Analytics Section */}
       <FilingAnalytics />
+
+      {/* Credit Usage Section */}
+      <CreditUsageChart />
 
       {/* Quick Actions Section */}
       <QuickActions />

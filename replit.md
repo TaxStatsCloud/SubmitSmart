@@ -105,9 +105,34 @@ A critical component is the iXBRL Generation Service, designed for Companies Hou
 **Recently Completed (October 2025):**
 - UK Accounting Expert AI Chatbot: Comprehensive knowledge base covering Corporation Tax (CT600), Annual Accounts (iXBRL), Confirmation Statements (CS01), UK GAAP (FRS 102), filing deadlines, penalties, entity size detection, and detailed workflow guides for all filing types
 - Enhanced quick responses with 8 common queries covering April 2027 deadline, tax rates, document requirements, credit system, and penalties
+- **Phase 1 (Foundation)**: Filing analytics dashboard with accurate metrics, comprehensive audit logging infrastructure
+- **Phase 2 (UX Excellence - In Progress)**: Deadline warnings with urgency indicators, credit usage visualization with low balance alerts
+
+### UX Enhancements - Phase 2 (October 2025)
+
+**Dashboard Improvements:**
+- **Deadline Warnings Component**: Prominent visual alerts for urgent filings (<30 days: critical red, <60 days: warning amber)
+  - Displays up to 3 critical filings and 2 warning filings with countdown timers
+  - Actionable "Start Filing" or "Continue" buttons for immediate action
+  - Overdue filing alerts with clear penalty warnings
+  - Auto-hides when no urgent deadlines exist
+
+- **Credit Usage Visualization**: Interactive charts showing credit consumption patterns
+  - 30-day credit balance trend with area chart visualization
+  - Usage statistics: total spent, total purchased, average per filing
+  - Low balance warnings (amber for <100 credits, critical red for <50 credits)
+  - Direct "Buy Credits" integration for seamless top-ups
+  - Empty state handling for new users
+
+**Analytics Accuracy (Phase 1):**
+- All metrics use consistent "attempted filings" population (submitted/approved/failed) - excludes drafts/pending
+- Success rate accurately represents actual filing outcomes vs drafts
+- Money saved calculation only counts completed filings (not failed attempts)
+- Work-in-progress displayed separately in amber notification card
+- Comprehensive audit logging for all filing submissions with defensive error handling
 
 **In Development:**
-- Guided filing workflows with step-by-step assistance (planned)
+- Guided filing workflows with enhanced validation hints and field-level help (planned)
 - Production error tracking and monitoring (planned)
 - User onboarding tutorials and interactive guides (planned)
 - Advanced pricing tiers for enterprises and accountant firms (planned)
