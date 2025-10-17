@@ -16,7 +16,47 @@ PromptSubmissions is an AI-powered platform for UK corporate compliance, special
 - **Authority Compliance**: Ensure all filings meet the highest standards for HMRC and Companies House acceptance
 
 ## System Architecture
-The platform features a React frontend with TypeScript, a Node.js/Express backend, and a PostgreSQL database with Drizzle ORM. UI/UX emphasizes a Silicon Valley-level design system with glass morphism, gradient backgrounds, and intuitive quick actions. Core technical implementations include AI-driven document processing using OpenAI, comprehensive financial reporting (P&L, Balance Sheet, Cash Flow), and an Extended Trial Balance system. Filing automation supports both HMRC and Companies House via XML Gateway integrations for iXBRL and CT600 submissions. The system also includes an agent orchestration system for proactive outreach and a credit-based billing system. Authentication is handled via Replit Auth with Google OAuth.
+The platform features a React frontend with TypeScript, a Node.js/Express backend, and a PostgreSQL database with Drizzle ORM. UI/UX emphasizes a Silicon Valley-level design system with glass morphism, gradient backgrounds, and intuitive quick actions. Core technical implementations include AI-driven document processing using OpenAI, comprehensive financial reporting (P&L, Balance Sheet, Cash Flow), and an Extended Trial Balance system. Filing automation supports both HMRC and Companies House via XML Gateway integrations for iXBRL and CT600 submissions. The system includes an automated Companies House API discovery agent for lead generation, tracking companies with upcoming filing deadlines. Authentication is handled via Replit Auth with Google OAuth.
+
+### Automated Lead Generation System
+**Companies House API Integration** (`server/services/companiesHouseApiService.ts`):
+- **Company Discovery**: Searches Companies House API for companies with upcoming filing deadlines (accounts/confirmation statements)
+- **Lead Scoring Algorithm**: 0-100 score based on deadline proximity, company status, and urgency
+  - Accounts deadline ≤30 days: +40 points (very urgent)
+  - Accounts deadline ≤60 days: +30 points (urgent)
+  - Accounts deadline ≤90 days: +20 points (moderate)
+  - CS deadline ≤30 days: +20 points
+  - Active company status: +30 points
+  - Overdue filings: +10 bonus
+- **Entity Size Detection**: Heuristic classification (micro/small/medium/large) from company data
+- **Rate Limiting**: Built-in delays to respect API quotas
+
+**Agent Orchestration** (`server/services/agentOrchestrationService.ts`, `server/services/agents/companiesHouseAgent.ts`):
+- **Automated Discovery Runs**: Scheduled agent executions query Companies House for prospects
+- **Prospect Management**: Creates/updates prospects table with company details, deadlines, and scores
+- **Metrics Tracking**: agentRuns table logs execution history, success/failure rates, prospects processed
+- **High-Priority Filtering**: Surfaces leads with score ≥60 for immediate outreach
+
+**Prospects Data Model** (`shared/schema.ts`):
+- `prospects` table: Discovered companies with filing deadlines
+- Fields: companyNumber, companyName, accountsDueDate, confirmationStatementDueDate, leadScore, leadStatus, entitySize, sic_codes
+- Lead statuses: new, contacted, qualified, converted, lost
+- Discovery tracking: agentRunId, discoverySource (companies_house_api/manual/import)
+
+**API Endpoints** (`server/routes/agentRoutes.ts`):
+- `POST /api/agents/run` - Manually trigger Companies House discovery agent
+- `GET /api/agents/prospects` - Retrieve prospects with filtering (status, minScore, limit)
+- `GET /api/agents/prospects/high-priority` - Get high-scoring leads for outreach
+- `PATCH /api/agents/prospects/:id` - Update prospect status/details
+- `GET /api/agents/runs` - View agent execution history with metrics
+- `GET /api/agents/stats` - Performance statistics (success rate, avg prospects per run)
+
+**Frontend Dashboard** (`client/src/pages/ProspectsDashboard.tsx`):
+- Real-time prospect viewing with lead score badges (high/medium/low priority)
+- Days-until-deadline calculations for accounts and CS filings
+- Agent run history with status indicators (completed/failed/running)
+- Manual discovery trigger button for on-demand agent execution
+- Statistics: total prospects, high-priority count, agent runs, success rate
 
 ### Companies House April 2027 Compliance
 The platform implements Companies House mandatory software filing requirements effective April 2027 (4.8M UK companies affected):

@@ -8,8 +8,8 @@
  */
 
 import { db } from "../../db";
-import { companies, filingReminders, agentRuns } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { companies, filingReminders, agentRuns, prospects } from "@shared/schema";
+import { eq, and } from "drizzle-orm";
 import { executeTransaction } from "../../db";
 import { logger } from "../../utils/logger";
 
@@ -60,8 +60,10 @@ export async function identifyCompaniesWithUpcomingFilings(): Promise<{
     const companiesData = await fetchCompaniesWithUpcomingFilings();
     
     let filingRemindersCreated = 0;
+    let prospectsCreated = 0;
+    let prospectsUpdated = 0;
     
-    // Process each company and create filing reminders
+    // Process each company and create filing reminders + prospects
     for (const companyData of companiesData) {
       const companyId = await processCompany(companyData);
       
@@ -83,6 +85,14 @@ export async function identifyCompaniesWithUpcomingFilings(): Promise<{
         );
         filingRemindersCreated++;
       }
+      
+      // Create or update prospect record with lead scoring
+      const prospectResult = await createOrUpdateProspect(companyData, agentRun.id);
+      if (prospectResult.created) {
+        prospectsCreated++;
+      } else {
+        prospectsUpdated++;
+      }
     }
     
     // Update agent run with completion status
@@ -93,7 +103,9 @@ export async function identifyCompaniesWithUpcomingFilings(): Promise<{
         completedAt: new Date(),
         metrics: {
           companiesProcessed: companiesData.length,
-          filingRemindersCreated
+          filingRemindersCreated,
+          prospectsCreated,
+          prospectsUpdated
         }
       })
       .where(eq(agentRuns.id, agentRun.id));
@@ -117,15 +129,59 @@ export async function identifyCompaniesWithUpcomingFilings(): Promise<{
  * Fetch companies with upcoming filings from Companies House API
  */
 async function fetchCompaniesWithUpcomingFilings(): Promise<CompaniesHouseCompany[]> {
-  // PRODUCTION NOTE: Companies House API implementation ready
-  // This function integrates with our existing companiesHouseService
-  // when API credentials are configured via COMPANIES_HOUSE_API_KEY
-
   logger.info('Fetching companies with upcoming filings from Companies House API');
   
-  // Use existing Companies House service for API integration
-  // Returns empty array when API credentials not configured
-  return [];
+  // Check if API key is configured
+  if (!process.env.COMPANIES_HOUSE_API_KEY) {
+    logger.warn('COMPANIES_HOUSE_API_KEY not configured - skipping Companies House API discovery');
+    return [];
+  }
+
+  try {
+    // Import the Companies House API service
+    const { companiesHouseApiService } = await import('../companiesHouseApiService');
+    
+    // Search for companies with upcoming deadlines (next 90 days)
+    // Using generic search terms to discover various company types
+    const searchQueries = ['Limited', 'Ltd', 'LLP'];
+    const allCompanies: CompaniesHouseCompany[] = [];
+    
+    for (const query of searchQueries) {
+      const companies = await companiesHouseApiService.getCompaniesWithUpcomingDeadlines(
+        query,
+        90, // days ahead
+        20  // max results per query
+      );
+      
+      // Map to expected format
+      for (const { profile } of companies) {
+        allCompanies.push({
+          company_number: profile.company_number,
+          company_name: profile.company_name,
+          company_status: profile.company_status,
+          company_type: 'ltd', // default type
+          registered_office_address: {
+            address_line_1: '',
+            locality: '',
+            postal_code: ''
+          },
+          incorporation_date: profile.date_of_creation,
+          next_accounts_due: profile.accounts?.next_due,
+          next_confirmation_statement_due: profile.confirmation_statement?.next_due,
+          sic_codes: profile.sic_codes
+        });
+      }
+      
+      // Rate limiting between queries
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    logger.info(`Found ${allCompanies.length} companies with upcoming filings`);
+    return allCompanies;
+  } catch (error) {
+    logger.error('Error fetching from Companies House API:', error);
+    return [];
+  }
 }
 
 /**
@@ -185,12 +241,13 @@ async function createFilingReminder(
 ): Promise<void> {
   try {
     // Check if a reminder already exists
-    const [existingReminder] = await db
-      .select()
-      .from(filingReminders)
-      .where(eq(filingReminders.companyId, companyId))
-      .where(eq(filingReminders.filingType, filingType))
-      .where(eq(filingReminders.status, 'pending'));
+    const existingReminder = await db.query.filingReminders.findFirst({
+      where: and(
+        eq(filingReminders.companyId, companyId),
+        eq(filingReminders.filingType, filingType),
+        eq(filingReminders.status, 'pending')
+      )
+    });
     
     if (existingReminder) {
       // Update the existing reminder if the due date changed
@@ -216,6 +273,109 @@ async function createFilingReminder(
     logger.error(`Error creating filing reminder for company ${companyId}:`, error);
     throw error;
   }
+}
+
+/**
+ * Create or update prospect record with lead scoring
+ */
+async function createOrUpdateProspect(
+  companyData: CompaniesHouseCompany, 
+  agentRunId: number
+): Promise<{ created: boolean }> {
+  try {
+    // Calculate lead score based on deadline urgency
+    let leadScore = 0;
+    
+    // Active company status
+    if (companyData.company_status === 'active') {
+      leadScore += 30;
+    }
+    
+    // Score based on accounts deadline proximity
+    if (companyData.next_accounts_due) {
+      const daysUntil = getDaysUntil(companyData.next_accounts_due);
+      if (daysUntil <= 30) {
+        leadScore += 40;
+      } else if (daysUntil <= 60) {
+        leadScore += 30;
+      } else if (daysUntil <= 90) {
+        leadScore += 20;
+      }
+    }
+    
+    // Score based on CS deadline
+    if (companyData.next_confirmation_statement_due) {
+      const daysUntil = getDaysUntil(companyData.next_confirmation_statement_due);
+      if (daysUntil <= 30) {
+        leadScore += 20;
+      } else if (daysUntil <= 60) {
+        leadScore += 15;
+      } else if (daysUntil <= 90) {
+        leadScore += 10;
+      }
+    }
+    
+    leadScore = Math.min(leadScore, 100);
+    
+    // Check if prospect already exists
+    const existingProspect = await db.query.prospects.findFirst({
+      where: eq(prospects.companyNumber, companyData.company_number)
+    });
+    
+    if (existingProspect) {
+      // Update existing prospect - preserve lead status and other CRM fields
+      await db.update(prospects)
+        .set({
+          // Only update fields from Companies House API
+          companyName: companyData.company_name,
+          companyStatus: companyData.company_status,
+          incorporationDate: companyData.incorporation_date || null,
+          accountsDueDate: companyData.next_accounts_due || null,
+          confirmationStatementDueDate: companyData.next_confirmation_statement_due || null,
+          entitySize: 'micro', // Default heuristic
+          sic_codes: companyData.sic_codes || [],
+          leadScore, // Update score based on new deadlines
+          // Preserve existing leadStatus - DO NOT reset to 'new'
+          agentRunId, // Track latest discovery run
+          updatedAt: new Date()
+        })
+        .where(eq(prospects.id, existingProspect.id));
+      
+      return { created: false };
+    } else {
+      // Create new prospect with default leadStatus='new'
+      const prospectData = {
+        companyNumber: companyData.company_number,
+        companyName: companyData.company_name,
+        companyStatus: companyData.company_status,
+        incorporationDate: companyData.incorporation_date || null,
+        accountsDueDate: companyData.next_accounts_due || null,
+        confirmationStatementDueDate: companyData.next_confirmation_statement_due || null,
+        entitySize: 'micro', // Default heuristic
+        sic_codes: companyData.sic_codes || [],
+        leadScore,
+        leadStatus: 'new',
+        agentRunId,
+        discoverySource: 'companies_house_api'
+      };
+      
+      await db.insert(prospects).values(prospectData);
+      return { created: true };
+    }
+  } catch (error) {
+    logger.error(`Error creating/updating prospect for ${companyData.company_number}:`, error);
+    return { created: false };
+  }
+}
+
+/**
+ * Calculate days until a date
+ */
+function getDaysUntil(dateStr: string): number {
+  const targetDate = new Date(dateStr);
+  const today = new Date();
+  const diffTime = targetDate.getTime() - today.getTime();
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
 
 /**

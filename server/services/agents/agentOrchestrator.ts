@@ -121,7 +121,7 @@ export async function runAgent(
       success: false,
       agentType,
       metrics: {},
-      error: error.message || 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error'
     };
   }
 }
@@ -155,23 +155,21 @@ export async function runAgentSequence(
  * Get all agent runs with their metrics
  */
 export async function getAgentRuns(limit: number = 50): Promise<any[]> {
-  return await db
-    .select()
-    .from(agentRuns)
-    .orderBy({ field: agentRuns.createdAt, order: 'desc' })
-    .limit(limit);
+  return await db.query.agentRuns.findMany({
+    orderBy: (agentRuns, { desc }) => [desc(agentRuns.createdAt)],
+    limit
+  });
 }
 
 /**
  * Get agent runs by type
  */
 export async function getAgentRunsByType(agentType: string, limit: number = 50): Promise<any[]> {
-  return await db
-    .select()
-    .from(agentRuns)
-    .where(eq(agentRuns.agentType, agentType))
-    .orderBy({ field: agentRuns.createdAt, order: 'desc' })
-    .limit(limit);
+  return await db.query.agentRuns.findMany({
+    where: eq(agentRuns.agentType, agentType),
+    orderBy: (agentRuns, { desc }) => [desc(agentRuns.createdAt)],
+    limit
+  });
 }
 
 /**

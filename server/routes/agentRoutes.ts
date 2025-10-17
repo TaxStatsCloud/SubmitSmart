@@ -194,4 +194,75 @@ router.delete('/schedule/:type', (req, res) => {
   }
 });
 
+/**
+ * Get all prospects with optional filtering
+ * GET /api/agents/prospects
+ */
+router.get('/prospects', async (req, res) => {
+  try {
+    const { db } = await import('../db');
+    const { prospects } = await import('@shared/schema');
+    const { eq, gte, and, desc } = await import('drizzle-orm');
+    
+    const { status, minScore, limit } = req.query;
+    let conditions = [];
+
+    if (status && typeof status === 'string') {
+      conditions.push(eq(prospects.leadStatus, status));
+    }
+
+    if (minScore && !isNaN(Number(minScore))) {
+      conditions.push(gte(prospects.leadScore, Number(minScore)));
+    }
+
+    const results = await db.query.prospects.findMany({
+      where: conditions.length > 0 ? and(...conditions) : undefined,
+      orderBy: [desc(prospects.leadScore), desc(prospects.createdAt)],
+      limit: limit ? Number(limit) : 100
+    });
+
+    res.json(results);
+  } catch (error) {
+    agentRoutesLogger.error('Error fetching prospects:', error);
+    res.status(500).json({ error: 'Failed to fetch prospects' });
+  }
+});
+
+/**
+ * Get agent performance statistics
+ * GET /api/agents/stats
+ */
+router.get('/stats', async (req, res) => {
+  try {
+    const { db } = await import('../db');
+    const { agentRuns } = await import('@shared/schema');
+    const { eq } = await import('drizzle-orm');
+    
+    const { agentType } = req.query;
+
+    const runs = await db.query.agentRuns.findMany({
+      where: agentType && typeof agentType === 'string' ? eq(agentRuns.agentType, agentType) : undefined
+    });
+
+    const totalRuns = runs.length;
+    const successfulRuns = runs.filter(r => r.status === 'completed').length;
+    const failedRuns = runs.filter(r => r.status === 'failed').length;
+    
+    const totalProspects = runs.reduce((sum, run) => {
+      const metrics = run.metrics as any;
+      return sum + (metrics?.totalProcessed || metrics?.companiesProcessed || 0);
+    }, 0);
+
+    res.json({
+      totalRuns,
+      successfulRuns,
+      failedRuns,
+      averageProspectsPerRun: totalRuns > 0 ? Math.round(totalProspects / totalRuns) : 0
+    });
+  } catch (error) {
+    agentRoutesLogger.error('Error fetching agent stats:', error);
+    res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
 export default router;
