@@ -74,6 +74,17 @@ A critical component is the iXBRL Generation Service, designed for Companies Hou
 - Implemented adaptive rate limiting (500ms-1000ms based on volume)
 - Improved data mapping with better fallbacks for company type, address, SIC codes
 
+### Exa Integration for Data Enrichment (October 2025)
+- **Comprehensive Company Enrichment**: Integrated Exa AI neural search API for advanced company data enrichment
+- Extended prospects schema with enriched fields: website, description, employee count, revenue, funding stage, tech stack, recent news, social profiles
+- Created decision_makers table to track C-level contacts (CFOs, Finance Directors, MDs, CEOs) discovered via Exa
+- **ExaService**: Company enrichment with 300+ data points, decision maker discovery, intelligent data extraction
+- **ExaEnrichmentAgent**: Automated batch enrichment of prospects with enhanced lead scoring based on company signals
+- **Enhanced Lead Scoring**: Boosts for employee count (5-15 pts), funding stage (5-25 pts), website presence (5 pts), recent news (2-10 pts), social profiles (3-10 pts)
+- **ProspectCard Component**: Modern card-based UI showing enriched company data and decision maker contacts
+- Admin controls via ProspectsDashboard "Enrich Data" button and `/api/agents/exa-enrichment` endpoint
+- Rate limiting: 1s per prospect, 500ms per decision maker query to respect Exa API limits
+
 ### System State
 **Production Ready:**
 - iXBRL generation with FRC 2025 taxonomy compliance

@@ -2,10 +2,11 @@ import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, TrendingUp, Users, Calendar, Play, Mail, MessageCircle, AlertTriangle } from 'lucide-react';
+import { Loader2, TrendingUp, Users, Calendar, Play, Mail, MessageCircle, AlertTriangle, Sparkles } from 'lucide-react';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ProspectCard } from '@/components/ProspectCard';
 
 interface Prospect {
   id: number;
@@ -19,6 +20,24 @@ interface Prospect {
   leadStatus: string;
   discoverySource: string;
   createdAt: string;
+  enrichmentStatus?: string;
+  companyWebsite?: string;
+  companyDescription?: string;
+  employeeCount?: number;
+  estimatedRevenue?: string;
+  fundingStage?: string;
+  recentNews?: string[];
+}
+
+interface DecisionMaker {
+  id: number;
+  prospectId: number;
+  name: string;
+  title: string;
+  email?: string;
+  phone?: string;
+  linkedinUrl?: string;
+  confidence: number;
 }
 
 interface AgentRun {
@@ -104,6 +123,32 @@ export default function ProspectsDashboard() {
     }
   };
 
+  const runExaEnrichment = async () => {
+    try {
+      toast({
+        title: "Starting Exa enrichment...",
+        description: "Enriching prospects with company data and finding decision makers"
+      });
+
+      const result = await apiRequest('/api/agents/exa-enrichment', 'POST', { limit: 50 }) as any;
+
+      queryClient.invalidateQueries({ queryKey: ['/api/agents/prospects'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/agents/runs'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/agents/stats'] });
+
+      toast({
+        title: "Enrichment completed",
+        description: `Enriched ${result.metrics?.prospectsEnriched || 0} prospects, found ${result.metrics?.decisionMakersFound || 0} contacts`
+      });
+    } catch (error: any) {
+      toast({
+        title: "Enrichment failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
   const getDaysUntil = (dateStr: string | null) => {
     if (!dateStr) return null;
     const target = new Date(dateStr);
@@ -139,14 +184,24 @@ export default function ProspectsDashboard() {
               Automated discovery of companies with upcoming filing deadlines
             </p>
           </div>
-          <Button 
-            onClick={runDiscoveryMutation}
-            data-testid="button-run-discovery"
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-          >
-            <Play className="mr-2 h-4 w-4" />
-            Run Discovery Agent
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={runExaEnrichment}
+              data-testid="button-run-enrichment"
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+            >
+              <Sparkles className="mr-2 h-4 w-4" />
+              Enrich Data
+            </Button>
+            <Button 
+              onClick={runDiscoveryMutation}
+              data-testid="button-run-discovery"
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+            >
+              <Play className="mr-2 h-4 w-4" />
+              Run Discovery
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -289,103 +344,36 @@ export default function ProspectsDashboard() {
           </div>
         </Card>
 
-        {/* Prospects Table */}
-        <Card className="backdrop-blur-sm bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800">
-          <div className="p-6">
-            <h2 className="text-xl font-semibold mb-4 text-slate-900 dark:text-white">Discovered Prospects</h2>
-            
-            {prospectsLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-              </div>
-            ) : prospects && prospects.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-slate-200 dark:border-slate-700">
-                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-600 dark:text-slate-400">Company</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-600 dark:text-slate-400">Lead Score</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-600 dark:text-slate-400">Accounts Due</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-600 dark:text-slate-400">CS Due</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-600 dark:text-slate-400">Status</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-600 dark:text-slate-400">Source</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {prospects.map((prospect) => (
-                      <tr 
-                        key={prospect.id} 
-                        className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                        data-testid={`row-prospect-${prospect.id}`}
-                      >
-                        <td className="py-3 px-4">
-                          <div>
-                            <p className="font-medium text-slate-900 dark:text-white">{prospect.companyName}</p>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">{prospect.companyNumber}</p>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-2">
-                            <span className={`text-lg font-bold ${getLeadScoreColor(prospect.leadScore)}`}>
-                              {prospect.leadScore}
-                            </span>
-                            {getLeadScoreBadge(prospect.leadScore)}
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          {prospect.accountsDueDate ? (
-                            <div>
-                              <p className="text-sm text-slate-900 dark:text-white">
-                                {new Date(prospect.accountsDueDate).toLocaleDateString()}
-                              </p>
-                              <p className="text-xs text-slate-500 dark:text-slate-400">
-                                {getDaysUntil(prospect.accountsDueDate)} days
-                              </p>
-                            </div>
-                          ) : (
-                            <span className="text-sm text-slate-400">-</span>
-                          )}
-                        </td>
-                        <td className="py-3 px-4">
-                          {prospect.confirmationStatementDueDate ? (
-                            <div>
-                              <p className="text-sm text-slate-900 dark:text-white">
-                                {new Date(prospect.confirmationStatementDueDate).toLocaleDateString()}
-                              </p>
-                              <p className="text-xs text-slate-500 dark:text-slate-400">
-                                {getDaysUntil(prospect.confirmationStatementDueDate)} days
-                              </p>
-                            </div>
-                          ) : (
-                            <span className="text-sm text-slate-400">-</span>
-                          )}
-                        </td>
-                        <td className="py-3 px-4">
-                          <Badge variant="outline" className="capitalize">
-                            {prospect.leadStatus}
-                          </Badge>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className="text-sm text-slate-600 dark:text-slate-400 capitalize">
-                            {prospect.discoverySource.replace(/_/g, ' ')}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
+        {/* Prospects Grid */}
+        <div>
+          <h2 className="text-xl font-semibold mb-4 text-slate-900 dark:text-white">Discovered Prospects</h2>
+          
+          {prospectsLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+          ) : prospects && prospects.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {prospects.map((prospect) => (
+                <ProspectCard 
+                  key={prospect.id} 
+                  prospect={prospect}
+                  data-testid={`card-prospect-${prospect.id}`}
+                />
+              ))}
+            </div>
+          ) : (
+            <Card className="backdrop-blur-sm bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800">
               <div className="text-center py-12">
                 <Users className="h-12 w-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
                 <p className="text-slate-500 dark:text-slate-400">No prospects discovered yet</p>
                 <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">
-                  Click "Run Discovery Agent" to start finding companies
+                  Click "Run Discovery" to start finding companies
                 </p>
               </div>
-            )}
-          </div>
-        </Card>
+            </Card>
+          )}
+        </div>
 
         {/* Recent Agent Runs */}
         <Card className="backdrop-blur-sm bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800">
