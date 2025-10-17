@@ -60,6 +60,13 @@ A critical component is the iXBRL Generation Service, designed for Companies Hou
 - Integrated admin routes into sidebar navigation with role-based visibility
 - Fixed Landing page Sign In button routing to /auth
 
+### Security Enhancements
+- **CRITICAL FIX**: Migrated AI chatbot from client-side OpenAI calls to secure backend API
+- Created `/api/chatbot/*` routes to handle AI interactions server-side
+- Removed OpenAI API key exposure from client environment variables
+- Implemented session-based conversation management with proper rate limiting
+- AI chatbot now properly secured against API key theft and unauthorized usage
+
 ### Agent System Enhancements
 - **Companies House Discovery**: Expanded from 3 to 14 industry-targeted search terms
 - Increased per-query results from 20 to 50 (700+ companies per run vs 60 previously)

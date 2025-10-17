@@ -1,11 +1,9 @@
-import OpenAI from "openai";
-
-// Note: In production, API calls should go through the backend for security
-// This is a demo setup - the API key should be handled server-side
-const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
-  dangerouslyAllowBrowser: true
-});
+/**
+ * AI Chatbot Service
+ * 
+ * Provides secure chatbot functionality by calling backend API
+ * Never exposes OpenAI API keys to the client
+ */
 
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -15,46 +13,11 @@ export interface ChatMessage {
 
 export class AIChatbotService {
   private conversation: ChatMessage[] = [];
-  private systemPrompt = `You are an expert UK corporate compliance assistant for PromptSubmissions, an AI-powered platform for UK corporate filings. You help users with:
-
-## UK ACCOUNTING & TAX EXPERTISE:
-- Corporation Tax returns (CT600)
-- Annual Accounts preparation 
-- Confirmation Statements
-- VAT returns and compliance
-- UK GAAP accounting standards
-- Companies House filing requirements
-- HMRC regulations and deadlines
-
-## PLATFORM FEATURES:
-- AI document processing for invoices, receipts, bank statements
-- Extended Trial Balance generation
-- Financial statement preparation (P&L, Balance Sheet, Cash Flow)
-- Journal entry processing and audit trails
-- Multi-format export (PDF, Excel, CSV)
-- Credit-based billing system
-- April 2027 mandatory software filing compliance
-
-## PRICING & PLANS:
-- Starter: £79 (50 credits) - Dormant companies
-- Professional: £199 (150 credits) - Small businesses (MOST POPULAR)
-- Business: £399 (350 credits) - Growing businesses
-- Enterprise: £899 (850 credits) - Accounting firms
-
-## KEY REGULATIONS:
-- April 2027: All UK companies must use software for filing
-- Small companies now require P&L statements
-- Digital-first approach mandatory
-- Audit trail requirements for tax compliance
-
-Always provide accurate, helpful guidance on UK regulations and platform usage. Be professional but friendly. If you don't know something specific, direct users to contact support.`;
+  private sessionId: string;
 
   constructor() {
-    this.conversation = [{
-      role: 'system',
-      content: this.systemPrompt,
-      timestamp: new Date()
-    }];
+    // Generate unique session ID for this conversation
+    this.sessionId = `session-${Date.now()}-${Math.random().toString(36).substring(7)}`;
   }
 
   async sendMessage(message: string): Promise<string> {
@@ -66,24 +29,28 @@ Always provide accurate, helpful guidance on UK regulations and platform usage. 
     });
 
     try {
-      // Check if OpenAI API key is available
-      if (!import.meta.env.VITE_OPENAI_API_KEY) {
-        return "I'm currently unavailable. Please contact support for assistance with UK compliance questions.";
-      }
-
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o", // Latest model with multimodal capabilities
-        messages: this.conversation.map(msg => ({
-          role: msg.role,
-          content: msg.content
-        })),
-        max_tokens: 1000,
-        temperature: 0.7,
-        presence_penalty: 0.1,
-        frequency_penalty: 0.1
+      // Call backend API instead of OpenAI directly
+      const response = await fetch('/api/chatbot/message', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include', // Include session cookies
+        body: JSON.stringify({
+          message,
+          sessionId: this.sessionId
+        })
       });
 
-      const assistantMessage = response.choices[0].message.content || "I apologize, but I couldn't generate a response. Please try again.";
+      if (!response.ok) {
+        if (response.status === 429) {
+          throw new Error('Too many requests. Please wait a moment before trying again.');
+        }
+        throw new Error('Failed to get response from chatbot');
+      }
+
+      const data = await response.json();
+      const assistantMessage = data.message;
 
       // Add assistant response to conversation
       this.conversation.push({
@@ -92,18 +59,20 @@ Always provide accurate, helpful guidance on UK regulations and platform usage. 
         timestamp: new Date()
       });
 
-      // Keep conversation history manageable using app constants
-      if (this.conversation.length > APP_CONFIG.LIMITS.MAX_CONVERSATION_LENGTH) {
-        this.conversation = [
-          this.conversation[0], // Keep system message
-          ...this.conversation.slice(APP_CONFIG.LIMITS.CONVERSATION_HISTORY_LIMIT)
-        ];
-      }
-
       return assistantMessage;
     } catch (error) {
-      // Handle AI chatbot errors silently
-      return "I'm experiencing technical difficulties. Please try again or contact support if the issue persists.";
+      console.error('Chat error:', error);
+      const errorMessage = error instanceof Error ? error.message : 
+        'I apologize, but I encountered an error. Please try again or contact support.';
+      
+      // Add error message to conversation
+      this.conversation.push({
+        role: 'assistant',
+        content: errorMessage,
+        timestamp: new Date()
+      });
+
+      return errorMessage;
     }
   }
 
@@ -111,12 +80,27 @@ Always provide accurate, helpful guidance on UK regulations and platform usage. 
     return this.conversation.filter(msg => msg.role !== 'system');
   }
 
-  clearConversation(): void {
-    this.conversation = [{
-      role: 'system',
-      content: this.systemPrompt,
-      timestamp: new Date()
-    }];
+  async clearConversation(): Promise<void> {
+    try {
+      await fetch('/api/chatbot/clear', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          sessionId: this.sessionId
+        })
+      });
+
+      this.conversation = [];
+      // Generate new session ID
+      this.sessionId = `session-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    } catch (error) {
+      console.error('Error clearing conversation:', error);
+      // Clear client-side even if backend call fails
+      this.conversation = [];
+    }
   }
 
   // Predefined quick responses for common queries
@@ -128,7 +112,7 @@ Always provide accurate, helpful guidance on UK regulations and platform usage. 
       },
       {
         question: "How much does it cost?",
-        answer: "Our Professional plan at £199 for 150 credits is most popular, covering 6 small company filings with AI processing."
+        answer: "Our Professional plan at £399.99 for 400 credits is most popular, covering multiple filings with AI processing."
       },
       {
         question: "What documents do I need to upload?",
