@@ -27,7 +27,7 @@ import UserManagement from "@/pages/UserManagement";
 import DocumentLibrary from "@/pages/DocumentLibrary";
 import ConfirmationStatement from "@/pages/ConfirmationStatement";
 import AnnualAccounts from "@/pages/AnnualAccounts";
-import CorporationTax from "@/pages/CorporationTax";
+import CT600Filing from "@/pages/CT600Filing";
 import AdminDashboard from "@/pages/AdminDashboard";
 import TaxEngine from "@/pages/TaxEngine";
 import RealWorldFiling from "@/pages/RealWorldFiling";
@@ -75,7 +75,7 @@ function Router() {
         <Route path="/new-filing" component={NewFiling} />
         <Route path="/filings/confirmation-statements" component={ConfirmationStatement} />
         <Route path="/filings/annual-accounts" component={AnnualAccounts} />
-        <Route path="/filings/corporation-tax" component={CorporationTax} />
+        <Route path="/filings/corporation-tax" component={CT600Filing} />
         <Route path="/filings/review" component={FilingReview} />
         
         {/* Real-world filing demo */}
