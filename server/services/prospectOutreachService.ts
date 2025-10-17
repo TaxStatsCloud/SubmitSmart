@@ -5,7 +5,7 @@
  */
 
 import { db } from '../db';
-import { prospects } from '@shared/schema';
+import { prospects, decisionMakers } from '@shared/schema';
 import { eq, and, gte, lte, sql } from 'drizzle-orm';
 import { 
   getInitialOutreachTemplate, 
@@ -81,7 +81,12 @@ export async function sendInitialOutreach(options: {
           continue;
         }
 
-        // Build email data
+        // Fetch decision maker for personalized greeting
+        const decisionMaker = await db.query.decisionMakers.findFirst({
+          where: eq(decisionMakers.prospectId, prospect.id)
+        });
+
+        // Build email data with enriched information for AI-powered personalization
         const emailData: ProspectEmailData = {
           companyName: prospect.companyName,
           companyNumber: prospect.companyNumber,
@@ -89,7 +94,15 @@ export async function sendInitialOutreach(options: {
           confirmationStatementDueDate: prospect.confirmationStatementDueDate || undefined,
           daysUntilAccountsDeadline: prospect.accountsDueDate ? getDaysUntil(prospect.accountsDueDate) : undefined,
           daysUntilCSDeadline: prospect.confirmationStatementDueDate ? getDaysUntil(prospect.confirmationStatementDueDate) : undefined,
-          signUpLink: `https://promptsubmissions.replit.app/signup?ref=${prospect.companyNumber}`
+          signUpLink: `https://promptsubmissions.replit.app/signup?ref=${prospect.companyNumber}`,
+          // Enriched data from Exa for personalization
+          employeeCount: prospect.employeeCount || undefined,
+          estimatedRevenue: prospect.estimatedRevenue || undefined,
+          fundingStage: prospect.fundingStage || undefined,
+          companyDescription: prospect.description || undefined,
+          recentNews: prospect.recentNews || undefined,
+          decisionMakerName: decisionMaker?.name || undefined,
+          decisionMakerTitle: decisionMaker?.title || undefined
         };
 
         const template = getInitialOutreachTemplate(emailData);

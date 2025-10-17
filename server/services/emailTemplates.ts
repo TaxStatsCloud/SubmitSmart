@@ -18,12 +18,71 @@ export interface ProspectEmailData {
   daysUntilAccountsDeadline?: number;
   daysUntilCSDeadline?: number;
   signUpLink?: string;
+  // Exa enrichment data for personalization
+  employeeCount?: number;
+  estimatedRevenue?: string;
+  fundingStage?: string;
+  companyDescription?: string;
+  recentNews?: string[];
+  decisionMakerName?: string;
+  decisionMakerTitle?: string;
+}
+
+/**
+ * Build personalized intro based on enriched company data
+ */
+function buildPersonalizedIntro(data: ProspectEmailData): string {
+  const parts: string[] = [];
+
+  // Company size context
+  if (data.employeeCount) {
+    const sizeContext = data.employeeCount < 10 
+      ? 'a growing small business'
+      : data.employeeCount < 50
+        ? 'an established SME'
+        : data.employeeCount < 250
+          ? 'a mid-sized company'
+          : 'a large organization';
+    parts.push(`As ${sizeContext} with ${data.employeeCount} employees`);
+  }
+
+  // Funding/growth context
+  if (data.fundingStage && data.fundingStage !== 'Unknown') {
+    const fundingContext = data.fundingStage === 'Seed' || data.fundingStage === 'Series A'
+      ? 'in a growth phase'
+      : data.fundingStage === 'Series B' || data.fundingStage === 'Series C'
+        ? 'scaling rapidly'
+        : 'well-established';
+    parts.push(fundingContext);
+  }
+
+  // Recent news context
+  if (data.recentNews && data.recentNews.length > 0) {
+    const newsItem = data.recentNews[0];
+    if (newsItem.length < 120) {
+      parts.push(`we noticed: "${newsItem}"`);
+    }
+  }
+
+  if (parts.length === 0) {
+    return '';
+  }
+
+  const intro = parts.join(', ');
+  return `<p style="background: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 15px; margin: 20px 0; color: #0c4a6e;">${intro}, we understand the importance of efficient compliance management.</p>`;
 }
 
 /**
  * Initial outreach email for high-priority prospects
  */
 export function getInitialOutreachTemplate(data: ProspectEmailData): EmailTemplate {
+  // AI-powered personalization based on enriched data
+  const greeting = data.decisionMakerName 
+    ? `Hello ${data.decisionMakerName},`
+    : `Hello from PromptSubmissions,`;
+
+  const personalizedIntro = buildPersonalizedIntro(data);
+
   const urgencyMessage = data.daysUntilAccountsDeadline && data.daysUntilAccountsDeadline <= 30
     ? `<p style="color: #dc2626; font-weight: 600;">⚠️ Your filing deadline is approaching in just ${data.daysUntilAccountsDeadline} days!</p>`
     : '';
@@ -46,9 +105,11 @@ export function getInitialOutreachTemplate(data: ProspectEmailData): EmailTempla
   </div>
   
   <div style="background: white; padding: 30px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
-    <h2 style="color: #1e293b; margin-top: 0;">Hello from PromptSubmissions,</h2>
+    <h2 style="color: #1e293b; margin-top: 0;">${greeting}</h2>
     
     ${urgencyMessage}
+    
+    ${personalizedIntro}
     
     <p>We noticed that <strong>${data.companyName}</strong> (${data.companyNumber}) has upcoming filing requirements with Companies House and HMRC.</p>
     
@@ -94,14 +155,18 @@ export function getInitialOutreachTemplate(data: ProspectEmailData): EmailTempla
 </html>
   `;
 
+  const textGreeting = data.decisionMakerName ? `Hello ${data.decisionMakerName},` : 'Hello,';
+  const textPersonalization = data.employeeCount || data.fundingStage ? 
+    `As ${data.employeeCount ? `a company with ${data.employeeCount} employees` : 'a growing business'}${data.fundingStage && data.fundingStage !== 'Unknown' ? ` in the ${data.fundingStage} stage` : ''}, we understand the importance of efficient compliance management.\n\n` : '';
+
   const text = `
 PromptSubmissions - AI-Powered UK Corporate Compliance
 
-Hello,
+${textGreeting}
 
 ${data.daysUntilAccountsDeadline && data.daysUntilAccountsDeadline <= 30 ? `⚠️ URGENT: Your filing deadline is approaching in just ${data.daysUntilAccountsDeadline} days!` : ''}
 
-We noticed that ${data.companyName} (${data.companyNumber}) has upcoming filing requirements with Companies House and HMRC.
+${textPersonalization}We noticed that ${data.companyName} (${data.companyNumber}) has upcoming filing requirements with Companies House and HMRC.
 
 UPCOMING DEADLINES:
 ${data.accountsDueDate ? `- Annual Accounts: ${new Date(data.accountsDueDate).toLocaleDateString('en-GB')} (${data.daysUntilAccountsDeadline} days)` : ''}
