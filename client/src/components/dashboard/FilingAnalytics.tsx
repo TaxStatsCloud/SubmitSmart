@@ -78,11 +78,14 @@ const FilingAnalytics = () => {
 
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
 
+  // Status data for pie chart - only show attempted filings (exclude pending/drafts from main chart)
   const statusData = [
     { name: 'Completed', value: analytics.completedFilings },
-    { name: 'Pending', value: analytics.pendingFilings },
     { name: 'Failed', value: analytics.failedFilings },
   ].filter(item => item.value > 0);
+  
+  // Separate card for drafts/pending
+  const hasPendingWork = analytics.pendingFilings > 0;
 
   return (
     <div className="mb-8">
@@ -135,13 +138,32 @@ const FilingAnalytics = () => {
         </Card>
       )}
 
+      {/* Pending/Draft Work Notice */}
+      {hasPendingWork && (
+        <Card className="mb-6 bg-amber-50 border-amber-200">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="bg-amber-100 p-2 rounded-full">
+                <FileText className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-amber-900">Work in Progress</h3>
+                <p className="text-sm text-amber-700">
+                  You have {analytics.pendingFilings} draft or pending filing{analytics.pendingFilings > 1 ? 's' : ''} that {analytics.pendingFilings > 1 ? 'haven\'t' : 'hasn\'t'} been submitted yet.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Charts */}
       {analytics.totalFilings > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Filings by Type */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Filings by Type</CardTitle>
+              <CardTitle className="text-lg">Submitted Filings by Type</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={250}>
@@ -176,32 +198,38 @@ const FilingAnalytics = () => {
             </CardContent>
           </Card>
 
-          {/* Filing Status Distribution */}
+          {/* Filing Success Rate */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Filing Status</CardTitle>
+              <CardTitle className="text-lg">Filing Outcomes</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={statusData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {statusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value: number) => [`${value} filings`, 'Count']} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+              {statusData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={statusData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {statusData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value: number) => [`${value} filings`, 'Count']} />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[250px] text-neutral-500">
+                  <p>No attempted filings yet</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

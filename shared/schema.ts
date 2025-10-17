@@ -810,4 +810,37 @@ export const openingTrialBalancesRelations = relations(openingTrialBalances, ({ 
   user: one(users, { fields: [openingTrialBalances.userId], references: [users.id] })
 }));
 
+// Audit Logs - Track all system actions and changes
+export const auditLogs = pgTable("audit_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  action: text("action").notNull(), // e.g., "filing_submitted", "user_login", "credit_purchased"
+  entityType: text("entity_type"), // e.g., "filing", "user", "company"
+  entityId: integer("entity_id"), // ID of the affected entity
+  changes: jsonb("changes"), // JSON object with before/after values
+  metadata: jsonb("metadata"), // Additional context (IP, user agent, etc.)
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAuditLogSchema = createInsertSchema(auditLogs).pick({
+  userId: true,
+  action: true,
+  entityType: true,
+  entityId: true,
+  changes: true,
+  metadata: true,
+  ipAddress: true,
+  userAgent: true,
+});
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+
+// Audit logs relations
+export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
+  user: one(users, { fields: [auditLogs.userId], references: [users.id] })
+}));
+
 

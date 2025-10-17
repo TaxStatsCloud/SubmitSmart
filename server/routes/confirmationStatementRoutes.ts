@@ -9,6 +9,7 @@ import { Router } from 'express';
 import { isAuthenticated } from '../auth';
 import { logger } from '../utils/logger';
 import { storage } from '../storage';
+import { auditService } from '../services/auditService';
 
 const router = Router();
 router.use(isAuthenticated);
@@ -105,6 +106,15 @@ router.post('/submit', async (req, res) => {
         filingId: filing.id,
         companyNumber: formData.companyNumber,
         creditsDeducted: REQUIRED_CREDITS,
+      });
+
+      // Log audit event
+      await auditService.logFilingSubmission({
+        userId,
+        filingId: filing.id,
+        filingType: 'confirmation_statement',
+        status: 'submitted',
+        req,
       });
 
       res.json({

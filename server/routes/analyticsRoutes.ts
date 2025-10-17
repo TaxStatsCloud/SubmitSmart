@@ -14,13 +14,19 @@ router.get("/filings", isAuthenticated, async (req, res) => {
     }
 
     // Get all filings for the user
-    const filings = await storage.getFilingsByUser(userId);
+    const allFilings = await storage.getFilingsByUser(userId);
     
-    // Calculate statistics
-    const totalFilings = filings.length;
-    const completedFilings = filings.filter(f => f.status === 'submitted' || f.status === 'approved').length;
-    const pendingFilings = filings.filter(f => f.status === 'pending' || f.status === 'draft').length;
-    const failedFilings = filings.filter(f => f.status === 'rejected' || f.status === 'failed').length;
+    // Separate filings by category
+    const completedFilingsList = allFilings.filter(f => f.status === 'submitted' || f.status === 'approved');
+    const pendingFilingsList = allFilings.filter(f => f.status === 'pending' || f.status === 'draft');
+    const failedFilingsList = allFilings.filter(f => f.status === 'rejected' || f.status === 'failed');
+    
+    // Calculate statistics - only count attempted filings (exclude drafts/pending)
+    const attemptedFilings = [...completedFilingsList, ...failedFilingsList];
+    const completedFilings = completedFilingsList.length;
+    const pendingFilings = pendingFilingsList.length;
+    const failedFilings = failedFilingsList.length;
+    const totalFilings = attemptedFilings.length; // Total now excludes drafts/pending
     const successRate = totalFilings > 0 ? (completedFilings / totalFilings) * 100 : 0;
 
     // Calculate credits used
@@ -30,6 +36,7 @@ router.get("/filings", isAuthenticated, async (req, res) => {
       .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
     // Calculate money saved (vs traditional accounting services)
+    // ONLY count completed/approved filings (not drafts, pending, or failed)
     // Assumptions:
     // - Annual Accounts with accountant: £500 avg (we charge £120 credits = ~£12)
     // - Confirmation Statement with accountant: £150 avg (we charge £50 credits = ~£5)
@@ -40,12 +47,12 @@ router.get("/filings", isAuthenticated, async (req, res) => {
       'corporation_tax': 600 - 10,  // £590 saved
     };
     
-    const moneySaved = filings.reduce((sum, filing) => {
+    const moneySaved = completedFilingsList.reduce((sum, filing) => {
       return sum + (savingsPerType[filing.type] || 0);
     }, 0);
 
-    // Group filings by type
-    const filingsByType = filings.reduce((acc, filing) => {
+    // Group ATTEMPTED filings by type (exclude drafts/pending)
+    const filingsByType = attemptedFilings.reduce((acc, filing) => {
       const existing = acc.find(f => f.type === filing.type);
       if (existing) {
         existing.count++;
@@ -55,7 +62,7 @@ router.get("/filings", isAuthenticated, async (req, res) => {
       return acc;
     }, [] as { type: string; count: number }[]);
 
-    // Group filings by month (last 6 months)
+    // Group ATTEMPTED filings by month (last 6 months, exclude drafts/pending)
     const monthlyActivity: { month: string; count: number }[] = [];
     const now = new Date();
     
@@ -63,7 +70,7 @@ router.get("/filings", isAuthenticated, async (req, res) => {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthKey = date.toLocaleString('en-US', { month: 'short', year: '2-digit' });
       
-      const count = filings.filter(f => {
+      const count = attemptedFilings.filter(f => {
         const filingDate = new Date(f.createdAt);
         return filingDate.getMonth() === date.getMonth() && 
                filingDate.getFullYear() === date.getFullYear();
