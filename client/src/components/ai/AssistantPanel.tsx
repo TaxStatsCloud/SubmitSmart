@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useAiAssistant } from "@/contexts/AiAssistantContext";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";

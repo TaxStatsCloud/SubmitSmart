@@ -1,4 +1,4 @@
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/use-auth";
 import { useAiAssistant } from "@/contexts/AiAssistantContext";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";

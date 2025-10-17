@@ -1,4 +1,4 @@
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/use-auth";
 import QuickActions from "./QuickActions";
 import UpcomingFilings from "./UpcomingFilings";
 import DraftFilings from "./DraftFilings";

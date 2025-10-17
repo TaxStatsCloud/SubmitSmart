@@ -5,7 +5,7 @@ import { BadgeInfo, Building2, CalendarClock, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { formatDate } from "@/lib/utils";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/use-auth";
 import { EFilingCredentialsDialog } from "@/components/EFilingCredentialsDialog";
 
 const CompanyDetails = () => {

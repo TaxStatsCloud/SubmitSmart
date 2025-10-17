@@ -29,10 +29,26 @@ export async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  // Require SESSION_SECRET - fail fast if missing
+  if (!process.env.SESSION_SECRET) {
+    throw new Error("SESSION_SECRET environment variable is required for session management");
+  }
+
+  // Use database-backed session store
+  const connectPg = require('connect-pg-simple');
+  const PostgresSessionStore = connectPg(session);
+
+  const sessionStore = new PostgresSessionStore({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: true,
+    ttl: 7 * 24 * 60 * 60, // 1 week in seconds
+  });
+
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || "development-secret-key-change-in-production",
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    store: sessionStore,
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

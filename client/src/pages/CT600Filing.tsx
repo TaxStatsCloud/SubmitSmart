@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -96,8 +96,8 @@ export default function CT600Filing() {
   // Compute tax mutation
   const computeTaxMutation = useMutation({
     mutationFn: async (data: CT600FormData) => {
-      const response = await apiRequest('/api/ct600/compute', 'POST', data);
-      return response;
+      const response = await apiRequest('POST', '/api/ct600/compute', data);
+      return response.json();
     },
     onSuccess: (data) => {
       setComputation(data);
@@ -120,11 +120,11 @@ export default function CT600Filing() {
   const submitToHMRCMutation = useMutation({
     mutationFn: async () => {
       const formData = form.getValues();
-      const response = await apiRequest('/api/ct600/submit', 'POST', {
+      const response = await apiRequest('POST', '/api/ct600/submit', {
         ...formData,
         computation,
       });
-      return response;
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/ct600/current'] });

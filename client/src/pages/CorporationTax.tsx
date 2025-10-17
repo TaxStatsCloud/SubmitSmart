@@ -3,7 +3,7 @@ import FilingTemplate from "@/components/filings/FilingTemplate";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/use-auth";
 
 const CorporationTax = () => {
   const { toast } = useToast();
