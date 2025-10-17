@@ -326,6 +326,54 @@ export const insertOutreachCampaignSchema = createInsertSchema(outreachCampaigns
   metadata: true
 });
 
+// Prospects - Companies discovered from Companies House API with upcoming filing deadlines
+export const prospects = pgTable("prospects", {
+  id: serial("id").primaryKey(),
+  companyNumber: text("company_number").notNull().unique(),
+  companyName: text("company_name").notNull(),
+  companyStatus: text("company_status").notNull(), // active, dissolved, liquidation, etc.
+  incorporationDate: text("incorporation_date"),
+  
+  // Filing deadline information from Companies House
+  accountsDueDate: text("accounts_due_date"),
+  confirmationStatementDueDate: text("confirmation_statement_due_date"),
+  
+  // Company size indicators
+  entitySize: text("entity_size"), // micro, small, medium, large
+  sic_codes: text("sic_codes").array(),
+  
+  // Lead scoring
+  leadScore: integer("lead_score").default(0), // 0-100 score based on deadline proximity, size, etc.
+  leadStatus: text("lead_status").notNull().default("new"), // new, contacted, qualified, converted, lost
+  
+  // Outreach tracking
+  lastContactedAt: timestamp("last_contacted_at"),
+  convertedAt: timestamp("converted_at"),
+  convertedToUserId: integer("converted_to_user_id").references(() => users.id),
+  
+  // Discovery metadata
+  agentRunId: integer("agent_run_id").references(() => agentRuns.id),
+  discoverySource: text("discovery_source").notNull(), // companies_house_api, manual, import
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertProspectSchema = createInsertSchema(prospects).pick({
+  companyNumber: true,
+  companyName: true,
+  companyStatus: true,
+  incorporationDate: true,
+  accountsDueDate: true,
+  confirmationStatementDueDate: true,
+  entitySize: true,
+  sic_codes: true,
+  leadScore: true,
+  leadStatus: true,
+  agentRunId: true,
+  discoverySource: true
+});
+
 // Document templates - Provides templates for users to download and fill
 export const documentTemplates = pgTable("document_templates", {
   id: serial("id").primaryKey(),
