@@ -25,7 +25,8 @@ export type AgentType =
   | 'contact_research' 
   | 'outreach_email' 
   | 'onboarding'
-  | 'document_processing';
+  | 'document_processing'
+  | 'exa_enrichment';
 
 /**
  * Agent execution result
@@ -126,6 +127,18 @@ export async function runAgent(
             documentId: result.documentId,
             processingComplete: result.processingComplete
           }
+        };
+      
+      case 'exa_enrichment':
+        const { agentOrchestrationService: exaService } = await import('../agentOrchestrationService');
+        const limit = params.limit || 50;
+        
+        result = await exaService.runExaEnrichmentAgent(limit);
+        
+        return {
+          success: result.success,
+          agentType,
+          metrics: result.metrics
         };
       
       default:

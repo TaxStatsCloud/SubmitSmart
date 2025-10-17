@@ -11,6 +11,7 @@
 import { db } from '../db';
 import { prospects, agentRuns, insertProspectSchema } from '@shared/schema';
 import { companiesHouseApiService } from './companiesHouseApiService';
+import { exaEnrichmentAgent } from './agents/exaEnrichmentAgent';
 import { eq, and, gte, sql } from 'drizzle-orm';
 
 export class AgentOrchestrationService {
@@ -181,6 +182,24 @@ export class AgentOrchestrationService {
       failedRuns,
       averageProspectsPerRun: totalRuns > 0 ? Math.round(totalProspects / totalRuns) : 0
     };
+  }
+
+  /**
+   * Run Exa enrichment agent
+   * Enriches prospects with company data and decision maker contacts
+   */
+  async runExaEnrichmentAgent(limit: number = 50): Promise<{
+    success: boolean;
+    metrics: any;
+    agentRunId?: number;
+  }> {
+    console.log(`[Agent] Starting Exa enrichment agent (limit: ${limit})`);
+    
+    const result = await exaEnrichmentAgent.run(limit);
+    
+    console.log(`[Agent] Exa enrichment completed:`, result.metrics);
+    
+    return result;
   }
 
   /**

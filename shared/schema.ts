@@ -343,8 +343,20 @@ export const prospects = pgTable("prospects", {
   entitySize: text("entity_size"), // micro, small, medium, large
   sic_codes: text("sic_codes").array(),
   
-  // Lead scoring
-  leadScore: integer("lead_score").default(0), // 0-100 score based on deadline proximity, size, etc.
+  // Exa enrichment data
+  enrichmentStatus: text("enrichment_status").default("pending"), // pending, enriched, failed
+  enrichedAt: timestamp("enriched_at"),
+  companyWebsite: text("company_website"),
+  companyDescription: text("company_description"),
+  employeeCount: integer("employee_count"),
+  estimatedRevenue: text("estimated_revenue"),
+  fundingStage: text("funding_stage"),
+  techStack: text("tech_stack").array(),
+  recentNews: text("recent_news").array(),
+  socialProfiles: jsonb("social_profiles"), // {linkedin, twitter, etc.}
+  
+  // Lead scoring (enhanced with enriched data)
+  leadScore: integer("lead_score").default(0), // 0-100 score based on deadline proximity, size, signals
   leadStatus: text("lead_status").notNull().default("new"), // new, contacted, qualified, converted, lost
   
   // Contact information
@@ -381,6 +393,45 @@ export const insertProspectSchema = createInsertSchema(prospects).pick({
   agentRunId: true,
   discoverySource: true
 });
+
+export type Prospect = typeof prospects.$inferSelect;
+export type InsertProspect = z.infer<typeof insertProspectSchema>;
+
+// Decision Makers - C-level contacts discovered via Exa enrichment
+export const decisionMakers = pgTable("decision_makers", {
+  id: serial("id").primaryKey(),
+  prospectId: integer("prospect_id").notNull().references(() => prospects.id),
+  name: text("name").notNull(),
+  title: text("title").notNull(), // CFO, Finance Director, Managing Director, CEO, etc.
+  email: text("email"),
+  phone: text("phone"),
+  linkedinUrl: text("linkedin_url"),
+  
+  // Enrichment metadata
+  source: text("source").notNull().default("exa"), // exa, hunter, manual, companies_house
+  confidence: integer("confidence").default(0), // 0-100 confidence score
+  
+  // Outreach tracking
+  contactedAt: timestamp("contacted_at"),
+  respondedAt: timestamp("responded_at"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertDecisionMakerSchema = createInsertSchema(decisionMakers).pick({
+  prospectId: true,
+  name: true,
+  title: true,
+  email: true,
+  phone: true,
+  linkedinUrl: true,
+  source: true,
+  confidence: true,
+});
+
+export type DecisionMaker = typeof decisionMakers.$inferSelect;
+export type InsertDecisionMaker = z.infer<typeof insertDecisionMakerSchema>;
 
 // Document templates - Provides templates for users to download and fill
 export const documentTemplates = pgTable("document_templates", {
@@ -674,6 +725,16 @@ export const companiesRelations = relations(companies, ({ many }) => ({
   comparativePeriods: many(comparativePeriods),
   companiesHouseFilings: many(companiesHouseFilings),
   openingTrialBalances: many(openingTrialBalances)
+}));
+
+export const prospectsRelations = relations(prospects, ({ many, one }) => ({
+  decisionMakers: many(decisionMakers),
+  agentRun: one(agentRuns, { fields: [prospects.agentRunId], references: [agentRuns.id] }),
+  convertedUser: one(users, { fields: [prospects.convertedToUserId], references: [users.id] })
+}));
+
+export const decisionMakersRelations = relations(decisionMakers, ({ one }) => ({
+  prospect: one(prospects, { fields: [decisionMakers.prospectId], references: [prospects.id] })
 }));
 
 export const documentsRelations = relations(documents, ({ one }) => ({

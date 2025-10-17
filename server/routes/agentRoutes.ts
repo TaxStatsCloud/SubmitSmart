@@ -95,7 +95,8 @@ router.post('/run', async (req, res) => {
       'contact_research', 
       'outreach_email', 
       'onboarding', 
-      'document_processing'
+      'document_processing',
+      'exa_enrichment'
     ];
     
     if (!validAgentTypes.includes(agentType as AgentType)) {
@@ -500,6 +501,57 @@ router.get('/enrichment-stats', async (req, res) => {
   } catch (error) {
     agentRoutesLogger.error('Error fetching enrichment stats:', error);
     res.status(500).json({ error: 'Failed to fetch enrichment stats' });
+  }
+});
+
+/**
+ * Run Exa enrichment agent manually
+ * POST /api/agents/exa-enrichment
+ */
+router.post('/exa-enrichment', async (req, res) => {
+  try {
+    const { agentOrchestrationService } = await import('../services/agentOrchestrationService');
+    const { limit = 50 } = req.body;
+
+    agentRoutesLogger.info(`Running Exa enrichment agent (limit: ${limit})`);
+
+    const result = await agentOrchestrationService.runExaEnrichmentAgent(limit);
+
+    res.json({
+      success: result.success,
+      metrics: result.metrics,
+      agentRunId: result.agentRunId
+    });
+  } catch (error) {
+    agentRoutesLogger.error('Error running Exa enrichment:', error);
+    res.status(500).json({ error: 'Failed to run Exa enrichment' });
+  }
+});
+
+/**
+ * Get decision makers for a prospect
+ * GET /api/agents/prospects/:id/decision-makers
+ */
+router.get('/prospects/:id/decision-makers', async (req, res) => {
+  try {
+    const { db } = await import('../db');
+    const { decisionMakers } = await import('@shared/schema');
+    const { eq } = await import('drizzle-orm');
+    
+    const prospectId = parseInt(req.params.id);
+    if (isNaN(prospectId)) {
+      return res.status(400).json({ error: 'Invalid prospect ID' });
+    }
+
+    const contacts = await db.query.decisionMakers.findMany({
+      where: eq(decisionMakers.prospectId, prospectId),
+      orderBy: (decisionMakers, { desc }) => [desc(decisionMakers.confidence)]
+    });
+
+    res.json(contacts);
+  } catch (error) {
+    agentRoutesLogger.error('Error fetching decision makers:', error);
+    res.status(500).json({ error: 'Failed to fetch decision makers' });
   }
 });
 
