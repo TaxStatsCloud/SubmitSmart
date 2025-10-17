@@ -43,6 +43,7 @@ import Landing from "@/pages/Landing";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
 import ProspectsDashboard from "@/pages/ProspectsDashboard";
+import SignUp from "@/pages/SignUp";
 import { useAuth } from "@/contexts/AuthContext";
 
 function Router() {
@@ -54,6 +55,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Landing} />
         <Route path="/login" component={Login} />
+        <Route path="/signup" component={SignUp} />
         <Route path="/terms" component={Terms} />
         <Route path="/privacy" component={Privacy} />
         <Route component={Landing} />

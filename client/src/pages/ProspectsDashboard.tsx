@@ -2,9 +2,10 @@ import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, TrendingUp, Users, Calendar, Play } from 'lucide-react';
+import { Loader2, TrendingUp, Users, Calendar, Play, Mail, MessageCircle, AlertTriangle } from 'lucide-react';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface Prospect {
   id: number;
@@ -71,6 +72,32 @@ export default function ProspectsDashboard() {
     } catch (error: any) {
       toast({
         title: "Discovery failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const runOutreachCampaign = async (type: 'all' | 'initial' | 'followup' | 'warnings') => {
+    try {
+      toast({
+        title: "Starting outreach campaign...",
+        description: "Sending personalized emails to prospects"
+      });
+
+      const endpoint = type === 'all' ? '/api/agents/outreach' : `/api/agents/outreach/${type}`;
+      const result = await apiRequest(endpoint, 'POST', { dryRun: false }) as any;
+
+      queryClient.invalidateQueries({ queryKey: ['/api/agents/prospects'] });
+
+      const total = result.results?.total || result.result;
+      toast({
+        title: "Outreach completed",
+        description: `Sent ${total?.sent || 0} emails successfully`
+      });
+    } catch (error: any) {
+      toast({
+        title: "Outreach failed",
         description: error.message,
         variant: "destructive"
       });
@@ -180,6 +207,87 @@ export default function ProspectsDashboard() {
             </div>
           </Card>
         </div>
+
+        {/* Outreach Campaigns */}
+        <Card className="backdrop-blur-sm bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800">
+          <div className="p-6">
+            <h2 className="text-xl font-semibold mb-4 text-slate-900 dark:text-white flex items-center gap-2">
+              <Mail className="h-5 w-5 text-blue-600" />
+              Automated Outreach Campaigns
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+              Send personalized emails to prospects based on their lead score and filing deadlines
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    className="h-auto py-4 flex-col gap-2"
+                    data-testid="button-outreach-all"
+                  >
+                    <Mail className="h-5 w-5 text-blue-600" />
+                    <div className="text-left">
+                      <p className="font-semibold">Run All Campaigns</p>
+                      <p className="text-xs text-slate-500">Initial + Follow-up + Warnings</p>
+                    </div>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Run All Outreach Campaigns</DialogTitle>
+                    <DialogDescription>
+                      This will send initial outreach, follow-ups, and deadline warnings to all eligible prospects. Are you sure?
+                    </DialogDescription>
+                  </DialogHeader>
+                  <Button onClick={() => runOutreachCampaign('all')} className="w-full">
+                    Confirm & Send All Campaigns
+                  </Button>
+                </DialogContent>
+              </Dialog>
+
+              <Button 
+                variant="outline" 
+                className="h-auto py-4 flex-col gap-2"
+                onClick={() => runOutreachCampaign('initial')}
+                data-testid="button-outreach-initial"
+              >
+                <MessageCircle className="h-5 w-5 text-green-600" />
+                <div className="text-left">
+                  <p className="font-semibold">Initial Outreach</p>
+                  <p className="text-xs text-slate-500">High-priority prospects (score ≥60)</p>
+                </div>
+              </Button>
+
+              <Button 
+                variant="outline" 
+                className="h-auto py-4 flex-col gap-2"
+                onClick={() => runOutreachCampaign('followup')}
+                data-testid="button-outreach-followup"
+              >
+                <Users className="h-5 w-5 text-orange-600" />
+                <div className="text-left">
+                  <p className="font-semibold">Follow-Up</p>
+                  <p className="text-xs text-slate-500">Contacted prospects (7+ days)</p>
+                </div>
+              </Button>
+
+              <Button 
+                variant="outline" 
+                className="h-auto py-4 flex-col gap-2"
+                onClick={() => runOutreachCampaign('warnings')}
+                data-testid="button-outreach-warnings"
+              >
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+                <div className="text-left">
+                  <p className="font-semibold">Deadline Warnings</p>
+                  <p className="text-xs text-slate-500">Urgent deadlines (≤14 days)</p>
+                </div>
+              </Button>
+            </div>
+          </div>
+        </Card>
 
         {/* Prospects Table */}
         <Card className="backdrop-blur-sm bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800">
