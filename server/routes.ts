@@ -28,7 +28,7 @@ import annualAccountsRoutes from "./routes/annualAccountsRoutes";
 import confirmationStatementRoutes from "./routes/confirmationStatementRoutes";
 import monitoringRoutes from "./routes/monitoringRoutes";
 import Stripe from "stripe";
-import { setupAuth, isAuthenticated } from "./auth";
+import { setupAuth, isAuthenticated, hashPassword } from "./auth";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
 
@@ -107,8 +107,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('[DEV-LOGIN] Company created in DB:', testCompany.id);
           
           // Create user with company - DON'T pass ID, let DB auto-generate
+          // Hash the password securely (required for database schema)
+          const hashedPassword = await hashPassword(password);
+          
           const [newUser] = await db.insert(schema.users).values({
             email: email,
+            password: hashedPassword,
             firstName: email.split('@')[0],
             role: 'director',
             credits: 1000,
