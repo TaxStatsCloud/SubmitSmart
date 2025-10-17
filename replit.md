@@ -85,6 +85,12 @@ A critical component is the iXBRL Generation Service, designed for Companies Hou
 - Admin controls via ProspectsDashboard "Enrich Data" button and `/api/agents/exa-enrichment` endpoint
 - Rate limiting: 1s per prospect, 500ms per decision maker query to respect Exa API limits
 
+### Critical Storage Fix (October 2025)
+- **FIXED**: Switched from MemStorage to DatabaseStorage for production-ready persistence
+- All user data, prospects, filings now properly persisted to PostgreSQL
+- Admin login now works correctly with database-backed authentication
+- Session management fully integrated with PostgreSQL (connect-pg-simple)
+
 ### System State
 **Production Ready:**
 - iXBRL generation with FRC 2025 taxonomy compliance
