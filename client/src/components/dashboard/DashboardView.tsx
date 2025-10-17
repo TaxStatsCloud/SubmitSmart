@@ -3,6 +3,7 @@ import QuickActions from "./QuickActions";
 import UpcomingFilings from "./UpcomingFilings";
 import DraftFilings from "./DraftFilings";
 import RecentActivity from "./RecentActivity";
+import FilingAnalytics from "./FilingAnalytics";
 
 const DashboardView = () => {
   const { user } = useAuth();
@@ -17,6 +18,9 @@ const DashboardView = () => {
           Your dashboard shows an overview of your upcoming filings and compliance status. Upload documents to get started with automated filing preparation.
         </p>
       </div>
+
+      {/* Filing Analytics Section */}
+      <FilingAnalytics />
 
       {/* Quick Actions Section */}
       <QuickActions />

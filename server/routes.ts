@@ -27,6 +27,7 @@ import chatbotRoutes from "./routes/chatbotRoutes";
 import annualAccountsRoutes from "./routes/annualAccountsRoutes";
 import confirmationStatementRoutes from "./routes/confirmationStatementRoutes";
 import monitoringRoutes from "./routes/monitoringRoutes";
+import analyticsRoutes from "./routes/analyticsRoutes";
 import Stripe from "stripe";
 import { setupAuth, isAuthenticated, hashPassword } from "./auth";
 import { db } from "./db";
@@ -310,6 +311,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register monitoring routes (admin-only)
   app.use('/api/monitoring', monitoringRoutes);
+  
+  // Register analytics routes (user-specific)
+  app.use('/api/analytics', analyticsRoutes);
   
   // Enhanced Stripe payment routes
   app.post("/api/create-payment-intent", async (req, res) => {
