@@ -346,6 +346,10 @@ export const prospects = pgTable("prospects", {
   leadScore: integer("lead_score").default(0), // 0-100 score based on deadline proximity, size, etc.
   leadStatus: text("lead_status").notNull().default("new"), // new, contacted, qualified, converted, lost
   
+  // Contact information
+  contactEmail: text("contact_email"), // Primary contact email for outreach
+  contactName: text("contact_name"), // Primary contact name
+  
   // Outreach tracking
   lastContactedAt: timestamp("last_contacted_at"),
   convertedAt: timestamp("converted_at"),

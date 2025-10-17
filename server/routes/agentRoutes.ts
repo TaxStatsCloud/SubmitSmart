@@ -377,4 +377,121 @@ router.post('/outreach/warnings', async (req, res) => {
   }
 });
 
+/**
+ * Update prospect status (conversion tracking)
+ * PATCH /api/agents/prospects/:id/status
+ */
+router.patch('/prospects/:id/status', async (req, res) => {
+  try {
+    const { db } = await import('../db');
+    const { prospects } = await import('@shared/schema');
+    const { eq } = await import('drizzle-orm');
+    const { z } = await import('zod');
+    
+    const prospectId = parseInt(req.params.id);
+    if (isNaN(prospectId)) {
+      return res.status(400).json({ error: 'Invalid prospect ID' });
+    }
+
+    // Validate request body with Zod
+    const statusUpdateSchema = z.object({
+      status: z.enum(['new', 'contacted', 'qualified', 'converted', 'lost'])
+    });
+
+    const validation = statusUpdateSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({ 
+        error: 'Invalid status', 
+        details: validation.error.issues 
+      });
+    }
+
+    const { status } = validation.data;
+
+    // Check if prospect exists
+    const existingProspect = await db.query.prospects.findFirst({
+      where: eq(prospects.id, prospectId)
+    });
+
+    if (!existingProspect) {
+      return res.status(404).json({ error: 'Prospect not found' });
+    }
+
+    const updateData: any = {
+      leadStatus: status,
+      updatedAt: new Date()
+    };
+
+    if (status === 'contacted') {
+      updateData.lastContactedAt = new Date();
+    } else if (status === 'converted') {
+      updateData.convertedAt = new Date();
+    }
+
+    await db.update(prospects)
+      .set(updateData)
+      .where(eq(prospects.id, prospectId));
+
+    agentRoutesLogger.info(`Updated prospect ${prospectId} status to ${status}`);
+    res.json({ success: true, prospect: { id: prospectId, status } });
+  } catch (error) {
+    agentRoutesLogger.error('Error updating prospect status:', error);
+    res.status(500).json({ error: 'Failed to update prospect status' });
+  }
+});
+
+/**
+ * Get conversion analytics
+ * GET /api/agents/analytics
+ */
+router.get('/analytics', async (req, res) => {
+  try {
+    const { db } = await import('../db');
+    const { prospects } = await import('@shared/schema');
+    const { sql } = await import('drizzle-orm');
+
+    const allProspects = await db.query.prospects.findMany();
+
+    // Calculate conversion metrics
+    const totalProspects = allProspects.length;
+    const newProspects = allProspects.filter(p => p.leadStatus === 'new').length;
+    const contactedProspects = allProspects.filter(p => p.leadStatus === 'contacted').length;
+    const qualifiedProspects = allProspects.filter(p => p.leadStatus === 'qualified').length;
+    const convertedProspects = allProspects.filter(p => p.leadStatus === 'converted').length;
+    const lostProspects = allProspects.filter(p => p.leadStatus === 'lost').length;
+
+    // Calculate conversion rates
+    const contactRate = totalProspects > 0 ? (contactedProspects + qualifiedProspects + convertedProspects) / totalProspects : 0;
+    const qualificationRate = contactedProspects > 0 ? (qualifiedProspects + convertedProspects) / (contactedProspects + qualifiedProspects + convertedProspects) : 0;
+    const conversionRate = totalProspects > 0 ? convertedProspects / totalProspects : 0;
+
+    // Calculate average lead score by stage
+    const avgScoreByStage = {
+      new: allProspects.filter(p => p.leadStatus === 'new').reduce((sum, p) => sum + (p.leadScore || 0), 0) / (newProspects || 1),
+      contacted: allProspects.filter(p => p.leadStatus === 'contacted').reduce((sum, p) => sum + (p.leadScore || 0), 0) / (contactedProspects || 1),
+      qualified: allProspects.filter(p => p.leadStatus === 'qualified').reduce((sum, p) => sum + (p.leadScore || 0), 0) / (qualifiedProspects || 1),
+      converted: allProspects.filter(p => p.leadStatus === 'converted').reduce((sum, p) => sum + (p.leadScore || 0), 0) / (convertedProspects || 1)
+    };
+
+    res.json({
+      funnel: {
+        new: newProspects,
+        contacted: contactedProspects,
+        qualified: qualifiedProspects,
+        converted: convertedProspects,
+        lost: lostProspects
+      },
+      rates: {
+        contactRate: Math.round(contactRate * 100),
+        qualificationRate: Math.round(qualificationRate * 100),
+        conversionRate: Math.round(conversionRate * 100)
+      },
+      avgScoreByStage
+    });
+  } catch (error) {
+    agentRoutesLogger.error('Error fetching analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch analytics' });
+  }
+});
+
 export default router;

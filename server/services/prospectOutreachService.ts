@@ -62,7 +62,7 @@ export async function sendInitialOutreach(options: {
   };
 
   try {
-    // Find high-priority prospects who haven't been contacted yet
+    // Find high-priority prospects who haven't been contacted yet AND have contact emails
     const targetProspects = await db.query.prospects.findMany({
       where: and(
         eq(prospects.leadStatus, 'new'),
@@ -75,6 +75,13 @@ export async function sendInitialOutreach(options: {
 
     for (const prospect of targetProspects) {
       try {
+        // Skip if no contact email
+        if (!prospect.contactEmail) {
+          result.skipped++;
+          logger.warn(`Skipping ${prospect.companyName} - no contact email`);
+          continue;
+        }
+
         // Build email data
         const emailData: ProspectEmailData = {
           companyName: prospect.companyName,
@@ -89,7 +96,7 @@ export async function sendInitialOutreach(options: {
         const template = getInitialOutreachTemplate(emailData);
 
         if (dryRun) {
-          logger.info(`[DRY RUN] Would send email to ${prospect.companyName}:`, {
+          logger.info(`[DRY RUN] Would send email to ${prospect.companyName} (${prospect.contactEmail}):`, {
             subject: template.subject,
             companyNumber: prospect.companyNumber
           });
@@ -97,9 +104,9 @@ export async function sendInitialOutreach(options: {
           continue;
         }
 
-        // Send email via SendGrid
+        // Send email via SendGrid to verified contact email
         await sgMail.send({
-          to: `info@${prospect.companyNumber}.com`, // Placeholder - would need actual contact email
+          to: prospect.contactEmail,
           from: FROM_EMAIL,
           replyTo: REPLY_TO_EMAIL,
           subject: template.subject,
@@ -175,6 +182,13 @@ export async function sendFollowUpEmails(options: {
 
     for (const prospect of targetProspects) {
       try {
+        // Skip if no contact email
+        if (!prospect.contactEmail) {
+          result.skipped++;
+          logger.warn(`Skipping follow-up for ${prospect.companyName} - no contact email`);
+          continue;
+        }
+
         const emailData: ProspectEmailData = {
           companyName: prospect.companyName,
           companyNumber: prospect.companyNumber,
@@ -188,13 +202,13 @@ export async function sendFollowUpEmails(options: {
         const template = getFollowUpTemplate(emailData);
 
         if (dryRun) {
-          logger.info(`[DRY RUN] Would send follow-up to ${prospect.companyName}`);
+          logger.info(`[DRY RUN] Would send follow-up to ${prospect.companyName} (${prospect.contactEmail})`);
           result.sent++;
           continue;
         }
 
         await sgMail.send({
-          to: `info@${prospect.companyNumber}.com`,
+          to: prospect.contactEmail,
           from: FROM_EMAIL,
           replyTo: REPLY_TO_EMAIL,
           subject: template.subject,
@@ -267,6 +281,13 @@ export async function sendDeadlineWarnings(options: {
 
     for (const prospect of targetProspects) {
       try {
+        // Skip if no contact email
+        if (!prospect.contactEmail) {
+          result.skipped++;
+          logger.warn(`Skipping deadline warning for ${prospect.companyName} - no contact email`);
+          continue;
+        }
+
         const daysUntilDeadline = prospect.accountsDueDate ? getDaysUntil(prospect.accountsDueDate) : 0;
 
         // Skip if already sent warning recently
@@ -293,13 +314,13 @@ export async function sendDeadlineWarnings(options: {
         const template = getDeadlineWarningTemplate(emailData);
 
         if (dryRun) {
-          logger.info(`[DRY RUN] Would send deadline warning to ${prospect.companyName}`);
+          logger.info(`[DRY RUN] Would send deadline warning to ${prospect.companyName} (${prospect.contactEmail})`);
           result.sent++;
           continue;
         }
 
         await sgMail.send({
-          to: `info@${prospect.companyNumber}.com`,
+          to: prospect.contactEmail,
           from: FROM_EMAIL,
           replyTo: REPLY_TO_EMAIL,
           subject: template.subject,

@@ -44,6 +44,7 @@ import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
 import ProspectsDashboard from "@/pages/ProspectsDashboard";
 import SignUp from "@/pages/SignUp";
+import AnalyticsDashboard from "@/pages/AnalyticsDashboard";
 import { useAuth } from "@/contexts/AuthContext";
 
 function Router() {
@@ -118,6 +119,7 @@ function Router() {
         {/* Admin routes */}
         <Route path="/agents" component={AgentDashboard} />
         <Route path="/prospects" component={ProspectsDashboard} />
+        <Route path="/analytics" component={AnalyticsDashboard} />
         <Route path="/admin/dashboard" component={AdminDashboard} />
         
         {/* 404 route */}
