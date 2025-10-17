@@ -51,6 +51,7 @@ import AgentControlPanel from "@/pages/AgentControlPanel";
 import SubscriptionManagement from "@/pages/SubscriptionManagement";
 import AdminAnalytics from "@/pages/AdminAnalytics";
 import MonitoringDashboard from "@/pages/MonitoringDashboard";
+import OnboardingTutorial from "@/pages/OnboardingTutorial";
 import { ProtectedRoute } from "@/lib/protected-route";
 
 function Router() {
@@ -75,6 +76,9 @@ function Router() {
       <Switch>
         {/* Dashboard */}
         <ProtectedRoute path="/" component={Dashboard} />
+        
+        {/* Onboarding */}
+        <Route path="/onboarding" component={OnboardingTutorial} />
         
         {/* Filing routes */}
         <Route path="/new-filing" component={NewFiling} />
