@@ -36,20 +36,13 @@ export function setupAuth(app: Express) {
   }
 
   // Use database-backed session store
+  // Note: Session table is created via SQL migration, not auto-created
   const PostgresSessionStore = connectPgSimple(session);
 
   const sessionStore = new PostgresSessionStore({
     conString: process.env.DATABASE_URL,
-    createTableIfMissing: true,
+    createTableIfMissing: false, // Table created via migration
     ttl: 7 * 24 * 60 * 60, // 1 week in seconds
-    errorLog: (...args) => {
-      // Suppress errors about index already existing (harmless)
-      const message = args[0];
-      if (typeof message === 'string' && message.includes('already exists')) {
-        return;
-      }
-      console.error('[Session Store]', ...args);
-    }
   });
 
   const sessionSettings: session.SessionOptions = {
@@ -169,6 +162,36 @@ export function setupAuth(app: Express) {
     const { password: _, ...userWithoutPassword } = req.user;
     res.json(userWithoutPassword);
   });
+
+  // Refresh session with latest user data from database
+  app.post("/api/refresh-session", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      // Fetch latest user data from database
+      const freshUser = await storage.getUser(req.user.id);
+      if (!freshUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Re-login to update session with fresh user data
+      req.login(freshUser, (err) => {
+        if (err) {
+          console.error('Session refresh error:', err);
+          return res.status(500).json({ message: "Failed to refresh session" });
+        }
+        
+        // Remove password from response
+        const { password: _, ...userWithoutPassword } = freshUser;
+        res.json(userWithoutPassword);
+      });
+    } catch (error: any) {
+      console.error('Refresh session error:', error);
+      res.status(500).json({ message: error.message || "Failed to refresh session" });
+    }
+  });
 }
 
 // Middleware to protect routes
@@ -177,4 +200,22 @@ export function isAuthenticated(req: any, res: any, next: any) {
     return next();
   }
   res.status(401).json({ message: "Unauthorized" });
+}
+
+// Middleware to protect admin-only routes
+export function isAdmin(req: any, res: any, next: any) {
+  if (!req.isAuthenticated()) {
+    console.log('[isAdmin] User not authenticated');
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  
+  const userRole = req.user?.role;
+  console.log(`[isAdmin] User ${req.user?.email} role: ${userRole}`);
+  
+  if (userRole !== 'admin') {
+    console.log(`[isAdmin] Access denied for role: ${userRole}`);
+    return res.status(403).json({ message: "Forbidden: Admin access required" });
+  }
+  
+  return next();
 }

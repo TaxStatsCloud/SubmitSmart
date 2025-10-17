@@ -40,6 +40,26 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Verify session table exists before starting
+  try {
+    const { db } = await import('./db');
+    await db.execute(`SELECT 1 FROM session LIMIT 1`);
+    logger.info('Session table verified');
+  } catch (error) {
+    logger.error('Session table not found - creating it now');
+    const { db } = await import('./db');
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS "session" (
+        "sid" varchar NOT NULL COLLATE "default",
+        "sess" json NOT NULL,
+        "expire" timestamp(6) NOT NULL,
+        CONSTRAINT "session_pkey" PRIMARY KEY ("sid")
+      );
+      CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
+    `);
+    logger.info('Session table created successfully');
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

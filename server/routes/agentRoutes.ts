@@ -9,6 +9,7 @@
  */
 
 import { Router } from 'express';
+import { isAdmin } from '../auth';
 import { 
   runAgent, 
   runAgentSequence, 
@@ -26,6 +27,9 @@ import {
 import { logger } from '../utils/logger';
 
 const router = Router();
+
+// Apply admin authentication to all agent routes
+router.use(isAdmin);
 const agentRoutesLogger = logger.withContext('AgentRoutes');
 
 /**
