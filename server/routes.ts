@@ -24,6 +24,8 @@ import agentRoutes from "./routes/agentRoutes";
 import billingRoutes from "./routes/billingRoutes";
 import adminRoutes from "./routes/adminRoutes";
 import chatbotRoutes from "./routes/chatbotRoutes";
+import annualAccountsRoutes from "./routes/annualAccountsRoutes";
+import confirmationStatementRoutes from "./routes/confirmationStatementRoutes";
 import Stripe from "stripe";
 import { setupAuth, isAuthenticated } from "./auth";
 import { db } from "./db";
@@ -296,6 +298,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/agents', agentRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/chatbot', chatbotRoutes);
+  
+  // Register filing wizard routes
+  app.use('/api/annual-accounts', annualAccountsRoutes);
+  app.use('/api/confirmation-statement', confirmationStatementRoutes);
   
   // Enhanced Stripe payment routes
   app.post("/api/create-payment-intent", async (req, res) => {

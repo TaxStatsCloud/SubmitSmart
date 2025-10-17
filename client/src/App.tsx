@@ -28,6 +28,8 @@ import DocumentLibrary from "@/pages/DocumentLibrary";
 import ConfirmationStatement from "@/pages/ConfirmationStatement";
 import AnnualAccounts from "@/pages/AnnualAccounts";
 import CT600Filing from "@/pages/CT600Filing";
+import AnnualAccountsWizard from "@/pages/AnnualAccountsWizard";
+import ConfirmationStatementWizard from "@/pages/ConfirmationStatementWizard";
 import AdminDashboard from "@/pages/AdminDashboard";
 import TaxEngine from "@/pages/TaxEngine";
 import RealWorldFiling from "@/pages/RealWorldFiling";
@@ -79,6 +81,11 @@ function Router() {
         <Route path="/filings/annual-accounts" component={AnnualAccounts} />
         <Route path="/filings/corporation-tax" component={CT600Filing} />
         <Route path="/filings/review" component={FilingReview} />
+        
+        {/* Filing Wizards */}
+        <Route path="/wizards/annual-accounts" component={AnnualAccountsWizard} />
+        <Route path="/wizards/confirmation-statement" component={ConfirmationStatementWizard} />
+        <Route path="/wizards/ct600" component={CT600Filing} />
         
         {/* Real-world filing demo */}
         <Route path="/real-world-filing" component={RealWorldFiling} />
