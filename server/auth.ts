@@ -2,6 +2,7 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
@@ -35,8 +36,7 @@ export function setupAuth(app: Express) {
   }
 
   // Use database-backed session store
-  const connectPg = require('connect-pg-simple');
-  const PostgresSessionStore = connectPg(session);
+  const PostgresSessionStore = connectPgSimple(session);
 
   const sessionStore = new PostgresSessionStore({
     conString: process.env.DATABASE_URL,
