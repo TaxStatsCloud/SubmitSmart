@@ -45,6 +45,7 @@ import Privacy from "@/pages/Privacy";
 import ProspectsDashboard from "@/pages/ProspectsDashboard";
 import AnalyticsDashboard from "@/pages/AnalyticsDashboard";
 import AuthPage from "@/pages/AuthPage";
+import AgentControlPanel from "@/pages/AgentControlPanel";
 import { ProtectedRoute } from "@/lib/protected-route";
 
 function Router() {
@@ -117,6 +118,7 @@ function Router() {
         
         {/* Admin routes */}
         <Route path="/agents" component={AgentDashboard} />
+        <Route path="/agent-control" component={AgentControlPanel} />
         <Route path="/prospects" component={ProspectsDashboard} />
         <Route path="/analytics" component={AnalyticsDashboard} />
         <Route path="/admin/dashboard" component={AdminDashboard} />

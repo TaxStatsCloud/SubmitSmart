@@ -139,6 +139,11 @@ const Sidebar = () => {
                   Administration
                 </h3>
                 
+                <Link href="/agent-control" className={`sidebar-link ${isActive("/agent-control") ? "active" : ""}`}>
+                  <span className="material-icons sidebar-icon">settings</span>
+                  Agent Control Panel
+                </Link>
+                
                 <Link href="/agents" className={`sidebar-link ${isActive("/agents") ? "active" : ""}`}>
                   <span className="material-icons sidebar-icon">smart_toy</span>
                   Agent Manager
