@@ -6,7 +6,7 @@ import { Helmet } from 'react-helmet-async';
 
 export default function Landing() {
   const handleSignIn = () => {
-    window.location.href = '/api/login';
+    window.location.href = '/auth';
   };
 
   return (

@@ -141,39 +141,54 @@ async function fetchCompaniesWithUpcomingFilings(): Promise<CompaniesHouseCompan
     // Import the Companies House API service
     const { companiesHouseApiService } = await import('../companiesHouseApiService');
     
-    // Search for companies with upcoming deadlines (next 90 days)
-    // Using generic search terms to discover various company types
-    const searchQueries = ['Limited', 'Ltd', 'LLP'];
+    // Enhanced search strategy with industry targeting
+    // Priority sectors: Professional services, retail, tech, hospitality, construction
+    const searchQueries = [
+      // General company types
+      'Limited', 'Ltd', 'LLP', 'PLC',
+      // Industry-specific terms for better targeting
+      'Consulting', 'Services', 'Solutions', 'Digital', 'Technology',
+      'Retail', 'Restaurant', 'Cafe', 'Construction', 'Property'
+    ];
+    
     const allCompanies: CompaniesHouseCompany[] = [];
+    const seenCompanies = new Set<string>(); // Deduplication
     
     for (const query of searchQueries) {
       const companies = await companiesHouseApiService.getCompaniesWithUpcomingDeadlines(
         query,
         90, // days ahead
-        20  // max results per query
+        50  // Increased from 20 to 50 results per query for better coverage
       );
       
-      // Map to expected format
+      // Map to expected format with deduplication
       for (const { profile } of companies) {
+        // Skip if we've already seen this company
+        if (seenCompanies.has(profile.company_number)) {
+          continue;
+        }
+        seenCompanies.add(profile.company_number);
+        
         allCompanies.push({
           company_number: profile.company_number,
           company_name: profile.company_name,
           company_status: profile.company_status,
-          company_type: 'ltd', // default type
+          company_type: profile.type || 'ltd',
           registered_office_address: {
-            address_line_1: '',
-            locality: '',
-            postal_code: ''
+            address_line_1: profile.registered_office_address?.address_line_1 || '',
+            locality: profile.registered_office_address?.locality || '',
+            postal_code: profile.registered_office_address?.postal_code || ''
           },
           incorporation_date: profile.date_of_creation,
           next_accounts_due: profile.accounts?.next_due,
           next_confirmation_statement_due: profile.confirmation_statement?.next_due,
-          sic_codes: profile.sic_codes
+          sic_codes: profile.sic_codes || []
         });
       }
       
-      // Rate limiting between queries
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Adaptive rate limiting: faster for early queries, slower to avoid API limits
+      const delay = allCompanies.length > 200 ? 1000 : 500;
+      await new Promise(resolve => setTimeout(resolve, delay));
     }
     
     logger.info(`Found ${allCompanies.length} companies with upcoming filings`);

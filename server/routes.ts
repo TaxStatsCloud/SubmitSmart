@@ -154,7 +154,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log('[DEV-LOGIN] Establishing session for user ID:', user.id);
         // Use Passport's login method to properly establish session
-        req.login(passportUser, (err) => {
+        // Must pass the actual user object (not passportUser) because passport.serializeUser expects user.id
+        req.login(user, (err) => {
           if (err) {
             console.error('[DEV-LOGIN] Passport login error:', err);
             return res.status(500).json({ error: 'Failed to establish session', details: err.message });
@@ -162,14 +163,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log('[DEV-LOGIN] SUCCESS - session established, user ID:', user.id, 'companyId:', user.companyId);
           // Session is now established
+          const { password, ...userWithoutPassword } = user;
           res.json({
             success: true,
-            user: {
-              id: user.id,
-              email: user.email,
-              firstName: user.firstName,
-              companyId: user.companyId
-            }
+            user: userWithoutPassword
           });
         });
       } catch (error: any) {
