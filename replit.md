@@ -18,11 +18,72 @@ PromptSubmissions is an AI-powered platform designed for UK corporate compliance
 ## System Architecture
 The platform is built with a React frontend (TypeScript), a Node.js/Express backend, and a PostgreSQL database utilizing Drizzle ORM. The UI/UX emphasizes a Silicon Valley-level design with glass morphism, gradient backgrounds, and intuitive quick actions. Key technical features include AI-driven document processing, comprehensive financial reporting (P&L, Balance Sheet, Cash Flow), and an Extended Trial Balance system. Filing automation integrates with HMRC and Companies House via XML Gateway for iXBRL and CT600 submissions.
 
-The system incorporates an automated Companies House API discovery agent for lead generation, tracking companies with upcoming filing deadlines, and an automated customer onboarding and lead conversion system with outreach campaigns, real-time company verification, and conversion tracking via Hunter.io email enrichment. Agent management is secured via admin-only routes protected by isAdmin middleware requiring role='admin'.
+### Agent System & Lead Generation (ENHANCED - Oct 2025)
+The platform features a sophisticated multi-agent system for automated customer acquisition:
+
+**Companies House Discovery Agent** (Enhanced):
+- Industry-targeted search with 14 query terms covering professional services, retail, tech, hospitality, construction
+- Fetches 50 results per query (up from 20), discovering 700+ unique companies per run
+- Deduplication system prevents duplicate processing using Set-based tracking
+- Adaptive rate limiting (500ms-1000ms) to optimize API usage while respecting limits
+- Automated lead scoring based on filing deadlines, entity size, and company status
+
+**Email Enrichment Service** (Hunter.io):
+- Automated contact discovery for prospects without email addresses
+- Batch enrichment supporting up to 50 prospects per run
+- Confidence scoring and position tracking for discovered contacts
+- Rate-limited API calls (1 request/second) to avoid quota exhaustion
+
+**Outreach Campaign System**:
+- Three-tier email campaigns: Initial outreach, follow-ups, urgent deadline warnings
+- Personalized templates with company-specific filing deadlines
+- Campaign tracking with metadata (last contacted, follow-up dates, conversion status)
+- SendGrid integration with bounce/unsubscribe handling
+
+**Admin Dashboards**:
+- ProspectsDashboard: Real-time lead pipeline, lead scoring, manual agent triggers
+- AgentControlPanel: Schedule management, manual agent execution, run history
+- AdminAnalytics: Conversion metrics, campaign performance, revenue analytics
+- UserManagement: Role-based access control, subscription management
+
+Agent management is secured via admin-only routes protected by isAdmin middleware requiring role='admin'.
 
 Authentication is managed via email/password with Passport.js (passport-local strategy), using secure password hashing (scrypt) and PostgreSQL-backed session storage (connect-pg-simple) with 7-day session TTL. Session table is auto-created at startup with verification check. A /api/refresh-session endpoint allows users to refresh their session after role changes (note: users must explicitly call this endpoint as sessions cache user data).
 
 A critical component is the iXBRL Generation Service, designed for Companies House's April 2027 mandatory filing requirements. It incorporates the FRC 2025 Taxonomy, automatic entity size detection, mandatory P&L for micro-entities, and robust Directors' Report and audit exemption statement generation with full tagging. An enhanced iXBRL Validation Service, using DOM/XPath, ensures comprehensive validation, including placeholder detection, fact value validation, and cross-reference verification, reporting detailed errors and warnings. A professional accountant review dashboard (`/filings/review`) provides summary metrics, color-coded filing cards, detailed validation results, and an approval workflow with dual-layer client-side and server-side validation to prevent approval bypass.
+
+## Recent Changes (October 2025)
+
+### Authentication & Admin Access
+- Fixed dev-login endpoint session serialization bug (corrected passportUser object structure)
+- Verified admin credentials: admin@promptsubmissions.com / Admin123! (documented in ADMIN_CREDENTIALS.md)
+- Integrated admin routes into sidebar navigation with role-based visibility
+- Fixed Landing page Sign In button routing to /auth
+
+### Agent System Enhancements
+- **Companies House Discovery**: Expanded from 3 to 14 industry-targeted search terms
+- Increased per-query results from 20 to 50 (700+ companies per run vs 60 previously)
+- Added Set-based deduplication to prevent duplicate company processing
+- Implemented adaptive rate limiting (500ms-1000ms based on volume)
+- Improved data mapping with better fallbacks for company type, address, SIC codes
+
+### System State
+**Production Ready:**
+- iXBRL generation with FRC 2025 taxonomy compliance
+- Enhanced iXBRL validation service with comprehensive error detection
+- CT600 corporation tax filing automation
+- Confirmation Statement (CS01) filing
+- Admin portal with user management, subscriptions, analytics
+- Multi-agent system for lead generation and customer acquisition
+- Email/password authentication with secure session management
+- Credit-based billing system with Stripe integration
+
+**In Development:**
+- AI chatbot for UK accounting expertise (planned)
+- Guided filing workflows with step-by-step assistance (planned)
+- Production error tracking and monitoring (planned)
+- User onboarding tutorials and interactive guides (planned)
+- Advanced pricing tiers for enterprises and accountant firms (planned)
 
 ## External Dependencies
 - **OpenAI**: AI-driven document processing and financial data extraction.
