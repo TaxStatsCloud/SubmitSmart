@@ -22,6 +22,7 @@ import fs from "fs";
 import { WebSocketServer } from "ws";
 import agentRoutes from "./routes/agentRoutes";
 import billingRoutes from "./routes/billingRoutes";
+import adminRoutes from "./routes/adminRoutes";
 import Stripe from "stripe";
 import { setupAuth, isAuthenticated } from "./auth";
 import { db } from "./db";
@@ -295,6 +296,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register agent routes
   app.use('/api/agents', agentRoutes);
+  app.use('/api/admin', adminRoutes);
   
   // Enhanced Stripe payment routes
   app.post("/api/create-payment-intent", async (req, res) => {
