@@ -139,19 +139,34 @@ const Sidebar = () => {
                   Administration
                 </h3>
                 
+                <Link href="/admin/dashboard" className={`sidebar-link ${isActive("/admin/dashboard") ? "active" : ""}`}>
+                  <span className="material-icons sidebar-icon">dashboard</span>
+                  Admin Dashboard
+                </Link>
+                
+                <Link href="/admin/users" className={`sidebar-link ${isActive("/admin/users") ? "active" : ""}`}>
+                  <span className="material-icons sidebar-icon">group</span>
+                  User Management
+                </Link>
+                
+                <Link href="/admin/subscriptions" className={`sidebar-link ${isActive("/admin/subscriptions") ? "active" : ""}`}>
+                  <span className="material-icons sidebar-icon">shopping_bag</span>
+                  Subscriptions
+                </Link>
+                
+                <Link href="/admin/analytics" className={`sidebar-link ${isActive("/admin/analytics") ? "active" : ""}`}>
+                  <span className="material-icons sidebar-icon">insights</span>
+                  Analytics
+                </Link>
+                
                 <Link href="/agent-control" className={`sidebar-link ${isActive("/agent-control") ? "active" : ""}`}>
                   <span className="material-icons sidebar-icon">settings</span>
-                  Agent Control Panel
+                  Agent Control
                 </Link>
                 
                 <Link href="/agents" className={`sidebar-link ${isActive("/agents") ? "active" : ""}`}>
                   <span className="material-icons sidebar-icon">smart_toy</span>
                   Agent Manager
-                </Link>
-                
-                <Link href="/admin/dashboard" className={`sidebar-link ${isActive("/admin/dashboard") ? "active" : ""}`}>
-                  <span className="material-icons sidebar-icon">dashboard</span>
-                  Admin Dashboard
                 </Link>
               </div>
             )}

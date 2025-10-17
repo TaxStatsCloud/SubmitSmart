@@ -46,6 +46,8 @@ import ProspectsDashboard from "@/pages/ProspectsDashboard";
 import AnalyticsDashboard from "@/pages/AnalyticsDashboard";
 import AuthPage from "@/pages/AuthPage";
 import AgentControlPanel from "@/pages/AgentControlPanel";
+import SubscriptionManagement from "@/pages/SubscriptionManagement";
+import AdminAnalytics from "@/pages/AdminAnalytics";
 import { ProtectedRoute } from "@/lib/protected-route";
 
 function Router() {
@@ -122,6 +124,9 @@ function Router() {
         <Route path="/prospects" component={ProspectsDashboard} />
         <Route path="/analytics" component={AnalyticsDashboard} />
         <Route path="/admin/dashboard" component={AdminDashboard} />
+        <Route path="/admin/users" component={UserManagement} />
+        <Route path="/admin/subscriptions" component={SubscriptionManagement} />
+        <Route path="/admin/analytics" component={AdminAnalytics} />
         
         {/* 404 route */}
         <Route component={NotFound} />

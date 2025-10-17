@@ -61,21 +61,12 @@ const UserManagement = () => {
 
   const { data: users, isLoading } = useQuery<any[]>({
     queryKey: ['/api/admin/users', roleFilter],
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to load users",
-        variant: "destructive",
-      });
-    },
   });
 
   const createUserMutation = useMutation({
     mutationFn: async (userData: typeof newUser) => {
-      return await apiRequest('/api/admin/users', {
-        method: 'POST',
-        body: JSON.stringify(userData),
-      });
+      const res = await apiRequest('POST', '/api/admin/users', userData);
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
@@ -97,10 +88,8 @@ const UserManagement = () => {
 
   const updateUserMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: typeof editUser }) => {
-      return await apiRequest(`/api/admin/users/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(data),
-      });
+      const res = await apiRequest('PATCH', `/api/admin/users/${id}`, data);
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
@@ -122,9 +111,8 @@ const UserManagement = () => {
 
   const deleteUserMutation = useMutation({
     mutationFn: async (id: number) => {
-      return await apiRequest(`/api/admin/users/${id}`, {
-        method: 'DELETE',
-      });
+      const res = await apiRequest('DELETE', `/api/admin/users/${id}`);
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
@@ -173,7 +161,7 @@ const UserManagement = () => {
     }
   };
 
-  const filteredUsers = users?.filter(user => 
+  const filteredUsers = users?.filter((user: any) => 
     roleFilter === "all" || user.role === roleFilter
   );
 
@@ -311,7 +299,7 @@ const UserManagement = () => {
               </TableHeader>
               <TableBody>
                 {filteredUsers && filteredUsers.length > 0 ? (
-                  filteredUsers.map((user) => (
+                  filteredUsers.map((user: any) => (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">
                         <div className="flex items-center">
