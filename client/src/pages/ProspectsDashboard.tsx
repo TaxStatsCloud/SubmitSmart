@@ -55,12 +55,9 @@ export default function ProspectsDashboard() {
         description: "Querying Companies House API for companies with upcoming deadlines"
       });
 
-      const result = await apiRequest('/api/agents/run', {
-        method: 'POST',
-        body: JSON.stringify({
-          agentType: 'companies_house',
-          params: {}
-        })
+      const result = await apiRequest('/api/agents/run', 'POST', {
+        agentType: 'companies_house',
+        params: {}
       });
 
       queryClient.invalidateQueries({ queryKey: ['/api/agents/prospects'] });
