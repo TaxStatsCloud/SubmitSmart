@@ -42,6 +42,14 @@ export function setupAuth(app: Express) {
     conString: process.env.DATABASE_URL,
     createTableIfMissing: true,
     ttl: 7 * 24 * 60 * 60, // 1 week in seconds
+    errorLog: (...args) => {
+      // Suppress errors about index already existing (harmless)
+      const message = args[0];
+      if (typeof message === 'string' && message.includes('already exists')) {
+        return;
+      }
+      console.error('[Session Store]', ...args);
+    }
   });
 
   const sessionSettings: session.SessionOptions = {

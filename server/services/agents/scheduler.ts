@@ -35,22 +35,27 @@ export interface ScheduleConfig {
 const defaultSchedules: ScheduleConfig[] = [
   {
     agentType: 'companies_house',
-    cronExpression: '0 0 * * 0', // Every Sunday at midnight
+    cronExpression: '0 2 * * *', // Every day at 2 AM
+    params: { 
+      searchQuery: 'limited',
+      daysAhead: 90,
+      maxResults: 100
+    },
     enabled: true,
-    description: 'Weekly Companies House data collection'
+    description: 'Daily Companies House lead discovery'
   },
   {
     agentType: 'contact_research',
-    cronExpression: '0 1 * * *', // Every day at 1 AM
-    params: { batchSize: 20 },
+    cronExpression: '0 3 * * *', // Every day at 3 AM (after discovery)
+    params: { batchSize: 50 },
     enabled: true,
-    description: 'Daily contact research for companies'
+    description: 'Daily email enrichment for new prospects'
   },
   {
     agentType: 'outreach_email',
     cronExpression: '0 9 * * 1-5', // Every weekday at 9 AM
     enabled: true,
-    description: 'Weekday filing reminder emails'
+    description: 'Weekday automated outreach emails'
   }
 ];
 

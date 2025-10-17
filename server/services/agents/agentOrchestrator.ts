@@ -51,25 +51,42 @@ export async function runAgent(
     
     switch (agentType) {
       case 'companies_house':
-        result = await identifyCompaniesWithUpcomingFilings();
+        // Use new discovery service
+        const { agentOrchestrationService } = await import('../agentOrchestrationService');
+        const searchQuery = params.searchQuery || 'limited';
+        const daysAhead = params.daysAhead || 90;
+        const maxResults = params.maxResults || 100;
+        
+        result = await agentOrchestrationService.runCompaniesHouseAgent(
+          searchQuery,
+          daysAhead,
+          maxResults
+        );
+        
         return {
           success: true,
           agentType,
           metrics: {
-            companiesProcessed: result.processed,
-            filingRemindersCreated: result.filingReminders
+            companiesProcessed: result.totalProcessed,
+            prospectsCreated: result.prospectsCreated,
+            prospectsUpdated: result.prospectsUpdated
           }
         };
       
       case 'contact_research':
-        const batchSize = params.batchSize || 10;
-        result = await findCompanyContactInformation(batchSize);
+        // Use email enrichment service
+        const { emailEnrichmentService } = await import('../emailEnrichmentService');
+        const batchSize = params.batchSize || 50;
+        
+        result = await emailEnrichmentService.enrichProspectsWithoutEmails(batchSize);
+        
         return {
           success: true,
           agentType,
           metrics: {
-            companiesProcessed: result.processed,
-            contactsFound: result.contactsFound
+            companiesProcessed: result.total,
+            contactsFound: result.enriched,
+            contactsFailed: result.failed
           }
         };
       
