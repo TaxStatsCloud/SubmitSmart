@@ -22,7 +22,7 @@ import { HelpPanel } from "@/components/wizard/HelpPanel";
 import { ValidationGuidance } from "@/components/wizard/ValidationGuidance";
 import { FilingSubmissionWarning } from "@/components/filing/FilingSubmissionWarning";
 
-// CT600 Form Schema with number coercion
+// CT600 Form Schema with Comparative Period Support and Activity Detection
 const ct600Schema = z.object({
   // Company Info
   companyName: z.string().min(1, "Company name is required"),
@@ -33,6 +33,17 @@ const ct600Schema = z.object({
   accountingPeriodStart: z.string().min(1, "Start date is required"),
   accountingPeriodEnd: z.string().min(1, "End date is required"),
   
+  // === ACTIVITY DETECTION QUESTIONS ===
+  hasPropertyIncome: z.boolean().default(false),
+  isCloseCompany: z.boolean().default(false),
+  hasOverseasIncome: z.boolean().default(false),
+  hasControlledForeignCompanies: z.boolean().default(false),
+  hasGroupRelief: z.boolean().default(false),
+  paidDividends: z.boolean().default(false),
+  hasTransferPricing: z.boolean().default(false),
+  
+  // === CURRENT PERIOD ===
+  
   // Trading Income - using coerce to handle string inputs
   turnover: z.coerce.number().min(0, "Turnover cannot be negative"),
   costOfSales: z.coerce.number().min(0, "Cost of sales cannot be negative").optional(),
@@ -41,6 +52,7 @@ const ct600Schema = z.object({
   // Other Income
   interestReceived: z.coerce.number().min(0).optional(),
   dividendsReceived: z.coerce.number().min(0).optional(),
+  propertyIncome: z.coerce.number().min(0).optional(),
   
   // Adjustments
   depreciationAddBack: z.coerce.number().min(0).optional(),
@@ -50,6 +62,20 @@ const ct600Schema = z.object({
   lossesBroughtForward: z.coerce.number().min(0).optional(),
   rdReliefClaim: z.coerce.number().min(0).optional(),
   charitableDonations: z.coerce.number().min(0).optional(),
+  
+  // === PRIOR PERIOD (Comparative Figures) ===
+  
+  turnoverPrior: z.coerce.number().min(0).optional(),
+  costOfSalesPrior: z.coerce.number().min(0).optional(),
+  operatingExpensesPrior: z.coerce.number().min(0).optional(),
+  interestReceivedPrior: z.coerce.number().min(0).optional(),
+  dividendsReceivedPrior: z.coerce.number().min(0).optional(),
+  propertyIncomePrior: z.coerce.number().min(0).optional(),
+  depreciationAddBackPrior: z.coerce.number().min(0).optional(),
+  capitalAllowancesPrior: z.coerce.number().min(0).optional(),
+  lossesBroughtForwardPrior: z.coerce.number().min(0).optional(),
+  rdReliefClaimPrior: z.coerce.number().min(0).optional(),
+  charitableDonationsPrior: z.coerce.number().min(0).optional(),
   
   // Associated Companies
   numberOfAssociatedCompanies: z.coerce.number().min(0).default(0),
@@ -73,16 +99,39 @@ export default function CT600Filing() {
       utr: "",
       accountingPeriodStart: "",
       accountingPeriodEnd: "",
+      // Activity Detection
+      hasPropertyIncome: false,
+      isCloseCompany: false,
+      hasOverseasIncome: false,
+      hasControlledForeignCompanies: false,
+      hasGroupRelief: false,
+      paidDividends: false,
+      hasTransferPricing: false,
+      // Current Period
       turnover: 0,
       costOfSales: 0,
       operatingExpenses: 0,
       interestReceived: 0,
       dividendsReceived: 0,
+      propertyIncome: 0,
       depreciationAddBack: 0,
       capitalAllowances: 0,
       lossesBroughtForward: 0,
       rdReliefClaim: 0,
       charitableDonations: 0,
+      // Prior Period
+      turnoverPrior: 0,
+      costOfSalesPrior: 0,
+      operatingExpensesPrior: 0,
+      interestReceivedPrior: 0,
+      dividendsReceivedPrior: 0,
+      propertyIncomePrior: 0,
+      depreciationAddBackPrior: 0,
+      capitalAllowancesPrior: 0,
+      lossesBroughtForwardPrior: 0,
+      rdReliefClaimPrior: 0,
+      charitableDonationsPrior: 0,
+      // Other
       numberOfAssociatedCompanies: 0,
     },
   });
