@@ -1,0 +1,51 @@
+{
+  "name": "PromptSubmissions - UK Corporate Compliance Platform",
+  "short_name": "PromptSubmissions",
+  "description": "AI-powered platform for UK corporate compliance - Automate Confirmation Statements, Annual Accounts, and Corporation Tax returns with 100% accuracy",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "categories": ["business", "finance", "productivity"],
+  "scope": "/",
+  "lang": "en-GB",
+  "dir": "ltr",
+  "shortcuts": [
+    {
+      "name": "File Annual Accounts",
+      "short_name": "Annual Accounts",
+      "description": "Start a new Annual Accounts filing",
+      "url": "/filings/annual-accounts",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "File Confirmation Statement",
+      "short_name": "CS01",
+      "description": "Start a new Confirmation Statement",
+      "url": "/filings/confirmation-statements",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "File Corporation Tax",
+      "short_name": "CT600",
+      "description": "Start a new Corporation Tax return",
+      "url": "/filings/corporation-tax",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ]
+}
