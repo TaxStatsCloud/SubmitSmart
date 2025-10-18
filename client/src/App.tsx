@@ -77,6 +77,11 @@ function Router() {
         {/* Dashboard */}
         <ProtectedRoute path="/" component={Dashboard} />
         
+        {/* Auth & Public Pages */}
+        <Route path="/auth" component={AuthPage} />
+        <Route path="/terms" component={Terms} />
+        <Route path="/privacy" component={Privacy} />
+        
         {/* Onboarding */}
         <Route path="/onboarding" component={OnboardingTutorial} />
         
