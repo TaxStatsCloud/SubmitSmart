@@ -18,6 +18,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { FileSpreadsheet, Building2, Calculator, CheckCircle, AlertTriangle, Send, ArrowLeft, ArrowRight, Upload, FileCheck } from "lucide-react";
+import { FieldHint, InlineHint } from "@/components/wizard/FieldHint";
+import { HelpPanel } from "@/components/wizard/HelpPanel";
+import { ValidationGuidance } from "@/components/wizard/ValidationGuidance";
 
 // Annual Accounts Form Schema
 const annualAccountsSchema = z.object({
@@ -228,13 +231,24 @@ export default function AnnualAccountsWizard() {
         <form className="space-y-6">
           {/* Step 1: Company Information */}
           {currentStep === 1 && (
-            <Card className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Building2 className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold">Company Information</h2>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <Card className="p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Building2 className="h-5 w-5 text-primary" />
+                    <h2 className="text-xl font-semibold">Company Information</h2>
+                  </div>
+                  
+                  <ValidationGuidance 
+                    errors={form.formState.errors} 
+                    fieldGuidance={{
+                      companyNumber: "Must be 8 characters (e.g., 12345678). Check your incorporation certificate.",
+                      financialYearEnd: "This determines your 9-month filing deadline with Companies House.",
+                      directorNames: "List all current directors as registered with Companies House."
+                    }}
+                  />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="companyName"
@@ -254,7 +268,14 @@ export default function AnnualAccountsWizard() {
                   name="companyNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Companies House Number *</FormLabel>
+                      <FormLabel className="flex items-center gap-2">
+                        Companies House Number *
+                        <FieldHint 
+                          description="Your unique 8-character company registration number issued by Companies House"
+                          example="12345678"
+                          type="help"
+                        />
+                      </FormLabel>
                       <FormControl>
                         <Input placeholder="12345678" {...field} data-testid="input-company-number" />
                       </FormControl>
@@ -296,7 +317,14 @@ export default function AnnualAccountsWizard() {
                   name="financialYearEnd"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Financial Year End *</FormLabel>
+                      <FormLabel className="flex items-center gap-2">
+                        Financial Year End *
+                        <FieldHint 
+                          description="The last day of your accounting period. Your accounts must be filed within 9 months of this date."
+                          example="31/12/2024"
+                          type="warning"
+                        />
+                      </FormLabel>
                       <FormControl>
                         <Input type="date" {...field} data-testid="input-fy-end" />
                       </FormControl>
@@ -322,27 +350,76 @@ export default function AnnualAccountsWizard() {
                 />
               </div>
 
-              <div className="flex justify-end mt-6">
-                <Button 
-                  type="button" 
-                  onClick={() => setCurrentStep(2)}
-                  data-testid="button-next-step"
-                >
-                  Next: Balance Sheet <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+                  <div className="flex justify-end mt-6">
+                    <Button 
+                      type="button" 
+                      onClick={() => setCurrentStep(2)}
+                      data-testid="button-next-step"
+                    >
+                      Next: Balance Sheet <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </Card>
               </div>
-            </Card>
+
+              {/* Help Panel */}
+              <div className="hidden lg:block">
+                <HelpPanel 
+                  title="Step 1 Help"
+                  currentStep={1}
+                  tips={[
+                    {
+                      icon: Building2,
+                      title: "Company Details",
+                      description: "Enter your company information exactly as registered with Companies House.",
+                      tips: [
+                        "Check your incorporation certificate for the exact company number",
+                        "Use the registered office address from Companies House records",
+                        "Ensure all director names match current registrations"
+                      ]
+                    },
+                    {
+                      icon: FileSpreadsheet,
+                      title: "Financial Year",
+                      description: "Your financial year determines important filing deadlines.",
+                      tips: [
+                        "Accounts must be filed within 9 months of financial year end",
+                        "First accounts may have longer deadline (21 months)",
+                        "Late filing results in automatic penalties (£150-£1,500)"
+                      ]
+                    }
+                  ]}
+                  documentRequirements={{
+                    required: [
+                      "Certificate of Incorporation",
+                      "Current company register extract",
+                      "List of current directors"
+                    ],
+                    optional: [
+                      "Previous year's accounts for reference"
+                    ]
+                  }}
+                />
+              </div>
+            </div>
           )}
 
           {/* Step 2: Balance Sheet */}
           {currentStep === 2 && (
-            <Card className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Calculator className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold">Balance Sheet</h2>
-              </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <Card className="p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Calculator className="h-5 w-5 text-primary" />
+                    <h2 className="text-xl font-semibold">Balance Sheet</h2>
+                  </div>
 
-              <Tabs defaultValue="fixed-assets" className="w-full">
+                  <InlineHint 
+                    message="Balance Sheet shows your company's financial position at year-end. Assets (what you own) must equal Liabilities + Equity (what you owe)."
+                    type="info"
+                  />
+
+                  <Tabs defaultValue="fixed-assets" className="w-full mt-4">
                 <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="fixed-assets">Fixed Assets</TabsTrigger>
                   <TabsTrigger value="current-assets">Current Assets</TabsTrigger>
@@ -356,7 +433,14 @@ export default function AnnualAccountsWizard() {
                     name="intangibleAssets"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Intangible Assets</FormLabel>
+                        <FormLabel className="flex items-center gap-2">
+                          Intangible Assets
+                          <FieldHint 
+                            description="Non-physical assets with long-term value, including goodwill, patents, trademarks, software, and brand names."
+                            example="£50,000 for purchased software licenses"
+                            type="help"
+                          />
+                        </FormLabel>
                         <FormControl>
                           <Input 
                             type="number" 
@@ -482,7 +566,14 @@ export default function AnnualAccountsWizard() {
                     name="creditorsDueWithinYear"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Creditors: Amounts Falling Due Within One Year</FormLabel>
+                        <FormLabel className="flex items-center gap-2">
+                          Creditors: Amounts Falling Due Within One Year
+                          <FieldHint 
+                            description="All debts payable within 12 months of the balance sheet date, including trade payables, bank overdrafts, PAYE/NI, VAT, and corporation tax due."
+                            example="£25,000 (trade creditors £15k, HMRC £10k)"
+                            type="help"
+                          />
+                        </FormLabel>
                         <FormControl>
                           <Input 
                             type="number" 
@@ -565,48 +656,114 @@ export default function AnnualAccountsWizard() {
                 </TabsContent>
               </Tabs>
 
-              <div className="flex justify-between mt-6">
-                <Button 
-                  type="button" 
-                  variant="outline"
-                  onClick={() => setCurrentStep(1)}
-                  data-testid="button-back"
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" /> Back
-                </Button>
-                <Button 
-                  type="button" 
-                  onClick={() => setCurrentStep(3)}
-                  data-testid="button-next"
-                >
-                  Next: P&L Account <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+                  <div className="flex justify-between mt-6">
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={() => setCurrentStep(1)}
+                      data-testid="button-back"
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                    </Button>
+                    <Button 
+                      type="button" 
+                      onClick={() => setCurrentStep(3)}
+                      data-testid="button-next"
+                    >
+                      Next: P&L Account <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </Card>
               </div>
-            </Card>
+
+              {/* Help Panel */}
+              <div className="hidden lg:block">
+                <HelpPanel 
+                  title="Step 2 Help"
+                  currentStep={2}
+                  tips={[
+                    {
+                      icon: Calculator,
+                      title: "Balance Sheet Fundamentals",
+                      description: "The Balance Sheet must balance: Assets = Liabilities + Equity",
+                      tips: [
+                        "Fixed Assets: Long-term items (property, equipment)",
+                        "Current Assets: Short-term items (cash, inventory, debtors)",
+                        "Liabilities: What you owe (creditors, loans)",
+                        "All values should be at cost less depreciation"
+                      ]
+                    },
+                    {
+                      icon: FileCheck,
+                      title: "UK GAAP Requirements",
+                      description: "Follow FRS 102 (UK Generally Accepted Accounting Practice) standards.",
+                      tips: [
+                        "Assets must be valued at historical cost or revalued amount",
+                        "Depreciation required for tangible fixed assets",
+                        "Stock valued at lower of cost or net realizable value",
+                        "Debtors shown net of bad debt provisions"
+                      ]
+                    },
+                    {
+                      icon: AlertTriangle,
+                      title: "Entity Size Detection",
+                      description: "We automatically detect your entity size based on thresholds.",
+                      tips: [
+                        "Micro: Turnover ≤ £632k, Assets ≤ £316k",
+                        "Small: Turnover ≤ £10.2m, Assets ≤ £5.1m",
+                        "Medium: Turnover ≤ £36m, Assets ≤ £18m",
+                        "Large: Above medium thresholds"
+                      ]
+                    }
+                  ]}
+                  documentRequirements={{
+                    required: [
+                      "Fixed asset register",
+                      "Bank statements at year end",
+                      "Debtors and creditors lists",
+                      "Stock valuation"
+                    ],
+                    optional: [
+                      "Depreciation schedules",
+                      "Asset purchase invoices"
+                    ]
+                  }}
+                />
+              </div>
+            </div>
           )}
 
           {/* Step 3: P&L Account */}
           {currentStep === 3 && (
-            <Card className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <FileSpreadsheet className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold">Profit & Loss Account</h2>
-              </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <Card className="p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <FileSpreadsheet className="h-5 w-5 text-primary" />
+                    <h2 className="text-xl font-semibold">Profit & Loss Account</h2>
+                  </div>
 
-              <Alert className="mb-6">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>
-                  Small companies must file a P&L Account. Micro-entities can choose to file abbreviated accounts (Balance Sheet only).
-                </AlertDescription>
-              </Alert>
+                  <Alert className="mb-6">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      Small companies must file a P&L Account. Micro-entities can choose to file abbreviated accounts (Balance Sheet only).
+                    </AlertDescription>
+                  </Alert>
 
-              <div className="space-y-4">
+                  <div className="space-y-4">
                 <FormField
                   control={form.control}
                   name="turnover"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Turnover *</FormLabel>
+                      <FormLabel className="flex items-center gap-2">
+                        Turnover *
+                        <FieldHint 
+                          description="Total revenue from sales and services before VAT. This is your gross income for the financial year."
+                          example="£500,000 (all sales excluding VAT)"
+                          type="help"
+                        />
+                      </FormLabel>
                       <FormControl>
                         <Input 
                           type="number" 
@@ -627,7 +784,14 @@ export default function AnnualAccountsWizard() {
                   name="costOfSales"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Cost of Sales</FormLabel>
+                      <FormLabel className="flex items-center gap-2">
+                        Cost of Sales
+                        <FieldHint 
+                          description="Direct costs of producing goods or services: materials, direct labor, and other costs directly linked to sales."
+                          example="£200,000 (materials £150k, direct labour £50k)"
+                          type="help"
+                        />
+                      </FormLabel>
                       <FormControl>
                         <Input 
                           type="number" 
@@ -671,7 +835,14 @@ export default function AnnualAccountsWizard() {
                   name="accountingPolicies"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Accounting Policies (Optional)</FormLabel>
+                      <FormLabel className="flex items-center gap-2">
+                        Accounting Policies (Optional)
+                        <FieldHint 
+                          description="Describe the accounting methods used for depreciation, stock valuation, revenue recognition, and other key policies per FRS 102."
+                          example="Fixed assets depreciated on straight-line basis over useful economic life. Stock valued at lower of cost and net realizable value."
+                          type="help"
+                        />
+                      </FormLabel>
                       <FormControl>
                         <Textarea 
                           placeholder="Describe your accounting policies, e.g., depreciation methods, stock valuation..." 
@@ -686,26 +857,83 @@ export default function AnnualAccountsWizard() {
                 />
               </div>
 
-              <div className="flex justify-between mt-6">
-                <Button 
-                  type="button" 
-                  variant="outline"
-                  onClick={() => setCurrentStep(2)}
-                  data-testid="button-back"
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" /> Back
-                </Button>
-                <Button 
-                  type="button" 
-                  onClick={onGenerateIXBRL}
-                  disabled={generateIXBRLMutation.isPending}
-                  data-testid="button-generate-ixbrl"
-                >
-                  {generateIXBRLMutation.isPending ? "Generating..." : "Generate iXBRL"}
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+                  <div className="flex justify-between mt-6">
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={() => setCurrentStep(2)}
+                      data-testid="button-back"
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                    </Button>
+                    <Button 
+                      type="button" 
+                      onClick={onGenerateIXBRL}
+                      disabled={generateIXBRLMutation.isPending}
+                      data-testid="button-generate-ixbrl"
+                    >
+                      {generateIXBRLMutation.isPending ? "Generating..." : "Generate iXBRL"}
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </Card>
               </div>
-            </Card>
+
+              {/* Help Panel */}
+              <div className="hidden lg:block">
+                <HelpPanel 
+                  title="Step 3 Help"
+                  currentStep={3}
+                  tips={[
+                    {
+                      icon: FileSpreadsheet,
+                      title: "Profit & Loss Structure",
+                      description: "The P&L shows your trading performance over the financial year.",
+                      tips: [
+                        "Turnover: All sales revenue (exc. VAT)",
+                        "Cost of Sales: Direct costs to generate those sales",
+                        "Gross Profit: Turnover minus Cost of Sales",
+                        "Operating Profit: Gross Profit minus expenses"
+                      ]
+                    },
+                    {
+                      icon: Calculator,
+                      title: "Administrative Expenses",
+                      description: "Include all indirect running costs of the business.",
+                      tips: [
+                        "Rent and rates for business premises",
+                        "Staff salaries (not directly producing goods)",
+                        "Professional fees (accounting, legal)",
+                        "Marketing, utilities, insurance, depreciation"
+                      ]
+                    },
+                    {
+                      icon: AlertTriangle,
+                      title: "Filing Requirements by Size",
+                      description: "Different entity sizes have different requirements.",
+                      tips: [
+                        "Micro-entities: May file Balance Sheet only",
+                        "Small companies: Must file full P&L",
+                        "Medium/Large: Full accounts + Director's Report",
+                        "April 2027: All must use iXBRL format"
+                      ]
+                    }
+                  ]}
+                  documentRequirements={{
+                    required: [
+                      "Sales invoices/records",
+                      "Purchase invoices",
+                      "Payroll summaries",
+                      "Expense receipts"
+                    ],
+                    optional: [
+                      "Management accounts",
+                      "Previous P&L for comparison"
+                    ]
+                  }}
+                />
+              </div>
+            </div>
           )}
 
           {/* Step 4: Review & iXBRL Preview */}
