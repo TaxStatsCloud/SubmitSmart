@@ -12,6 +12,7 @@ import { storage } from '../storage';
 import { auditService } from '../services/auditService';
 import { IXBRLPackagingService } from '../services/ixbrl/IXBRLPackagingService';
 import { getAnnualAccountsCost, EntitySize } from '../../shared/filingCosts';
+import { EntitySizeDetector, EntityMetrics } from '../services/ixbrl/EntitySizeDetector';
 
 const router = Router();
 router.use(isAuthenticated);
@@ -134,15 +135,186 @@ router.post('/submit', async (req, res) => {
 
     const { ixbrlData, documentIds, ...formData } = req.body;
     
-    // Determine entity size from ixbrlData or form data
-    const entitySize = (ixbrlData?.entitySize || formData.entitySize || 'small') as EntitySize;
+    // ============ CRITICAL VALIDATION ============
+    // Prevent users from forging entity size to bypass tiered pricing
     
-    // Calculate tiered credit cost based on entity size
+    // Extract financial metrics from submission data
+    const balanceSheet = ixbrlData?.balanceSheet || {};
+    const profitLoss = ixbrlData?.profitAndLoss || {};
+    
+    // Calculate total assets from balance sheet - ALWAYS compute from components (never trust provided totals)
+    // Modern structure: balanceSheet.fixedAssets.{intangible, tangible, investments}
+    // Legacy structure: balanceSheet.{intangibleAssets, tangibleAssets, investments}
+    
+    const totalFixedAssets = balanceSheet.fixedAssets
+      ? (Number(balanceSheet.fixedAssets.intangible) || 0) +  
+        (Number(balanceSheet.fixedAssets.tangible) || 0) + 
+        (Number(balanceSheet.fixedAssets.investments) || 0)
+      : (Number(balanceSheet.intangibleAssets) || 0) +  
+        (Number(balanceSheet.tangibleAssets) || 0) + 
+        (Number(balanceSheet.investments) || 0);
+    
+    const totalCurrentAssets = balanceSheet.currentAssets
+      ? (Number(balanceSheet.currentAssets.stocks) || 0) + 
+        (Number(balanceSheet.currentAssets.debtors) || 0) + 
+        (Number(balanceSheet.currentAssets.cash) || 0)
+      : (Number(balanceSheet.stocks) || 0) + 
+        (Number(balanceSheet.debtors) || 0) + 
+        (Number(balanceSheet.cash) || 0);
+    
+    const totalAssets = totalFixedAssets + totalCurrentAssets;
+    
+    // Validate against provided totals if present (detect tampering)
+    if (balanceSheet.fixedAssets?.total !== undefined) {
+      const providedFixedTotal = Number(balanceSheet.fixedAssets.total) || 0;
+      if (Math.abs(providedFixedTotal - totalFixedAssets) > 0.01) {
+        annualAccountsLogger.warn('Fixed assets total mismatch detected', {
+          provided: providedFixedTotal,
+          computed: totalFixedAssets,
+          userId: req.user?.id,
+          companyNumber: formData.companyNumber
+        });
+      }
+    }
+    
+    if (balanceSheet.currentAssets?.total !== undefined) {
+      const providedCurrentTotal = Number(balanceSheet.currentAssets.total) || 0;
+      if (Math.abs(providedCurrentTotal - totalCurrentAssets) > 0.01) {
+        annualAccountsLogger.warn('Current assets total mismatch detected', {
+          provided: providedCurrentTotal,
+          computed: totalCurrentAssets,
+          userId: req.user?.id,
+          companyNumber: formData.companyNumber
+        });
+      }
+    }
+    
+    const turnover = Number(profitLoss.turnover || profitLoss.revenue) || 0;
+    const employees = Number(formData.averageEmployees || formData.employees) || 0;
+    
+    // Detect actual entity size based on financial thresholds
+    const detectedEntitySize: EntitySize = (() => {
+      if (totalAssets === 0 && turnover === 0) {
+        // No financial data provided - default to small for safety
+        annualAccountsLogger.warn('No financial metrics provided - defaulting to small entity');
+        return 'small';
+      }
+      
+      const metrics: EntityMetrics = {
+        turnover,
+        balanceSheet: totalAssets,
+        employees
+      };
+      
+      const sizeResult = EntitySizeDetector.detectSize(metrics);
+      return sizeResult.size;
+    })();
+    
+    // Compare declared entity size with detected size
+    const declaredEntitySize = (ixbrlData?.entitySize || formData.entitySize || detectedEntitySize) as EntitySize;
+    
+    // Security check: Reject if user tries to declare smaller entity size to pay less
+    const sizeHierarchy = { micro: 0, small: 1, medium: 2, large: 3 };
+    if (sizeHierarchy[declaredEntitySize] < sizeHierarchy[detectedEntitySize]) {
+      annualAccountsLogger.error('Entity size forgery attempt detected', {
+        declared: declaredEntitySize,
+        detected: detectedEntitySize,
+        turnover,
+        totalAssets,
+        employees,
+        userId: req.user?.id
+      });
+      
+      return res.status(400).json({
+        error: 'Entity size mismatch',
+        message: `Based on your financial data (turnover: £${turnover.toLocaleString()}, assets: £${totalAssets.toLocaleString()}), your company qualifies as a ${detectedEntitySize} entity. You cannot file as a ${declaredEntitySize} entity.`,
+        detectedEntitySize,
+        declaredEntitySize
+      });
+    }
+    
+    // Use the detected entity size for credit calculation
+    const entitySize = detectedEntitySize;
+    
+    // Validate required sections for medium/large entities
+    if (entitySize === 'medium' || entitySize === 'large') {
+      // Medium and Large companies MUST have Cash Flow Statement with substantive content
+      const cashFlowData = ixbrlData?.cashFlowStatement || formData.cashFlowStatement;
+      const hasSubstantiveCashFlow = cashFlowData && (
+        typeof cashFlowData === 'object' && (
+          cashFlowData.netCashFromOperatingActivities !== undefined ||
+          cashFlowData.netCashFromInvestingActivities !== undefined ||
+          cashFlowData.netCashFromFinancingActivities !== undefined ||
+          cashFlowData.operatingActivities !== undefined
+        )
+      );
+      
+      if (!hasSubstantiveCashFlow) {
+        annualAccountsLogger.error('Cash Flow Statement missing or empty for medium/large entity', {
+          entitySize,
+          companyNumber: formData.companyNumber,
+          userId: req.user?.id,
+          hasCashFlowFlag: !!cashFlowData,
+          cashFlowDataType: typeof cashFlowData
+        });
+        
+        return res.status(400).json({
+          error: 'Cash Flow Statement required',
+          message: `${entitySize.charAt(0).toUpperCase() + entitySize.slice(1)} companies must include a complete Cash Flow Statement under FRS 102. Please complete the Cash Flow section with operating, investing, and financing activities.`,
+          requiredSections: ['cashFlowStatement'],
+          requiredFields: ['netCashFromOperatingActivities', 'netCashFromInvestingActivities', 'netCashFromFinancingActivities']
+        });
+      }
+    }
+    
+    if (entitySize === 'large') {
+      // Large companies MUST have Strategic Report with substantive content
+      const strategicReportData = ixbrlData?.strategicReport || formData.strategicReport;
+      const hasSubstantiveStrategicReport = (
+        (strategicReportData && typeof strategicReportData === 'object') ||
+        (formData.businessModel && formData.businessModel.length > 50 &&
+         formData.principalRisks && formData.principalRisks.length > 50 &&
+         formData.keyPerformanceIndicators && formData.keyPerformanceIndicators.length > 30)
+      );
+      
+      if (!hasSubstantiveStrategicReport) {
+        annualAccountsLogger.error('Strategic Report missing or incomplete for large entity', {
+          entitySize,
+          companyNumber: formData.companyNumber,
+          userId: req.user?.id,
+          hasStrategicReportFlag: !!strategicReportData,
+          hasBusinessModel: !!formData.businessModel,
+          businessModelLength: formData.businessModel?.length || 0,
+          hasPrincipalRisks: !!formData.principalRisks,
+          principalRisksLength: formData.principalRisks?.length || 0,
+          hasKPIs: !!formData.keyPerformanceIndicators,
+          kpisLength: formData.keyPerformanceIndicators?.length || 0
+        });
+        
+        return res.status(400).json({
+          error: 'Strategic Report required',
+          message: 'Large companies must include a comprehensive Strategic Report under Companies Act 2006 s414A. Please complete the Strategic Report section with detailed business model (minimum 50 characters), principal risks (minimum 50 characters), and key performance indicators (minimum 30 characters).',
+          requiredSections: ['strategicReport', 'businessModel', 'principalRisks', 'keyPerformanceIndicators'],
+          minimumLengths: {
+            businessModel: 50,
+            principalRisks: 50,
+            keyPerformanceIndicators: 30
+          }
+        });
+      }
+    }
+    
+    // Calculate tiered credit cost based on validated entity size
     const REQUIRED_CREDITS = getAnnualAccountsCost(entitySize);
     
-    annualAccountsLogger.info('Filing credit cost calculated', {
-      entitySize,
-      credits: REQUIRED_CREDITS
+    annualAccountsLogger.info('Filing validated and credit cost calculated', {
+      declaredEntitySize,
+      detectedEntitySize,
+      finalEntitySize: entitySize,
+      credits: REQUIRED_CREDITS,
+      turnover,
+      totalAssets,
+      employees
     });
     
     // Get user to check company association

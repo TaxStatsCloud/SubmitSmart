@@ -103,3 +103,47 @@ export function detectCT600Complexity(supplementaryPages: string[]): CT600Comple
     return 'group';
   }
 }
+
+/**
+ * Confirmation Statement Costs
+ */
+export const CS01_COST = 100; // Flat rate - minimal variation
+
+/**
+ * Get the credit cost for a Confirmation Statement filing
+ */
+export function getConfirmationStatementCost(): number {
+  return CS01_COST;
+}
+
+/**
+ * AI-Powered Report Generation Costs
+ * These are optional add-ons that help generate compliant reports
+ * Charged separately when AI assistance is requested
+ */
+export const AI_ASSISTANCE_COSTS = {
+  DIRECTORS_REPORT: 150,  // AI-generated compliant directors' report
+  STRATEGIC_REPORT: 200,  // AI-generated strategic report (KPIs, risks, outlook)
+  NOTES_TO_ACCOUNTS: 100, // AI-generated detailed accounting policy notes
+} as const;
+
+export type AIAssistanceType = keyof typeof AI_ASSISTANCE_COSTS;
+
+/**
+ * Get the credit cost for AI-powered report generation
+ */
+export function getAIAssistanceCost(assistanceType: AIAssistanceType): number {
+  return AI_ASSISTANCE_COSTS[assistanceType];
+}
+
+/**
+ * Get description for AI assistance type
+ */
+export function getAIAssistanceDescription(assistanceType: AIAssistanceType): string {
+  const descriptions = {
+    DIRECTORS_REPORT: 'AI-generated compliant directors\' report',
+    STRATEGIC_REPORT: 'AI-generated strategic report with KPIs, risks, and future outlook',
+    NOTES_TO_ACCOUNTS: 'AI-generated detailed accounting policy notes',
+  };
+  return descriptions[assistanceType];
+}

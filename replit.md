@@ -36,12 +36,33 @@ More complex filings require more AI processing, validation, and compliance chec
 - **Documentation Guidance**: Provide hints and support for users to upload correct documentation
 - **Authority Compliance**: Ensure all filings meet the highest standards for HMRC and Companies House acceptance
 
+## Exemptions Strategy
+
+UK companies can claim various exemptions when filing accounts:
+
+**Audit Exemption**: Small companies (turnover ≤£10.2m, assets ≤£5.1m) can claim audit exemption under Companies Act 2006 s477. Platform validates eligibility based on financial thresholds.
+
+**Abbreviated Accounts**: Small companies can file abbreviated accounts to Companies House while maintaining full accounts for members. Platform generates both versions when requested.
+
+**Dormant Company Exemptions**: Dormant companies have simplified filing requirements. Platform detects dormancy (no significant accounting transactions) and applies appropriate exemptions.
+
+**Filing Workflow**: Exemptions wizard step added before final review, with automatic eligibility checks and appropriate exemption statements included in iXBRL packages.
+
 ## System Architecture
 The platform utilizes a React frontend (TypeScript), a Node.js/Express backend, and a PostgreSQL database with Drizzle ORM. The UI/UX emphasizes a Silicon Valley-level design with glass morphism and gradient backgrounds. Key functionalities include AI-driven document processing, comprehensive financial reporting (P&L, Balance Sheet, Cash Flow), an Extended Trial Balance system, and an iXBRL Generation Service supporting FRC 2025 Taxonomy.
 
 Filing automation integrates with HMRC and Companies House via XML Gateway for iXBRL and CT600 submissions, including sophisticated authentication for both government APIs. A multi-agent system automates customer acquisition, featuring a Companies House Discovery Agent, an Email Enrichment Service, and a three-tier Outreach Campaign System. Admin dashboards provide real-time lead pipelines, agent control, conversion analytics, and user management with role-based access control. Authentication is handled via email/password with Passport.js, scrypt hashing, and PostgreSQL-backed session storage.
 
+**Critical Backend Enforcement**: Entity size detection validates against actual financial thresholds to prevent tiered pricing bypasses. Medium/large companies cannot file without substantive Cash Flow Statements and Strategic Reports (large only). All credit deduction paths use centralized tiered pricing functions.
+
 The system incorporates multi-company management with tier-based limits, a secure backend AI chatbot, and smart recommendation security with tenant isolation. UX includes a UK Accounting Expert AI Chatbot, deadline warnings, credit usage visualization, and AI-powered smart filing recommendations. Guided filing workflows for Annual Accounts, Confirmation Statements, and CT600 offer contextual help. An invitation-based Auditor Access System provides a read-only `auditor` role. Legal disclaimers are integrated at three levels to ensure compliance and user responsibility without impacting user experience. The platform also supports comparative year functionality for UK accounting standards, and a comprehensive CT600 validation system mapped to all 165 HMRC form boxes, including intelligent supplementary page detection and prior year comparison.
+
+**AI-Powered Report Generation** (Chargeable Revenue Features): Three AI services generate compliant UK statutory reports using OpenAI GPT-4o:
+- **Directors Report Generator** (150 credits): Creates compliant directors' reports including principal activities, business review, results/dividends, future developments, and statutory statements
+- **Strategic Report Generator** (200 credits): Produces comprehensive strategic reports for large companies with business model, KPIs, principal risks, Section 172(1) statement, and ESG disclosures
+- **Notes to Accounts Generator** (100 credits): Generates detailed accounting policy notes with FRS 102 compliance, basis of preparation, going concern, and all key accounting policies
+
+API endpoints at `/api/ai/directors-report`, `/api/ai/strategic-report`, and `/api/ai/notes-to-accounts` validate credits, generate reports, deduct charges, and log transactions.
 
 ## External Dependencies
 - **OpenAI**: AI-driven document processing, financial data extraction, and smart filing recommendations.

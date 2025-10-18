@@ -12,6 +12,7 @@ import { storage } from '../storage';
 import { auditService } from '../services/auditService';
 import { CS01FilingService } from '../services/filing/CS01FilingService';
 import { CS01Data } from '../services/filing/CS01XMLGenerator';
+import { getConfirmationStatementCost } from '../../shared/filingCosts';
 
 const router = Router();
 router.use(isAuthenticated);
@@ -44,8 +45,8 @@ router.post('/submit', async (req, res) => {
       return res.status(400).json({ error: 'Payment method is required. Companies House filing fee of £34.00 must be paid.' });
     }
 
-    // Define required credits for CS01
-    const REQUIRED_CREDITS = 50;
+    // Calculate required credits for CS01 using centralized pricing
+    const REQUIRED_CREDITS = getConfirmationStatementCost();
     
     // Get user to check company association
     const user = await storage.getUser(userId);

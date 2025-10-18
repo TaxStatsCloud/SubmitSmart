@@ -30,6 +30,7 @@ import confirmationStatementRoutes from "./routes/confirmationStatementRoutes";
 import monitoringRoutes from "./routes/monitoringRoutes";
 import analyticsRoutes from "./routes/analyticsRoutes";
 import recommendationRoutes from "./routes/recommendationRoutes";
+import aiReportRoutes from "./routes/aiReportRoutes";
 import Stripe from "stripe";
 import { setupAuth, isAuthenticated, isAdmin, isAuditor, hashPassword } from "./auth";
 import { db } from "./db";
@@ -311,6 +312,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register filing wizard routes
   app.use('/api/annual-accounts', annualAccountsRoutes);
   app.use('/api/confirmation-statement', confirmationStatementRoutes);
+  
+  // Register AI report generation routes (chargeable features)
+  app.use('/api/ai', aiReportRoutes);
   
   // Register monitoring routes (admin-only)
   app.use('/api/monitoring', monitoringRoutes);
