@@ -16,7 +16,10 @@ import { Badge } from "@/components/ui/badge";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Calculator, FileText, CheckCircle, AlertTriangle, Send, ArrowLeft, ArrowRight, Building2 } from "lucide-react";
+import { Calculator, FileText, CheckCircle, AlertTriangle, Send, ArrowLeft, ArrowRight, Building2, TrendingUp, BarChart3 } from "lucide-react";
+import { FieldHint, InlineHint } from "@/components/wizard/FieldHint";
+import { HelpPanel } from "@/components/wizard/HelpPanel";
+import { ValidationGuidance } from "@/components/wizard/ValidationGuidance";
 
 // CT600 Form Schema with number coercion
 const ct600Schema = z.object({
@@ -186,368 +189,625 @@ export default function CT600Filing() {
         <form className="space-y-6">
           {/* Step 1: Company Information */}
           {currentStep === 1 && (
-            <Card className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Building2 className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold">Company Information</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <Card className="p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Building2 className="h-5 w-5 text-primary" />
+                    <h2 className="text-xl font-semibold">Company Information & Accounting Period</h2>
+                  </div>
+                  
+                  <ValidationGuidance 
+                    errors={form.formState.errors} 
+                    fieldGuidance={{
+                      utr: "UTR must be exactly 10 digits. Find it on HMRC letters, your online tax account, or contact HMRC.",
+                      accountingPeriodStart: "Must not exceed 12 months and should align with your financial year.",
+                      accountingPeriodEnd: "Filing deadline is 12 months after this date. Late filing incurs £100-£1,000+ penalties.",
+                      numberOfAssociatedCompanies: "Include companies under common control. Affects marginal relief thresholds (£50k-£250k)."
+                    }}
+                  />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="companyName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Company Name *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="ABC Limited" {...field} data-testid="input-company-name" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="companyNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Companies House Number *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="12345678" {...field} data-testid="input-company-number" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="utr"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                            Unique Taxpayer Reference (UTR) *
+                            <FieldHint 
+                              description="Your 10-digit UTR is HMRC's unique identifier for your company's tax affairs. Find it on Corporation Tax letters, your HMRC online account, or payslips."
+                              example="1234567890 (exactly 10 digits)"
+                              type="help"
+                            />
+                          </FormLabel>
+                          <FormControl>
+                            <Input placeholder="1234567890" {...field} data-testid="input-utr" />
+                          </FormControl>
+                          <FormDescription>10-digit reference from HMRC</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="numberOfAssociatedCompanies"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                            Number of Associated Companies
+                            <FieldHint 
+                              description="Associated companies are those under common control. This affects your marginal relief thresholds. Standard rate applies to profits over £250k (divided by 1 + associates)."
+                              example="If you own 2 other companies, enter 2. The £250k threshold becomes £83,333 each (£250k ÷ 3)."
+                              type="warning"
+                            />
+                          </FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              {...field} 
+                              onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                              data-testid="input-associated-companies" 
+                            />
+                          </FormControl>
+                          <FormDescription>Affects marginal relief calculation</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <Separator className="my-6" />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="accountingPeriodStart"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                            Accounting Period Start *
+                            <FieldHint 
+                              description="The first day of your accounting period for Corporation Tax. This should align with your company's financial year and cannot exceed 12 months in length."
+                              example="01/04/2024"
+                              type="help"
+                            />
+                          </FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} data-testid="input-period-start" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="accountingPeriodEnd"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                            Accounting Period End *
+                            <FieldHint 
+                              description="The last day of your accounting period. Your CT600 must be filed within 12 months of this date. Late filing incurs automatic penalties (£100 for 1 day late, up to £1,000+)."
+                              example="31/03/2025"
+                              type="warning"
+                            />
+                          </FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} data-testid="input-period-end" />
+                          </FormControl>
+                          <FormDescription>Filing deadline: 12 months from this date</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex justify-end mt-6">
+                    <Button 
+                      type="button" 
+                      onClick={() => setCurrentStep(2)}
+                      data-testid="button-next-step"
+                    >
+                      Next: Financials <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </Card>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="companyName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Company Name *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="ABC Limited" {...field} data-testid="input-company-name" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
-                <FormField
-                  control={form.control}
-                  name="companyNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Company Number *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="12345678" {...field} data-testid="input-company-number" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="utr"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Unique Taxpayer Reference (UTR) *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="1234567890" {...field} data-testid="input-utr" />
-                      </FormControl>
-                      <FormDescription>10-digit UTR from HMRC</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="numberOfAssociatedCompanies"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Number of Associated Companies</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          {...field} 
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                          data-testid="input-associated-companies" 
-                        />
-                      </FormControl>
-                      <FormDescription>For marginal relief calculation</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+              {/* Help Panel */}
+              <div className="hidden lg:block">
+                <HelpPanel 
+                  title="Step 1 Help"
+                  currentStep={1}
+                  tips={[
+                    {
+                      icon: Calculator,
+                      title: "CT600 Filing Requirements",
+                      description: "Corporation Tax returns must be filed electronically with HMRC within strict deadlines.",
+                      tips: [
+                        "Filing deadline: 12 months after accounting period end",
+                        "Payment deadline: 9 months and 1 day after period end",
+                        "Late filing penalties: £100 (1 day late), £200 (3 months), up to £1,000+",
+                        "Standard CT rate: 19% (profits under £50k)",
+                        "Main rate: 25% (profits over £250k)",
+                        "Marginal relief: 19-25% (profits £50k-£250k)"
+                      ]
+                    },
+                    {
+                      icon: Building2,
+                      title: "UTR Explained",
+                      description: "Your Unique Taxpayer Reference is HMRC's identifier for your company.",
+                      tips: [
+                        "Format: Exactly 10 digits (e.g., 1234567890)",
+                        "Where to find it: HMRC letters, online tax account, corporation tax notices",
+                        "Different from: Companies House number (8 digits), VAT number",
+                        "How to get one: Automatically issued when you register for Corporation Tax",
+                        "Lost your UTR? Call HMRC on 0300 200 3410"
+                      ]
+                    },
+                    {
+                      icon: TrendingUp,
+                      title: "Associated Companies Rules",
+                      description: "Companies under common control share profit thresholds for marginal relief.",
+                      tips: [
+                        "Definition: Companies with >50% common ownership or control",
+                        "Impact: Thresholds divided by (1 + number of associates)",
+                        "Example: 2 associates means £250k threshold becomes £83,333 each",
+                        "Include: Parent companies, sister companies, subsidiaries",
+                        "Penalties for incorrect disclosure: Up to £3,000"
+                      ]
+                    }
+                  ]}
+                  documentRequirements={{
+                    required: [
+                      "Company UTR (10-digit reference from HMRC)",
+                      "Accounting period dates (max 12 months)",
+                      "List of associated companies (if any)",
+                      "Companies House number"
+                    ],
+                    optional: [
+                      "Previous CT600 for reference",
+                      "HMRC gateway credentials"
+                    ]
+                  }}
                 />
               </div>
-
-              <Separator className="my-6" />
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="accountingPeriodStart"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Accounting Period Start *</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} data-testid="input-period-start" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="accountingPeriodEnd"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Accounting Period End *</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} data-testid="input-period-end" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="flex justify-end mt-6">
-                <Button 
-                  type="button" 
-                  onClick={() => setCurrentStep(2)}
-                  data-testid="button-next-step"
-                >
-                  Next: Financials <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-            </Card>
+            </div>
           )}
 
           {/* Step 2: Financial Data */}
           {currentStep === 2 && (
-            <Card className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <FileText className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold">Financial Information</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <Card className="p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <FileText className="h-5 w-5 text-primary" />
+                    <h2 className="text-xl font-semibold">Trading Income & Tax Adjustments</h2>
+                  </div>
+
+                  <InlineHint 
+                    message="Corporation Tax is calculated on adjusted trading profits, not accounting profits. You must add back non-deductible expenses (like depreciation) and claim capital allowances instead."
+                    type="info"
+                  />
+
+                  <Tabs defaultValue="trading" className="w-full mt-4">
+                    <TabsList className="grid w-full grid-cols-4">
+                      <TabsTrigger value="trading">Income</TabsTrigger>
+                      <TabsTrigger value="other">Other Income</TabsTrigger>
+                      <TabsTrigger value="adjustments">Adjustments</TabsTrigger>
+                      <TabsTrigger value="reliefs">Reliefs</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="trading" className="mt-6 space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="turnover"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              Turnover *
+                              <FieldHint 
+                                description="Total revenue from your trading activities during the accounting period. Use revenue recognition rules for Corporation Tax - generally when the sale is made, not when payment is received."
+                                example="£500,000 annual sales (excluding VAT)"
+                                type="help"
+                              />
+                            </FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                placeholder="0.00" 
+                                {...field}
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                data-testid="input-turnover"
+                              />
+                            </FormControl>
+                            <FormDescription>Total revenue from trading (excluding VAT)</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="costOfSales"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              Cost of Sales
+                              <FieldHint 
+                                description="Direct costs of producing goods or services sold. For CT purposes, include: raw materials, direct labour, manufacturing overheads. Exclude: depreciation, financing costs, head office expenses."
+                                example="£200,000 (materials £150k + direct labour £50k)"
+                                type="help"
+                              />
+                            </FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                placeholder="0.00" 
+                                {...field}
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                data-testid="input-cost-of-sales"
+                              />
+                            </FormControl>
+                            <FormDescription>Direct costs of goods/services sold</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="operatingExpenses"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              Operating Expenses
+                              <FieldHint 
+                                description="Business running costs. WARNING: Some expenses are NOT tax-deductible and must be added back: client entertainment (100%), depreciation (100%), business entertainment over £50/head, fines & penalties."
+                                example="£100,000 (includes £10k depreciation to add back later)"
+                                type="warning"
+                              />
+                            </FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                placeholder="0.00" 
+                                {...field}
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                data-testid="input-operating-expenses"
+                              />
+                            </FormControl>
+                            <FormDescription>Admin, selling & distribution costs</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </TabsContent>
+
+                    <TabsContent value="other" className="mt-6 space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="interestReceived"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Interest Received</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                placeholder="0.00" 
+                                {...field}
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                data-testid="input-interest-received"
+                              />
+                            </FormControl>
+                            <FormDescription>Bank interest and investment income</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="dividendsReceived"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Dividends Received</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                placeholder="0.00" 
+                                {...field}
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                data-testid="input-dividends-received"
+                              />
+                            </FormControl>
+                            <FormDescription>Dividends from UK companies (usually exempt)</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </TabsContent>
+
+                    <TabsContent value="adjustments" className="mt-6 space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="depreciationAddBack"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              Depreciation Add-Back
+                              <FieldHint 
+                                description="Depreciation is NOT tax-deductible for Corporation Tax. You must add it back to accounting profits and claim Capital Allowances instead. This is a fundamental CT adjustment."
+                                example="If P&L shows £10k depreciation, add back £10k here and claim £10k+ capital allowances"
+                                type="warning"
+                              />
+                            </FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                placeholder="0.00" 
+                                {...field}
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                data-testid="input-depreciation-addback"
+                              />
+                            </FormControl>
+                            <FormDescription>Depreciation charged in P&L (not tax-deductible)</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="capitalAllowances"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              Capital Allowances
+                              <FieldHint 
+                                description="Tax relief for business assets. Annual Investment Allowance (AIA): 100% relief on first £1m qualifying expenditure. Main pool (plant & machinery): 18% writing down allowance. Special rate pool (integral features): 6%."
+                                example="£50k AIA claim on new equipment + £5k WDA on existing assets"
+                                type="help"
+                              />
+                            </FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                placeholder="0.00" 
+                                {...field}
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                data-testid="input-capital-allowances"
+                              />
+                            </FormControl>
+                            <FormDescription>AIA, plant & machinery allowances (tax-deductible)</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </TabsContent>
+
+                    <TabsContent value="reliefs" className="mt-6 space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="lossesBroughtForward"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              Losses Brought Forward
+                              <FieldHint 
+                                description="Trading losses from previous periods can be carried forward indefinitely and offset against future profits. Post-2017 rules: can offset up to 50% of profits over £5m (100% of first £5m)."
+                                example="£20k losses from 2023 can reduce 2024 profits"
+                                type="help"
+                              />
+                            </FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                placeholder="0.00" 
+                                {...field}
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                data-testid="input-losses-brought-forward"
+                              />
+                            </FormControl>
+                            <FormDescription>Previous trading losses to offset</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="rdReliefClaim"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              R&D Relief Claim
+                              <FieldHint 
+                                description="Research & Development tax relief for innovation projects. SME scheme (230% deduction): For companies with <500 staff, <€100m turnover. RDEC scheme (20% credit): For large companies or subcontracted R&D. Must be qualifying R&D activity."
+                                example="£100k R&D spend × 230% = £230k deduction (SME)"
+                                type="help"
+                              />
+                            </FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                placeholder="0.00" 
+                                {...field}
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                data-testid="input-rd-relief"
+                              />
+                            </FormControl>
+                            <FormDescription>Enhanced deduction for qualifying R&D</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="charitableDonations"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              Charitable Donations
+                              <FieldHint 
+                                description="Qualifying charitable donations are fully deductible. Must be to UK registered charities or Community Amateur Sports Clubs (CASCs). Exclude: political donations, sponsorships with advertising benefits, gifts to individuals."
+                                example="£5,000 donation to Cancer Research UK (registered charity)"
+                                type="help"
+                              />
+                            </FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                placeholder="0.00" 
+                                {...field}
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                data-testid="input-charitable-donations"
+                              />
+                            </FormControl>
+                            <FormDescription>Qualifying donations to registered charities</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </TabsContent>
+                  </Tabs>
+
+                  <div className="flex justify-between mt-6">
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={() => setCurrentStep(1)}
+                      data-testid="button-back-step"
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                    </Button>
+                    <Button 
+                      type="button" 
+                      onClick={onComputeTax}
+                      disabled={computeTaxMutation.isPending}
+                      data-testid="button-compute-tax"
+                    >
+                      {computeTaxMutation.isPending ? "Computing..." : "Compute Tax"}
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </Card>
               </div>
 
-              <Tabs defaultValue="trading" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="trading">Trading Income</TabsTrigger>
-                  <TabsTrigger value="other">Other Income</TabsTrigger>
-                  <TabsTrigger value="adjustments">Adjustments</TabsTrigger>
-                  <TabsTrigger value="reliefs">Reliefs</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="trading" className="mt-6 space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="turnover"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Turnover *</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="0.00" 
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            data-testid="input-turnover"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="costOfSales"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Cost of Sales</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="0.00" 
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            data-testid="input-cost-of-sales"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="operatingExpenses"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Operating Expenses</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="0.00" 
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            data-testid="input-operating-expenses"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </TabsContent>
-
-                <TabsContent value="other" className="mt-6 space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="interestReceived"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Interest Received</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="0.00" 
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            data-testid="input-interest-received"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="dividendsReceived"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Dividends Received</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="0.00" 
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            data-testid="input-dividends-received"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </TabsContent>
-
-                <TabsContent value="adjustments" className="mt-6 space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="depreciationAddBack"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Depreciation Add-Back</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="0.00" 
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            data-testid="input-depreciation-addback"
-                          />
-                        </FormControl>
-                        <FormDescription>Add back depreciation for tax purposes</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="capitalAllowances"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Capital Allowances</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="0.00" 
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            data-testid="input-capital-allowances"
-                          />
-                        </FormControl>
-                        <FormDescription>Tax-deductible capital allowances</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </TabsContent>
-
-                <TabsContent value="reliefs" className="mt-6 space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="lossesBroughtForward"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Losses Brought Forward</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="0.00" 
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            data-testid="input-losses-brought-forward"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="rdReliefClaim"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>R&D Relief Claim</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="0.00" 
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            data-testid="input-rd-relief"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="charitableDonations"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Charitable Donations</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="0.00" 
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            data-testid="input-charitable-donations"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </TabsContent>
-              </Tabs>
-
-              <div className="flex justify-between mt-6">
-                <Button 
-                  type="button" 
-                  variant="outline"
-                  onClick={() => setCurrentStep(1)}
-                  data-testid="button-back-step"
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" /> Back
-                </Button>
-                <Button 
-                  type="button" 
-                  onClick={onComputeTax}
-                  disabled={computeTaxMutation.isPending}
-                  data-testid="button-compute-tax"
-                >
-                  {computeTaxMutation.isPending ? "Computing..." : "Compute Tax"}
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+              {/* Help Panel */}
+              <div className="hidden lg:block">
+                <HelpPanel 
+                  title="Step 2 Help"
+                  currentStep={2}
+                  tips={[
+                    {
+                      icon: AlertTriangle,
+                      title: "Tax-Deductible vs Non-Deductible",
+                      description: "Not all accounting expenses are tax-deductible. Common add-backs required:",
+                      tips: [
+                        "✗ Depreciation (100% add-back, claim capital allowances instead)",
+                        "✗ Client entertainment (100% non-deductible)",
+                        "✗ Business entertainment >£50/head (non-deductible)",
+                        "✗ Fines, penalties, illegal payments (non-deductible)",
+                        "✓ Staff salaries, wages, pensions (fully deductible)",
+                        "✓ Office rent, utilities, insurance (fully deductible)",
+                        "✓ Professional fees (legal, accounting - deductible)",
+                        "✓ Staff entertaining, training (deductible)"
+                      ]
+                    },
+                    {
+                      icon: BarChart3,
+                      title: "Capital Allowances Guide",
+                      description: "Tax relief for capital expenditure on business assets.",
+                      tips: [
+                        "Annual Investment Allowance (AIA): 100% relief on first £1m",
+                        "Main pool (plant & machinery): 18% writing down allowance",
+                        "Special rate pool (integral features, long-life): 6% WDA",
+                        "Qualifying: computers, vehicles, machinery, office equipment",
+                        "Not qualifying: land, buildings (unless integral features)",
+                        "Super-deduction (temporary): 130% relief on qualifying plant",
+                        "Must maintain detailed fixed asset register"
+                      ]
+                    },
+                    {
+                      icon: TrendingUp,
+                      title: "R&D Tax Relief",
+                      description: "Enhanced relief for research & development activities.",
+                      tips: [
+                        "SME scheme: 230% deduction (130% enhancement on qualifying costs)",
+                        "RDEC scheme: 20% tax credit for large companies",
+                        "Qualifying costs: staff, materials, subcontractors, software",
+                        "Must be 'seeking advance in science or technology'",
+                        "Not R&D: routine testing, social sciences, arts & humanities",
+                        "Claim within 2 years of accounting period end",
+                        "HMRC may request detailed project reports"
+                      ]
+                    },
+                    {
+                      icon: FileText,
+                      title: "Loss Relief Strategies",
+                      description: "How to use trading losses to reduce Corporation Tax.",
+                      tips: [
+                        "Carry forward: Offset against future profits (indefinite)",
+                        "Carry back: Offset against previous 12 months' profits",
+                        "Post-2017: Can offset 100% of first £5m profits, then 50%",
+                        "Group relief: Surrender losses to profitable group companies",
+                        "Terminal loss relief: Extended carry-back on cessation",
+                        "Must maintain loss memorandum tracking losses",
+                        "Strategic: Consider timing of profits to maximize relief"
+                      ]
+                    }
+                  ]}
+                  documentRequirements={{
+                    required: [
+                      "Profit & Loss account for the period",
+                      "Detailed expense analysis (deductible vs non-deductible)",
+                      "Fixed asset register (for capital allowances)",
+                      "Depreciation schedule from accounts",
+                      "Loss memorandum (if claiming losses brought forward)"
+                    ],
+                    optional: [
+                      "R&D project descriptions and cost breakdowns",
+                      "Charitable donation receipts",
+                      "Capital allowances computation (CA01)",
+                      "Previous year's CT600 for comparison"
+                    ]
+                  }}
+                />
               </div>
-            </Card>
+            </div>
           )}
 
           {/* Step 3: Review & Computation */}
