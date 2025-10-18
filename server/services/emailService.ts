@@ -168,6 +168,30 @@ class EmailService {
       return false;
     }
   }
+
+  /**
+   * Send a generic email (for notifications and alerts)
+   */
+  async sendEmail(params: {
+    to: string;
+    subject: string;
+    text?: string;
+    html?: string;
+  }): Promise<boolean> {
+    try {
+      await this.mailService.send({
+        to: params.to,
+        from: 'support@promptsubmissions.com',
+        subject: params.subject,
+        text: params.text,
+        html: params.html || params.text,
+      });
+      return true;
+    } catch (error) {
+      console.error('SendGrid email error:', error);
+      return false;
+    }
+  }
 }
 
 export const emailService = new EmailService();

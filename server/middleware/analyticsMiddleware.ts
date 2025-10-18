@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { auditService } from '../services/auditService';
+import { notificationService } from '../services/notificationService';
 
 /**
  * Middleware to track API call performance
@@ -86,6 +87,18 @@ export function errorTrackingMiddleware(error: any, req: Request, res: Response,
     context: `${req.method} ${req.url}`,
     severity,
     req,
+  }).then(async (auditLog) => {
+    // Create admin notification for critical/high severity errors
+    if ((severity === 'critical' || severity === 'high') && auditLog) {
+      await notificationService.createErrorAlert({
+        auditLogId: auditLog.id,
+        severity,
+        errorMessage: errorMessage,
+        context: `${req.method} ${req.url}`,
+      }).catch(error => {
+        console.error('Failed to create error notification:', error);
+      });
+    }
   }).catch(loggingError => {
     // Defensive: ensure audit logging failure never breaks the response
     console.error('Failed to log error:', loggingError);

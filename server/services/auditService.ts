@@ -14,7 +14,7 @@ class AuditService {
     changes?: Record<string, any>;
     metadata?: Record<string, any>;
     req?: Request;
-  }): Promise<void> {
+  }): Promise<typeof auditLogs.$inferSelect | null> {
     try {
       const { userId, action, entityType, entityId, changes, metadata, req } = params;
 
@@ -29,10 +29,12 @@ class AuditService {
         userAgent: req?.get('user-agent') || null,
       };
 
-      await db.insert(auditLogs).values(auditEntry);
+      const [created] = await db.insert(auditLogs).values(auditEntry).returning();
+      return created || null;
     } catch (error) {
       // Don't throw - audit logging should never break the main flow
       console.error('Audit logging failed:', error);
+      return null;
     }
   }
 
@@ -292,15 +294,15 @@ class AuditService {
     context?: string;
     severity?: 'low' | 'medium' | 'high' | 'critical';
     req?: Request;
-  }): Promise<void> {
+  }): Promise<typeof auditLogs.$inferSelect | null> {
     const { userId, error, context, severity = 'medium', req } = params;
     
-    await this.log({
+    return await this.log({
       userId,
-      action: 'error_occurred',
+      action: 'error',
       metadata: {
         errorName: error?.name || 'UnknownError',
-        errorMessage: error?.message || String(error),
+        message: error?.message || String(error),
         stackTrace: error?.stack || null,
         context: context || 'unknown',
         severity,

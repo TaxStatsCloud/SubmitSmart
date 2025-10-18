@@ -15,6 +15,7 @@ import { hashPassword } from '../auth';
 import { db } from '../db';
 import { users, creditTransactions, creditPackages, filings, companies, auditLogs } from '@shared/schema';
 import { eq, desc, and, gte, lte, sql } from 'drizzle-orm';
+import { notificationService } from '../services/notificationService';
 
 const router = Router();
 
@@ -710,6 +711,62 @@ router.get('/analytics/production/filing-progress', async (req, res) => {
   } catch (error) {
     console.error('Error fetching filing progress analytics:', error);
     res.status(500).json({ error: 'Failed to fetch filing progress analytics' });
+  }
+});
+
+/**
+ * ADMIN NOTIFICATIONS ROUTES
+ */
+
+// Get all notifications (with optional unread filter)
+router.get('/notifications', async (req, res) => {
+  try {
+    const { unreadOnly = 'false', limit = '50', offset = '0' } = req.query;
+    
+    const notifications = await notificationService.getNotifications({
+      unreadOnly: unreadOnly === 'true',
+      limit: parseInt(limit as string),
+      offset: parseInt(offset as string),
+    });
+    
+    res.json(notifications);
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    res.status(500).json({ error: 'Failed to fetch notifications' });
+  }
+});
+
+// Get unread notification count
+router.get('/notifications/unread-count', async (req, res) => {
+  try {
+    const count = await notificationService.getUnreadCount();
+    res.json({ count });
+  } catch (error) {
+    console.error('Error fetching unread count:', error);
+    res.status(500).json({ error: 'Failed to fetch unread count' });
+  }
+});
+
+// Mark notification as read
+router.patch('/notifications/:id/read', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await notificationService.markAsRead(id);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error marking notification as read:', error);
+    res.status(500).json({ error: 'Failed to mark notification as read' });
+  }
+});
+
+// Mark all notifications as read
+router.patch('/notifications/mark-all-read', async (req, res) => {
+  try {
+    await notificationService.markAllAsRead();
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error marking all notifications as read:', error);
+    res.status(500).json({ error: 'Failed to mark all notifications as read' });
   }
 });
 

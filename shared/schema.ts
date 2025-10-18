@@ -843,4 +843,29 @@ export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
   user: one(users, { fields: [auditLogs.userId], references: [users.id] })
 }));
 
+// Admin Notifications - For error alerts and system notifications
+export const adminNotifications = pgTable("admin_notifications", {
+  id: serial("id").primaryKey(),
+  type: text("type").notNull(), // e.g., "error_alert", "system_alert", "performance_alert"
+  severity: text("severity").notNull(), // "critical", "high", "medium", "low"
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  auditLogId: integer("audit_log_id").references(() => auditLogs.id),
+  isRead: boolean("is_read").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  readAt: timestamp("read_at"),
+});
+
+export const insertAdminNotificationSchema = createInsertSchema(adminNotifications).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type AdminNotification = typeof adminNotifications.$inferSelect;
+export type InsertAdminNotification = z.infer<typeof insertAdminNotificationSchema>;
+
+// Admin notifications relations
+export const adminNotificationsRelations = relations(adminNotifications, ({ one }) => ({
+  auditLog: one(auditLogs, { fields: [adminNotifications.auditLogId], references: [auditLogs.id] })
+}));
 
