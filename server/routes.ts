@@ -30,7 +30,7 @@ import monitoringRoutes from "./routes/monitoringRoutes";
 import analyticsRoutes from "./routes/analyticsRoutes";
 import recommendationRoutes from "./routes/recommendationRoutes";
 import Stripe from "stripe";
-import { setupAuth, isAuthenticated, hashPassword } from "./auth";
+import { setupAuth, isAuthenticated, isAdmin, hashPassword } from "./auth";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
 
@@ -491,12 +491,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Admin routes for Companies House agent monitoring
-  app.get('/api/admin/agent-stats', isAuthenticated, async (req, res) => {
+  app.get('/api/admin/agent-stats', isAdmin, async (req, res) => {
     try {
-      if (!req.user) {
-        return res.status(401).json({ error: 'Authentication required' });
-      }
-      
       const { dateRange } = req.query;
       const { companiesHouseAgent } = await import('./services/companiesHouseAgent');
       const stats = await companiesHouseAgent.getAgentStats(dateRange as string);
@@ -506,12 +502,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get('/api/admin/prospects', isAuthenticated, async (req, res) => {
+  app.get('/api/admin/prospects', isAdmin, async (req, res) => {
     try {
-      if (!req.user) {
-        return res.status(401).json({ error: 'Authentication required' });
-      }
-      
       const { companiesHouseAgent } = await import('./services/companiesHouseAgent');
       const prospects = await companiesHouseAgent.getProspects(req.query);
       res.json(prospects);
@@ -520,12 +512,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get('/api/admin/outreach', isAuthenticated, async (req, res) => {
+  app.get('/api/admin/outreach', isAdmin, async (req, res) => {
     try {
-      if (!req.user) {
-        return res.status(401).json({ error: 'Authentication required' });
-      }
-      
       const { companiesHouseAgent } = await import('./services/companiesHouseAgent');
       const outreach = await companiesHouseAgent.getOutreachActivity(req.query);
       res.json(outreach);
@@ -534,12 +522,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get('/api/admin/user-usage', isAuthenticated, async (req, res) => {
+  app.get('/api/admin/user-usage', isAdmin, async (req, res) => {
     try {
-      if (!req.user) {
-        return res.status(401).json({ error: 'Authentication required' });
-      }
-      
       // Get user activity from storage
       const activities = await storage.getAllActivities();
       const users = await storage.getAllUsers ? await storage.getAllUsers() : [];
@@ -563,12 +547,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get('/api/admin/filings', isAuthenticated, async (req, res) => {
+  app.get('/api/admin/filings', isAdmin, async (req, res) => {
     try {
-      if (!req.user) {
-        return res.status(401).json({ error: 'Authentication required' });
-      }
-      
       const { dateRange } = req.query;
       
       // Calculate date filter based on date range

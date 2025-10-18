@@ -99,14 +99,15 @@ Fixed 13+ endpoints with hardcoded `userId = 1` or `companyId = 1` that would ha
    - `POST /api/filings/:id/reject` - Added auth, uses `req.user.id`
 
 6. **Admin Monitoring Endpoints** (5 endpoints):
-   - `GET /api/admin/agent-stats` - Added auth (prevents public access to prospect data)
-   - `GET /api/admin/prospects` - Added auth (prevents public access to lead database)
-   - `GET /api/admin/outreach` - Added auth (prevents public access to email campaigns)
-   - `GET /api/admin/user-usage` - Added auth (prevents public access to user analytics)
-   - `GET /api/admin/filings` - Added auth (prevents public access to all filing data)
+   - `GET /api/admin/agent-stats` - Added `isAdmin` middleware (role-based access control)
+   - `GET /api/admin/prospects` - Added `isAdmin` middleware (role-based access control)
+   - `GET /api/admin/outreach` - Added `isAdmin` middleware (role-based access control)
+   - `GET /api/admin/user-usage` - Added `isAdmin` middleware (role-based access control)
+   - `GET /api/admin/filings` - Added `isAdmin` middleware (role-based access control)
 
 ### Security Improvements
 - **Authentication Enforcement**: All sensitive endpoints now require `isAuthenticated` middleware
+- **Role-Based Authorization**: Admin endpoints protected with `isAdmin` middleware (returns 403 for non-admin users)
 - **User Isolation**: Activity logging, filing operations, and document uploads use authenticated user ID
 - **Company Validation**: Document uploads verify user has associated company
 - **Audit Trail Integrity**: All activity logs now correctly attribute actions to authenticated users
