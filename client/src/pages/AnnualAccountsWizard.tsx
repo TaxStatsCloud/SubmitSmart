@@ -22,6 +22,7 @@ import { FieldHint, InlineHint } from "@/components/wizard/FieldHint";
 import { HelpPanel } from "@/components/wizard/HelpPanel";
 import { ValidationGuidance } from "@/components/wizard/ValidationGuidance";
 import { FilingSubmissionWarning } from "@/components/filing/FilingSubmissionWarning";
+import { DocumentSelector } from "@/components/filings/DocumentSelector";
 
 // Annual Accounts Form Schema with Comparative Year Support
 const annualAccountsSchema = z.object({
@@ -106,6 +107,7 @@ export default function AnnualAccountsWizard() {
   const [iXBRLPreview, setIXBRLPreview] = useState<any>(null);
   const [showSubmissionWarning, setShowSubmissionWarning] = useState(false);
   const [priorYearDataLoaded, setPriorYearDataLoaded] = useState(false);
+  const [selectedDocumentIds, setSelectedDocumentIds] = useState<number[]>([]);
   
   // Credit requirements
   const FILING_COST = 25; // Annual Accounts filing cost in credits
@@ -216,7 +218,7 @@ export default function AnnualAccountsWizard() {
     },
     onSuccess: (data) => {
       setIXBRLPreview(data);
-      setCurrentStep(4);
+      setCurrentStep(5);
       toast({
         title: "iXBRL Generated",
         description: "Annual accounts have been generated in iXBRL format",
@@ -238,6 +240,7 @@ export default function AnnualAccountsWizard() {
       const response = await apiRequest('POST', '/api/annual-accounts/submit', {
         ...formData,
         ixbrlData: iXBRLPreview,
+        documentIds: selectedDocumentIds,
       });
       return response.json();
     },
@@ -247,7 +250,7 @@ export default function AnnualAccountsWizard() {
         title: "Submitted Successfully",
         description: "Annual Accounts have been submitted to Companies House",
       });
-      setCurrentStep(5);
+      setCurrentStep(6);
     },
     onError: (error: any) => {
       toast({
@@ -277,11 +280,11 @@ export default function AnnualAccountsWizard() {
     submitToCompaniesHouseMutation.mutate();
   };
 
-  const progressPercentage = (currentStep / 5) * 100;
+  const progressPercentage = (currentStep / 6) * 100;
   
   // Estimated time per step in minutes
-  const stepTimes = [5, 10, 10, 3, 2]; // Company Info, Balance Sheet, P&L, Review, Submit
-  const remainingTime = currentStep >= 5 ? 0 : stepTimes.slice(currentStep - 1).reduce((a, b) => a + b, 0);
+  const stepTimes = [5, 10, 10, 5, 3, 2]; // Company Info, Balance Sheet, P&L, Documents, Review, Submit
+  const remainingTime = currentStep >= 6 ? 0 : stepTimes.slice(currentStep - 1).reduce((a, b) => a + b, 0);
 
   return (
     <>
@@ -310,7 +313,7 @@ export default function AnnualAccountsWizard() {
           <span className="text-sm font-medium">Progress</span>
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">~{remainingTime} min remaining</span>
-            <span className="text-sm text-muted-foreground">Step {currentStep} of 5</span>
+            <span className="text-sm text-muted-foreground">Step {currentStep} of 6</span>
           </div>
         </div>
         <Progress value={progressPercentage} className="h-2" />
@@ -318,8 +321,9 @@ export default function AnnualAccountsWizard() {
           <span className={`text-xs ${currentStep >= 1 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Company Info</span>
           <span className={`text-xs ${currentStep >= 2 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Balance Sheet</span>
           <span className={`text-xs ${currentStep >= 3 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>P&L Account</span>
-          <span className={`text-xs ${currentStep >= 4 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Review</span>
-          <span className={`text-xs ${currentStep >= 5 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Submit</span>
+          <span className={`text-xs ${currentStep >= 4 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Documents</span>
+          <span className={`text-xs ${currentStep >= 5 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Review</span>
+          <span className={`text-xs ${currentStep >= 6 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Submit</span>
         </div>
       </div>
 
@@ -1490,8 +1494,84 @@ export default function AnnualAccountsWizard() {
             </div>
           )}
 
-          {/* Step 4: Review & iXBRL Preview */}
-          {currentStep === 4 && iXBRLPreview && (
+          {/* Step 4: Supporting Documents */}
+          {currentStep === 4 && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <DocumentSelector
+                  selectedDocumentIds={selectedDocumentIds}
+                  onSelectionChange={setSelectedDocumentIds}
+                  filingType="annual_accounts"
+                  recommendedTypes={["trial_balance", "bank_statement", "invoice", "accounting_export"]}
+                />
+
+                <div className="flex justify-between mt-6">
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    onClick={() => setCurrentStep(3)}
+                    data-testid="button-back"
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                  </Button>
+                  <Button 
+                    type="button" 
+                    onClick={() => {
+                      const values = form.getValues();
+                      generateIXBRLMutation.mutate(values);
+                    }}
+                    disabled={generateIXBRLMutation.isPending}
+                    data-testid="button-continue"
+                  >
+                    {generateIXBRLMutation.isPending ? "Generating Preview..." : "Continue to Review"}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="lg:col-span-1">
+                <HelpPanel 
+                  title="Why Attach Documents?"
+                  sections={[
+                    {
+                      icon: FileCheck,
+                      title: "Audit Trail",
+                      description: "Create a complete evidence trail for your filing.",
+                      tips: [
+                        "Helps auditors verify your figures",
+                        "Demonstrates due diligence to HMRC",
+                        "Satisfies Companies House requirements",
+                        "Supports your tax position if queried"
+                      ]
+                    },
+                    {
+                      icon: AlertTriangle,
+                      title: "Best Practice",
+                      description: "Professional accountants always maintain supporting documentation.",
+                      tips: [
+                        "Attach trial balance showing all accounts",
+                        "Include bank statements for reconciliation",
+                        "Upload invoices for major transactions",
+                        "Keep expense receipts for deductions"
+                      ]
+                    }
+                  ]}
+                  documentRequirements={{
+                    required: [],
+                    optional: [
+                      "Trial balance",
+                      "Bank statements",
+                      "Invoice records",
+                      "Expense receipts"
+                    ]
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Step 5: Review & iXBRL Preview */}
+          {currentStep === 5 && iXBRLPreview && (
             <Card className="p-6">
               <div className="flex items-center gap-2 mb-4">
                 <CheckCircle className="h-5 w-5 text-green-600" />
@@ -1618,7 +1698,7 @@ export default function AnnualAccountsWizard() {
                 <Button 
                   type="button" 
                   variant="outline"
-                  onClick={() => setCurrentStep(3)}
+                  onClick={() => setCurrentStep(4)}
                   data-testid="button-back"
                 >
                   <ArrowLeft className="mr-2 h-4 w-4" /> Back
@@ -1636,8 +1716,8 @@ export default function AnnualAccountsWizard() {
             </Card>
           )}
 
-          {/* Step 5: Success */}
-          {currentStep === 5 && (
+          {/* Step 6: Success */}
+          {currentStep === 6 && (
             <Card className="p-6">
               <div className="text-center py-8">
                 <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
