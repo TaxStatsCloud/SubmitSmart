@@ -153,7 +153,7 @@ export default function CT600Filing() {
   });
 
   // Fetch prefill data from Annual Accounts
-  const { data: prefillData } = useQuery({
+  const { data: prefillData } = useQuery<{ success: boolean; data?: any; sourceFilingDate?: string }>({
     queryKey: ['/api/ct600/prefill', user?.companyId],
     enabled: !!user?.companyId && !prefillApplied,
   });
@@ -971,12 +971,12 @@ export default function CT600Filing() {
                     type="button" 
                     onClick={() => {
                       const values = form.getValues();
-                      generateComputationMutation.mutate(values);
+                      computeTaxMutation.mutate(values);
                     }}
-                    disabled={generateComputationMutation.isPending}
+                    disabled={computeTaxMutation.isPending}
                     data-testid="button-continue"
                   >
-                    {generateComputationMutation.isPending ? "Generating Computation..." : "Continue to Review"}
+                    {computeTaxMutation.isPending ? "Generating Computation..." : "Continue to Review"}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
@@ -985,7 +985,7 @@ export default function CT600Filing() {
               <div className="lg:col-span-1">
                 <HelpPanel 
                   title="Why Attach Documents?"
-                  sections={[
+                  tips={[
                     {
                       icon: FileCheck,
                       title: "HMRC Compliance",

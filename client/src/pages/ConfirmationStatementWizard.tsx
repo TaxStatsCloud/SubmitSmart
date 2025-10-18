@@ -1460,7 +1460,7 @@ export default function ConfirmationStatementWizard() {
                   </Button>
                   <Button 
                     type="button" 
-                    onClick={handleSubmit}
+                    onClick={onSubmit}
                     data-testid="button-submit"
                   >
                     Submit to Companies House
@@ -1472,7 +1472,7 @@ export default function ConfirmationStatementWizard() {
               <div className="lg:col-span-1">
                 <HelpPanel 
                   title="Why Attach Documents?"
-                  sections={[
+                  tips={[
                     {
                       icon: FileCheck,
                       title: "Evidence & Verification",
