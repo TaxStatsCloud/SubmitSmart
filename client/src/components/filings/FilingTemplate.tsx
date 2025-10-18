@@ -17,6 +17,7 @@ interface FilingTemplateProps {
   dueDate?: string;
   documents?: any[];
   children?: ReactNode;
+  wizardRoute?: string;
 }
 
 const FilingTemplate = ({
@@ -27,7 +28,8 @@ const FilingTemplate = ({
   progress = 0,
   dueDate,
   documents = [],
-  children
+  children,
+  wizardRoute
 }: FilingTemplateProps) => {
   // Function to get status badge variant
   const getStatusVariant = (status: string) => {
@@ -89,9 +91,17 @@ const FilingTemplate = ({
             {status === "not_started" ? "Not Started" : status.split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ')}
           </Badge>
           
-          <Button>
-            {status === "not_started" ? "Start Filing" : "Continue Filing"}
-          </Button>
+          {wizardRoute ? (
+            <Link href={wizardRoute}>
+              <Button data-testid="button-start-filing">
+                {status === "not_started" ? "Start Filing" : "Continue Filing"}
+              </Button>
+            </Link>
+          ) : (
+            <Button data-testid="button-start-filing">
+              {status === "not_started" ? "Start Filing" : "Continue Filing"}
+            </Button>
+          )}
         </div>
       </div>
       

@@ -27,6 +27,7 @@ const AnnualAccounts = () => {
       status={filingData?.status || "not_started"}
       progress={filingData?.progress || 0}
       dueDate={filingData?.dueDate}
+      wizardRoute="/wizards/annual-accounts"
       documents={filingData?.documentIds ? [
         { name: "Balance Sheet" },
         { name: "Profit & Loss" },
