@@ -4,10 +4,14 @@ import { setupVite, serveStatic, log } from "./vite";
 import { initializeAgents } from "./services/agents/agentOrchestrator";
 import { initializeSchedules } from "./services/agents/scheduler";
 import { logger } from "./utils/logger";
+import { apiTrackingMiddleware, errorTrackingMiddleware } from "./middleware/analyticsMiddleware";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Production analytics tracking - track all API calls with performance metrics
+app.use(apiTrackingMiddleware);
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -62,14 +66,8 @@ app.use((req, res, next) => {
 
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    console.error('Server error:', err);
-    res.status(status).json({ message });
-    // Don't rethrow the error
-  });
+  // Production error tracking - log all uncaught errors with stack traces
+  app.use(errorTrackingMiddleware);
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route

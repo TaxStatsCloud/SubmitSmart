@@ -281,6 +281,178 @@ class AuditService {
       },
     });
   }
+
+  /**
+   * Log an error with stack trace
+   * Production monitoring - track all application errors
+   */
+  async logError(params: {
+    userId?: number;
+    error: Error | any;
+    context?: string;
+    severity?: 'low' | 'medium' | 'high' | 'critical';
+    req?: Request;
+  }): Promise<void> {
+    const { userId, error, context, severity = 'medium', req } = params;
+    
+    await this.log({
+      userId,
+      action: 'error_occurred',
+      metadata: {
+        errorName: error?.name || 'UnknownError',
+        errorMessage: error?.message || String(error),
+        stackTrace: error?.stack || null,
+        context: context || 'unknown',
+        severity,
+        url: req?.url || null,
+        method: req?.method || null,
+      },
+      req,
+    });
+  }
+
+  /**
+   * Log API call with performance metrics
+   * Track response times, status codes, and endpoints
+   */
+  async logApiCall(params: {
+    userId?: number;
+    method: string;
+    url: string;
+    statusCode: number;
+    responseTime: number; // milliseconds
+    req?: Request;
+  }): Promise<void> {
+    const { userId, method, url, statusCode, responseTime, req } = params;
+    
+    await this.log({
+      userId,
+      action: 'api_call',
+      metadata: {
+        method,
+        url,
+        statusCode,
+        responseTime,
+        isSuccess: statusCode >= 200 && statusCode < 400,
+      },
+      req,
+    });
+  }
+
+  /**
+   * Log user actions (page views, button clicks, form submissions)
+   * Track user behavior for analytics
+   */
+  async logUserAction(params: {
+    userId: number;
+    action: string;
+    category?: string;
+    label?: string;
+    value?: number;
+    metadata?: Record<string, any>;
+    req?: Request;
+  }): Promise<void> {
+    const { userId, action, category, label, value, metadata, req } = params;
+    
+    await this.log({
+      userId,
+      action: `user_action_${action}`,
+      metadata: {
+        category: category || 'general',
+        label: label || null,
+        value: value || null,
+        ...metadata,
+      },
+      req,
+    });
+  }
+
+  /**
+   * Log filing workflow progress
+   * Track where users drop off in filing wizards
+   */
+  async logFilingProgress(params: {
+    userId: number;
+    filingId: number;
+    filingType: string;
+    step: number;
+    stepName: string;
+    completed: boolean;
+    req?: Request;
+  }): Promise<void> {
+    const { userId, filingId, filingType, step, stepName, completed, req } = params;
+    
+    await this.log({
+      userId,
+      action: completed ? 'filing_step_completed' : 'filing_step_started',
+      entityType: 'filing',
+      entityId: filingId,
+      metadata: {
+        filingType,
+        step,
+        stepName,
+      },
+      req,
+    });
+  }
+
+  /**
+   * Log integration API calls (HMRC, Companies House, etc.)
+   * Track external API performance and errors
+   */
+  async logIntegrationCall(params: {
+    userId: number;
+    integration: string;
+    endpoint: string;
+    success: boolean;
+    responseTime: number;
+    errorMessage?: string;
+    req?: Request;
+  }): Promise<void> {
+    const { userId, integration, endpoint, success, responseTime, errorMessage, req } = params;
+    
+    await this.log({
+      userId,
+      action: 'integration_api_call',
+      metadata: {
+        integration,
+        endpoint,
+        success,
+        responseTime,
+        errorMessage: errorMessage || null,
+      },
+      req,
+    });
+  }
+
+  /**
+   * Log credit system events
+   * Track credit purchases, usage, and balance changes
+   */
+  async logCreditEvent(params: {
+    userId: number;
+    eventType: 'purchase' | 'usage' | 'refund' | 'expiry';
+    amount: number;
+    balanceBefore: number;
+    balanceAfter: number;
+    reason?: string;
+    req?: Request;
+  }): Promise<void> {
+    const { userId, eventType, amount, balanceBefore, balanceAfter, reason, req } = params;
+    
+    await this.log({
+      userId,
+      action: `credit_${eventType}`,
+      entityType: 'credit',
+      metadata: {
+        amount,
+        balanceBefore,
+        balanceAfter,
+        reason: reason || null,
+      },
+      req,
+    });
+  }
 }
 
 export const auditService = new AuditService();
