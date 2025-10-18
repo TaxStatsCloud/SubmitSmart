@@ -18,6 +18,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { FileCheck, Building2, Users, CheckCircle, AlertTriangle, Send, ArrowLeft, ArrowRight, Shield } from "lucide-react";
+import { FieldHint, InlineHint } from "@/components/wizard/FieldHint";
+import { HelpPanel } from "@/components/wizard/HelpPanel";
+import { ValidationGuidance } from "@/components/wizard/ValidationGuidance";
 
 // CS01 Form Schema
 const cs01Schema = z.object({
@@ -160,13 +163,23 @@ export default function ConfirmationStatementWizard() {
         <form className="space-y-6">
           {/* Step 1: Company Details */}
           {currentStep === 1 && (
-            <Card className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Building2 className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold">Company Details</h2>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <Card className="p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Building2 className="h-5 w-5 text-primary" />
+                    <h2 className="text-xl font-semibold">Company Details</h2>
+                  </div>
+
+                  <ValidationGuidance 
+                    errors={form.formState.errors} 
+                    fieldGuidance={{
+                      sicCodes: "Enter up to 4 SIC codes that best describe your business activities. You can search codes at companieshouse.gov.uk",
+                      tradingStatus: "Dormant companies have no significant accounting transactions during the period."
+                    }}
+                  />
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="companyName"
@@ -214,7 +227,14 @@ export default function ConfirmationStatementWizard() {
                   name="sicCodes"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>SIC Codes *</FormLabel>
+                      <FormLabel className="flex items-center gap-2">
+                        SIC Codes *
+                        <FieldHint 
+                          description="Standard Industrial Classification codes describe your business activities. You can have up to 4 codes. Use codes from the UK SIC 2007 system."
+                          example="62011 (Ready-made interactive leisure software), 62012 (Business software development)"
+                          type="help"
+                        />
+                      </FormLabel>
                       <FormControl>
                         <Input placeholder="62011, 62012" {...field} data-testid="input-sic-codes" />
                       </FormControl>
@@ -277,68 +297,133 @@ export default function ConfirmationStatementWizard() {
                 />
               </div>
 
-              <div className="flex justify-end mt-6">
-                <Button 
-                  type="button" 
-                  onClick={() => setCurrentStep(2)}
-                  data-testid="button-next-step"
-                >
-                  Next: PSC & Directors <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+                  <div className="flex justify-end mt-6">
+                    <Button 
+                      type="button" 
+                      onClick={() => setCurrentStep(2)}
+                      data-testid="button-next-step"
+                    >
+                      Next: PSC & Directors <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </Card>
               </div>
-            </Card>
+
+              {/* Help Panel */}
+              <div className="hidden lg:block">
+                <HelpPanel 
+                  title="Step 1 Help"
+                  currentStep={1}
+                  tips={[
+                    {
+                      icon: FileCheck,
+                      title: "Confirmation Statement Purpose",
+                      description: "The CS01 confirms your company information is up-to-date with Companies House.",
+                      tips: [
+                        "Must be filed at least once every 12 months",
+                        "Late filing can result in penalties up to £5,000",
+                        "Directors can be disqualified for persistent late filing",
+                        "Fee: £13 online, £40 paper (from Companies House)"
+                      ]
+                    },
+                    {
+                      icon: Building2,
+                      title: "SIC Codes Guide",
+                      description: "Standard Industrial Classification codes describe your business activities.",
+                      tips: [
+                        "You can have up to 4 SIC codes",
+                        "Use the UK SIC 2007 classification system",
+                        "First code should be your main business activity",
+                        "Search codes at: gov.uk/government/publications/standard-industrial-classification-of-economic-activities-sic"
+                      ]
+                    },
+                    {
+                      icon: AlertTriangle,
+                      title: "Trading Status",
+                      description: "Declare whether your company is trading or dormant.",
+                      tips: [
+                        "Trading: Company has significant accounting transactions",
+                        "Dormant: No significant transactions during the period",
+                        "Dormant companies still need to file confirmation statements",
+                        "Being dormant may reduce filing requirements"
+                      ]
+                    }
+                  ]}
+                  documentRequirements={{
+                    required: [
+                      "Current Companies House certificate",
+                      "Up-to-date company register",
+                      "List of current directors and shareholders",
+                      "Details of people with significant control (PSC)"
+                    ],
+                    optional: [
+                      "Previous year's confirmation statement"
+                    ]
+                  }}
+                />
+              </div>
+            </div>
           )}
 
           {/* Step 2: PSC & Directors */}
           {currentStep === 2 && (
-            <Card className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Users className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold">People with Significant Control & Directors</h2>
-              </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <Card className="p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Users className="h-5 w-5 text-primary" />
+                    <h2 className="text-xl font-semibold">People with Significant Control & Directors</h2>
+                  </div>
 
-              <Alert className="mb-6">
-                <Shield className="h-4 w-4" />
-                <AlertDescription>
-                  A Person with Significant Control (PSC) is anyone who owns more than 25% of shares or voting rights, 
-                  or has the right to appoint or remove the majority of directors.
-                </AlertDescription>
-              </Alert>
+                  <Alert className="mb-6">
+                    <Shield className="h-4 w-4" />
+                    <AlertDescription>
+                      A Person with Significant Control (PSC) is anyone who owns more than 25% of shares or voting rights, 
+                      or has the right to appoint or remove the majority of directors.
+                    </AlertDescription>
+                  </Alert>
 
-              <div className="space-y-6">
-                <h3 className="font-medium">Directors</h3>
-                <FormField
-                  control={form.control}
-                  name="directors"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Director Names *</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="John Smith, Jane Doe" {...field} data-testid="input-directors" />
-                      </FormControl>
-                      <FormDescription>List all current directors (comma-separated)</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <div className="space-y-6">
+                    <h3 className="font-medium">Directors</h3>
+                    <FormField
+                      control={form.control}
+                      name="directors"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Director Names *</FormLabel>
+                          <FormControl>
+                            <Textarea placeholder="John Smith, Jane Doe" {...field} data-testid="input-directors" />
+                          </FormControl>
+                          <FormDescription>List all current directors (comma-separated)</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <Separator className="my-6" />
+                    <Separator className="my-6" />
 
-                <h3 className="font-medium">Person with Significant Control (PSC)</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="pscName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>PSC Name *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="John Smith" {...field} data-testid="input-psc-name" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <h3 className="font-medium">Person with Significant Control (PSC)</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField
+                        control={form.control}
+                        name="pscName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              PSC Name *
+                              <FieldHint 
+                                description="A Person with Significant Control (PSC) owns more than 25% of shares, holds more than 25% of voting rights, or has the right to appoint or remove directors."
+                                example="John Smith (individual) or ABC Holdings Ltd (corporate entity)"
+                                type="help"
+                              />
+                            </FormLabel>
+                            <FormControl>
+                              <Input placeholder="John Smith" {...field} data-testid="input-psc-name" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
                   <FormField
                     control={form.control}
@@ -373,7 +458,13 @@ export default function ConfirmationStatementWizard() {
                     name="pscServiceAddress"
                     render={({ field }) => (
                       <FormItem className="md:col-span-2">
-                        <FormLabel>PSC Service Address *</FormLabel>
+                        <FormLabel className="flex items-center gap-2">
+                          PSC Service Address *
+                          <FieldHint 
+                            description="The service address appears on the public register at Companies House. PSCs can use their residential address or a service address."
+                            type="warning"
+                          />
+                        </FormLabel>
                         <FormControl>
                           <Textarea placeholder="123 High Street, London, UK" {...field} data-testid="input-psc-address" />
                         </FormControl>
@@ -388,7 +479,14 @@ export default function ConfirmationStatementWizard() {
                     name="pscNatureOfControl"
                     render={() => (
                       <FormItem className="md:col-span-2">
-                        <FormLabel>Nature of Control *</FormLabel>
+                        <FormLabel className="flex items-center gap-2">
+                          Nature of Control *
+                          <FieldHint 
+                            description="Select all types of control that apply to this PSC. Multiple categories can apply to the same person."
+                            example="A shareholder with 60% ownership would select both 'shares' and 'voting rights'"
+                            type="help"
+                          />
+                        </FormLabel>
                         <div className="space-y-2">
                           {[
                             { id: "shares_over_25", label: "Owns more than 25% of shares" },
@@ -434,45 +532,105 @@ export default function ConfirmationStatementWizard() {
                       </FormItem>
                     )}
                   />
-                </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between mt-6">
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={() => setCurrentStep(1)}
+                      data-testid="button-back"
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                    </Button>
+                    <Button 
+                      type="button" 
+                      onClick={() => setCurrentStep(3)}
+                      data-testid="button-next"
+                    >
+                      Next: Share Capital <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </Card>
               </div>
 
-              <div className="flex justify-between mt-6">
-                <Button 
-                  type="button" 
-                  variant="outline"
-                  onClick={() => setCurrentStep(1)}
-                  data-testid="button-back"
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" /> Back
-                </Button>
-                <Button 
-                  type="button" 
-                  onClick={() => setCurrentStep(3)}
-                  data-testid="button-next"
-                >
-                  Next: Share Capital <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+              {/* Help Panel */}
+              <div className="hidden lg:block">
+                <HelpPanel 
+                  title="Step 2 Help"
+                  currentStep={2}
+                  tips={[
+                    {
+                      icon: Shield,
+                      title: "PSC Requirements",
+                      description: "Understanding People with Significant Control obligations.",
+                      tips: [
+                        "PSC owns >25% of shares or voting rights",
+                        "PSC can appoint/remove majority of directors",
+                        "PSC has right to exercise significant influence",
+                        "All PSC information appears on public register",
+                        "Failure to register PSC is a criminal offence"
+                      ]
+                    },
+                    {
+                      icon: Users,
+                      title: "Director Responsibilities",
+                      description: "Key duties and obligations of company directors.",
+                      tips: [
+                        "Directors must act in the company's best interests",
+                        "Duty to promote success of the company",
+                        "Must exercise independent judgment",
+                        "Required to declare conflicts of interest",
+                        "Personally liable for certain company debts if negligent"
+                      ]
+                    },
+                    {
+                      icon: AlertTriangle,
+                      title: "Public Register",
+                      description: "Information that appears on the public register.",
+                      tips: [
+                        "PSC names and dates of birth (month/year only)",
+                        "Nature and extent of control",
+                        "Service addresses (residential addresses protected)",
+                        "Nationality and country of residence",
+                        "All information is publicly searchable"
+                      ]
+                    }
+                  ]}
+                  documentRequirements={{
+                    required: [
+                      "PSC register with up-to-date entries",
+                      "Director details and appointments",
+                      "Confirmation of PSC nature of control",
+                      "Service addresses for all PSCs"
+                    ],
+                    optional: [
+                      "Board minutes approving PSC register",
+                      "Share certificates confirming ownership"
+                    ]
+                  }}
+                />
               </div>
-            </Card>
+            </div>
           )}
 
           {/* Step 3: Share Capital */}
           {currentStep === 3 && (
-            <Card className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <FileCheck className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold">Statement of Capital</h2>
-              </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <Card className="p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <FileCheck className="h-5 w-5 text-primary" />
+                    <h2 className="text-xl font-semibold">Statement of Capital</h2>
+                  </div>
 
-              <Alert className="mb-6">
-                <AlertDescription>
-                  If your company's share capital has changed since the last confirmation statement, 
-                  you must provide updated information.
-                </AlertDescription>
-              </Alert>
+                  <InlineHint 
+                    message="Share capital represents the total value of shares issued by your company. You must report any changes to share capital, including new share issues (allotments) or changes to share classes."
+                    type="info"
+                  />
 
-              <div className="space-y-6">
+                  <div className="space-y-6 mt-6">
                 <FormField
                   control={form.control}
                   name="shareCapitalChanged"
@@ -501,7 +659,14 @@ export default function ConfirmationStatementWizard() {
                       name="numberOfShares"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Number of Shares *</FormLabel>
+                          <FormLabel className="flex items-center gap-2">
+                            Number of Shares *
+                            <FieldHint 
+                              description="The total number of shares your company has issued. This is the quantity of shares, not their value."
+                              example="1,000 ordinary shares of £1 each"
+                              type="help"
+                            />
+                          </FormLabel>
                           <FormControl>
                             <Input 
                               type="number" 
@@ -521,7 +686,14 @@ export default function ConfirmationStatementWizard() {
                       name="nominalValue"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Nominal Value per Share *</FormLabel>
+                          <FormLabel className="flex items-center gap-2">
+                            Nominal Value per Share *
+                            <FieldHint 
+                              description="The par value or face value of each share, set when the shares were created. Also called 'par value'. This is not the market value."
+                              example="£1.00 or £0.01 (common nominal values)"
+                              type="help"
+                            />
+                          </FormLabel>
                           <FormControl>
                             <Input 
                               type="number" 
@@ -565,7 +737,14 @@ export default function ConfirmationStatementWizard() {
                       name="aggregateNominalValue"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Aggregate Nominal Value *</FormLabel>
+                          <FormLabel className="flex items-center gap-2">
+                            Aggregate Nominal Value *
+                            <FieldHint 
+                              description="Total nominal value of all issued shares. Calculate by multiplying number of shares × nominal value per share."
+                              example="1,000 shares × £1.00 = £1,000 aggregate nominal value"
+                              type="help"
+                            />
+                          </FormLabel>
                           <FormControl>
                             <Input 
                               type="number" 
@@ -624,47 +803,107 @@ export default function ConfirmationStatementWizard() {
                       )}
                     />
                   </div>
-                )}
+                  )}
 
-                {!form.watch("shareCapitalChanged") && (
-                  <div className="bg-muted p-4 rounded-md">
-                    <p className="text-sm text-muted-foreground">
-                      If share capital hasn't changed, you'll confirm the existing Statement of Capital during submission.
-                    </p>
-                  </div>
-                )}
+                  {!form.watch("shareCapitalChanged") && (
+                    <div className="bg-muted p-4 rounded-md">
+                      <p className="text-sm text-muted-foreground">
+                        If share capital hasn't changed, you'll confirm the existing Statement of Capital during submission.
+                      </p>
+                    </div>
+                  )}
 
-                <Separator className="my-6" />
+                  <Separator className="my-6" />
 
-                {/* Filing Cost */}
-                <Alert>
-                  <AlertDescription className="flex items-center justify-between">
-                    <span>Filing cost: <strong>50 credits</strong></span>
-                    <span className="text-sm text-muted-foreground">Companies House fee: £34.00</span>
-                  </AlertDescription>
-                </Alert>
-              </div>
+                  {/* Filing Cost */}
+                  <Alert>
+                    <AlertDescription className="flex items-center justify-between">
+                      <span>Filing cost: <strong>50 credits</strong></span>
+                      <span className="text-sm text-muted-foreground">Companies House fee: £34.00</span>
+                    </AlertDescription>
+                  </Alert>
+                </div>
 
-              <div className="flex justify-between mt-6">
-                <Button 
-                  type="button" 
-                  variant="outline"
-                  onClick={() => setCurrentStep(2)}
-                  data-testid="button-back"
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" /> Back
-                </Button>
-                <Button 
-                  type="button" 
-                  onClick={onSubmit}
-                  disabled={submitToCompaniesHouseMutation.isPending}
-                  data-testid="button-submit"
-                >
-                  {submitToCompaniesHouseMutation.isPending ? "Submitting..." : "Submit to Companies House"}
-                  <Send className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-            </Card>
+                <div className="flex justify-between mt-6">
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    onClick={() => setCurrentStep(2)}
+                    data-testid="button-back"
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                  </Button>
+                  <Button 
+                    type="button" 
+                    onClick={onSubmit}
+                    disabled={submitToCompaniesHouseMutation.isPending}
+                    data-testid="button-submit"
+                  >
+                    {submitToCompaniesHouseMutation.isPending ? "Submitting..." : "Submit to Companies House"}
+                    <Send className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </Card>
+            </div>
+
+            {/* Help Panel */}
+            <div className="hidden lg:block">
+              <HelpPanel 
+                title="Step 3 Help"
+                currentStep={3}
+                tips={[
+                  {
+                    icon: FileCheck,
+                    title: "Share Capital Basics",
+                    description: "Understanding your company's share structure.",
+                    tips: [
+                      "Share capital = number of shares × nominal value",
+                      "Nominal value is fixed when shares are created",
+                      "Market value can differ from nominal value",
+                      "Most UK companies use £1 or £0.01 nominal value",
+                      "Changes must be reported within 14 days"
+                    ]
+                  },
+                  {
+                    icon: AlertTriangle,
+                    title: "When to Update Share Capital",
+                    description: "Circumstances requiring a share capital update.",
+                    tips: [
+                      "New shares issued (share allotment)",
+                      "Share buybacks or redemptions",
+                      "Share class rights changed",
+                      "Conversion of shares to different class",
+                      "Subdivision or consolidation of shares"
+                    ]
+                  },
+                  {
+                    icon: Users,
+                    title: "Allotment vs Transfer",
+                    description: "Understanding different share transactions.",
+                    tips: [
+                      "Allotment: Company creates and issues new shares",
+                      "Transfer: Existing shares change ownership",
+                      "Allotment increases total share capital",
+                      "Transfer doesn't change total share capital",
+                      "Both may require shareholder approval"
+                    ]
+                  }
+                ]}
+                documentRequirements={{
+                  required: [
+                    "Share register showing current shareholdings",
+                    "Details of any share allotments or transfers",
+                    "Board minutes approving share changes",
+                    "Updated statement of capital"
+                  ],
+                  optional: [
+                    "Share certificates issued",
+                    "Shareholder agreements if applicable"
+                  ]
+                }}
+              />
+            </div>
+          </div>
           )}
 
           {/* Step 4: Success */}
