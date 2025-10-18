@@ -52,8 +52,17 @@ export default function Landing() {
                 "contactPoint": {
                   "@type": "ContactPoint",
                   "contactType": "customer support",
+                  "telephone": "+44-161-817-3556",
+                  "email": "support@promptsubmissions.com",
                   "areaServed": "GB",
                   "availableLanguage": "en"
+                },
+                "address": {
+                  "@type": "PostalAddress",
+                  "streetAddress": "56 Oldham Road, TaxStats",
+                  "addressLocality": "Ashton Under Lyne",
+                  "postalCode": "OL6 7AP",
+                  "addressCountry": "GB"
                 }
               },
               {
@@ -167,7 +176,9 @@ export default function Landing() {
             <nav className="hidden md:flex items-center space-x-6">
               <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-features">Features</a>
               <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-pricing">Pricing</a>
-              <a href="#about" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-about">About</a>
+              <a href="/faq" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-faq">FAQ</a>
+              <a href="/resources" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-resources">Resources</a>
+              <a href="/contact" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-contact">Contact</a>
               <Button onClick={handleSignIn} data-testid="button-signin-header">Sign In</Button>
             </nav>
             <Button onClick={handleSignIn} className="md:hidden" size="sm" data-testid="button-signin-mobile">Sign In</Button>
@@ -550,7 +561,15 @@ export default function Landing() {
                 <ul className="space-y-2 text-sm text-muted-foreground">
                   <li><a href="#features" className="hover:text-foreground transition-colors" data-testid="link-footer-features">Features</a></li>
                   <li><a href="#pricing" className="hover:text-foreground transition-colors" data-testid="link-footer-pricing">Pricing</a></li>
-                  <li><a href="#about" className="hover:text-foreground transition-colors" data-testid="link-footer-about">About</a></li>
+                  <li><a href="/faq" className="hover:text-foreground transition-colors" data-testid="link-footer-faq">FAQ</a></li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-4">Resources</h3>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li><a href="/resources" className="hover:text-foreground transition-colors" data-testid="link-footer-resources">Guides & Templates</a></li>
+                  <li><a href="/blog" className="hover:text-foreground transition-colors" data-testid="link-footer-blog">Blog</a></li>
+                  <li><a href="/contact" className="hover:text-foreground transition-colors" data-testid="link-footer-contact">Contact</a></li>
                 </ul>
               </div>
               <div>
@@ -559,14 +578,6 @@ export default function Landing() {
                   <li><a href="/privacy" className="hover:text-foreground transition-colors" data-testid="link-footer-privacy">Privacy Policy</a></li>
                   <li><a href="/terms" className="hover:text-foreground transition-colors" data-testid="link-footer-terms">Terms of Service</a></li>
                   <li><a href="/privacy#gdpr" className="hover:text-foreground transition-colors" data-testid="link-footer-gdpr">GDPR</a></li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-4">Support</h3>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li><a href="#" className="hover:text-foreground transition-colors" data-testid="link-footer-docs">Documentation</a></li>
-                  <li><a href="#" className="hover:text-foreground transition-colors" data-testid="link-footer-contact">Contact Us</a></li>
-                  <li><a href="#" className="hover:text-foreground transition-colors" data-testid="link-footer-status">Status</a></li>
                 </ul>
               </div>
             </div>

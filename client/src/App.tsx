@@ -54,6 +54,10 @@ import SubscriptionManagement from "@/pages/SubscriptionManagement";
 import AdminAnalytics from "@/pages/AdminAnalytics";
 import MonitoringDashboard from "@/pages/MonitoringDashboard";
 import OnboardingTutorial from "@/pages/OnboardingTutorial";
+import Contact from "@/pages/Contact";
+import FAQ from "@/pages/FAQ";
+import Blog from "@/pages/Blog";
+import Resources from "@/pages/Resources";
 import { ProtectedRoute } from "@/lib/protected-route";
 
 function Router() {
@@ -67,6 +71,10 @@ function Router() {
         <Route path="/auth" component={AuthPage} />
         <Route path="/terms" component={Terms} />
         <Route path="/privacy" component={Privacy} />
+        <Route path="/contact" component={Contact} />
+        <Route path="/faq" component={FAQ} />
+        <Route path="/blog" component={Blog} />
+        <Route path="/resources" component={Resources} />
         <Route component={Landing} />
       </Switch>
     );
@@ -83,6 +91,10 @@ function Router() {
         <Route path="/auth" component={AuthPage} />
         <Route path="/terms" component={Terms} />
         <Route path="/privacy" component={Privacy} />
+        <Route path="/contact" component={Contact} />
+        <Route path="/faq" component={FAQ} />
+        <Route path="/blog" component={Blog} />
+        <Route path="/resources" component={Resources} />
         
         {/* Onboarding */}
         <Route path="/onboarding" component={OnboardingTutorial} />
