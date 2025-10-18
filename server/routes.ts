@@ -3087,5 +3087,47 @@ Generate the note content:`;
     }
   });
 
+  // Contact form submission
+  app.post('/api/contact', express.json(), async (req, res) => {
+    try {
+      const { name, email, phone, subject, message } = req.body;
+
+      // Validate required fields
+      if (!name || !email || !subject || !message) {
+        return res.status(400).json({ 
+          error: 'Missing required fields',
+          required: ['name', 'email', 'subject', 'message']
+        });
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: 'Invalid email address' });
+      }
+
+      // Send email via SendGrid
+      const success = await emailService.sendContactFormEmail({
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone?.trim(),
+        subject: subject.trim(),
+        message: message.trim()
+      });
+
+      if (!success) {
+        return res.status(500).json({ error: 'Failed to send message. Please try again later.' });
+      }
+
+      res.status(200).json({ 
+        success: true,
+        message: 'Message sent successfully. We\'ll get back to you within 24 hours.'
+      });
+    } catch (error: any) {
+      console.error('Contact form error:', error);
+      res.status(500).json({ error: 'Failed to send message. Please try again later.' });
+    }
+  });
+
   return httpServer;
 }
