@@ -189,6 +189,10 @@ export default function AnnualAccountsWizard() {
   };
 
   const progressPercentage = (currentStep / 5) * 100;
+  
+  // Estimated time per step in minutes
+  const stepTimes = [5, 10, 10, 3, 2]; // Company Info, Balance Sheet, P&L, Review, Submit
+  const remainingTime = currentStep >= 5 ? 0 : stepTimes.slice(currentStep - 1).reduce((a, b) => a + b, 0);
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
@@ -205,7 +209,10 @@ export default function AnnualAccountsWizard() {
       <div className="mb-8">
         <div className="flex justify-between mb-2">
           <span className="text-sm font-medium">Progress</span>
-          <span className="text-sm text-muted-foreground">Step {currentStep} of 5</span>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground">~{remainingTime} min remaining</span>
+            <span className="text-sm text-muted-foreground">Step {currentStep} of 5</span>
+          </div>
         </div>
         <Progress value={progressPercentage} className="h-2" />
         <div className="flex justify-between mt-2">

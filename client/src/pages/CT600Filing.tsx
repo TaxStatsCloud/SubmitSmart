@@ -158,6 +158,10 @@ export default function CT600Filing() {
   };
 
   const progressPercentage = (currentStep / 4) * 100;
+  
+  // Estimated time per step in minutes
+  const stepTimes = [5, 12, 3, 2]; // Company Info, Financials & Adjustments, Review, Submit
+  const remainingTime = currentStep >= 4 ? 0 : stepTimes.slice(currentStep - 1).reduce((a, b) => a + b, 0);
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
@@ -174,7 +178,10 @@ export default function CT600Filing() {
       <div className="mb-8">
         <div className="flex justify-between mb-2">
           <span className="text-sm font-medium">Progress</span>
-          <span className="text-sm text-muted-foreground">Step {currentStep} of 4</span>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground">~{remainingTime} min remaining</span>
+            <span className="text-sm text-muted-foreground">Step {currentStep} of 4</span>
+          </div>
         </div>
         <Progress value={progressPercentage} className="h-2" />
         <div className="flex justify-between mt-2">
