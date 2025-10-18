@@ -137,7 +137,12 @@ The platform includes a critical iXBRL Generation Service supporting Companies H
 
 Recent enhancements include multi-company management with tier-based limits, secure backend AI chatbot integration, and smart recommendation security for tenant isolation. The agent system has been improved with broader industry targeting and Exa AI integration for comprehensive company data enrichment. UX improvements include a UK Accounting Expert AI Chatbot, deadline warnings, credit usage visualization, and AI-powered smart filing recommendations. Guided filing workflows for Annual Accounts, Confirmation Statements, and CT600 offer contextual help. Advanced pricing tiers (Basic, Professional, Enterprise) and mobile optimization with PWA support are also implemented.
 
-Legal disclaimers are integrated at three levels: an AI Assistant Disclaimer, Filing Submission Warnings requiring explicit acknowledgment, and site-wide Footer Disclaimers, all emphasizing user responsibility and disclaiming professional advice. Critical production hardening involved removing hardcoded user/company IDs and enforcing authentication middleware and role-based authorization across all sensitive endpoints. Features like automatic form pre-fill from Annual Accounts to CT600 and an invitation-based Auditor Access System with a read-only `auditor` role have been implemented.
+Legal disclaimers are integrated at three levels with optimized UX:
+1. **Compact Footer Disclaimer** - Single-line summary with link to full disclaimer page
+2. **Filing Submission Warnings** - Comprehensive modal dialog requiring explicit acknowledgment before submission
+3. **AI Assistant Disclaimer** - Context-specific warnings for AI-generated advice
+
+All disclaimers emphasize user responsibility and disclaim professional advice while minimizing screen real estate impact. Critical production hardening involved removing hardcoded user/company IDs and enforcing authentication middleware and role-based authorization across all sensitive endpoints. Features like automatic form pre-fill from Annual Accounts to CT600 and an invitation-based Auditor Access System with a read-only `auditor` role have been implemented.
 
 ## External Dependencies
 - **OpenAI**: AI-driven document processing, financial data extraction, and smart filing recommendations.

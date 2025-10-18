@@ -4,33 +4,6 @@ export function Footer() {
   return (
     <footer className="mt-auto border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
       <div className="container mx-auto px-6 py-8">
-        {/* Legal Disclaimer */}
-        <div className="mb-6 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-          <h3 className="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-2">
-            ⚠️ Important Legal Disclaimer
-          </h3>
-          <div className="text-xs text-amber-800 dark:text-amber-200 space-y-2">
-            <p>
-              <strong>PromptSubmissions is a software tool only.</strong> We provide technology to assist with 
-              UK corporate compliance filings but do not provide accounting, tax, or legal advice.
-            </p>
-            <p>
-              While we strive for accuracy, <strong>you remain legally responsible</strong> for all information 
-              submitted to Companies House and HMRC. Inaccurate filings may result in penalties, fines, or legal consequences.
-            </p>
-            <p>
-              <strong>Professional review strongly recommended:</strong> We recommend having your filings reviewed 
-              by a qualified chartered accountant, tax advisor, or solicitor before submission, especially for 
-              complex matters or first-time filings.
-            </p>
-            <p>
-              <strong>No warranties:</strong> PromptSubmissions Ltd makes no warranties regarding the accuracy, 
-              completeness, or suitability of generated filings. We are not liable for any penalties, losses, 
-              or legal consequences arising from your use of this platform.
-            </p>
-          </div>
-        </div>
-
         {/* Footer Links */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-6">
           <div>
@@ -151,15 +124,21 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Copyright */}
+        {/* Copyright & Compact Disclaimer */}
         <div className="border-t border-neutral-200 dark:border-neutral-800 pt-6">
-          <div className="flex flex-col md:flex-row justify-between items-center text-xs text-neutral-600 dark:text-neutral-400">
-            <p>
-              © {new Date().getFullYear()} PromptSubmissions Ltd. All rights reserved.
+          <div className="flex flex-col items-center text-center space-y-3">
+            <p className="text-xs text-neutral-500 dark:text-neutral-500 max-w-4xl">
+              PromptSubmissions is a software tool only. You remain legally responsible for all filings. 
+              Professional review recommended. See our <Link href="/disclaimer" className="underline hover:text-primary">full disclaimer</Link>.
             </p>
-            <p className="mt-2 md:mt-0">
-              Not regulated by the Financial Conduct Authority or any professional accounting body.
-            </p>
+            <div className="flex flex-col md:flex-row justify-between items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
+              <p>
+                © {new Date().getFullYear()} PromptSubmissions Ltd. All rights reserved.
+              </p>
+              <p>
+                Not regulated by the Financial Conduct Authority or any professional accounting body.
+              </p>
+            </div>
           </div>
         </div>
       </div>
