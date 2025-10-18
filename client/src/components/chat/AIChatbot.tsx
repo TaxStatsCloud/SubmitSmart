@@ -160,6 +160,25 @@ export function AIChatbot({ className }: AIChatbotProps) {
                   <p className="text-xs">Ask me about UK accounting, tax rules, or how to use the platform.</p>
                 </div>
                 
+                {/* AI Disclaimer - Most Urgent */}
+                <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <div className="flex items-start gap-2">
+                    <HelpCircle className="text-amber-600 h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <div className="text-xs text-amber-900">
+                      <p className="font-semibold mb-1">Important Disclaimer</p>
+                      <p className="mb-2">
+                        This AI provides <strong>general guidance only</strong> and is not a substitute for professional accounting, tax, or legal advice.
+                      </p>
+                      <p className="mb-2">
+                        While we strive for accuracy, AI-generated information may contain errors. <strong>Always verify critical information</strong> with a qualified professional before making filing decisions.
+                      </p>
+                      <p>
+                        For complex matters, consult a chartered accountant, tax advisor, or solicitor. We are not liable for decisions made based on AI-generated content.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
                 <div className="space-y-2">
                   <p className="text-xs font-medium text-gray-700 mb-3">Quick questions:</p>
                   {quickResponses.slice(0, 3).map((item, idx) => (
