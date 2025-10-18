@@ -105,6 +105,13 @@
 }
 
 @layer components {
+  /* Mobile Touch Target Optimization - Ensure buttons meet 44px minimum */
+  @media (max-width: 768px) {
+    button {
+      @apply min-h-[44px];
+    }
+  }
+
   .sidebar-link {
     @apply flex items-center px-4 py-2 text-sm font-medium rounded-md;
   }
