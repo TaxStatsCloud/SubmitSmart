@@ -39,8 +39,8 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-white shadow-sm z-10">
-      <div className="flex items-center justify-between h-16 px-4 border-b border-neutral-200">
+    <header className="bg-white dark:bg-neutral-900 shadow-sm z-10 border-b border-neutral-200 dark:border-neutral-700">
+      <div className="flex items-center justify-between h-16 px-4">
         {/* Mobile Menu Toggle */}
         <Button 
           variant="ghost" 
@@ -54,19 +54,19 @@ const Header = () => {
 
         {/* Breadcrumb */}
         <div className="hidden md:flex items-center ml-4">
-          <span className="text-sm font-medium text-neutral-500">{getPageTitle()}</span>
+          <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">{getPageTitle()}</span>
         </div>
 
         {/* Right Side Items */}
         <div className="flex items-center">
           {/* Credits Display */}
-          <div className="hidden md:flex items-center px-3 py-1 mr-4 rounded-full bg-neutral-100">
-            <span className="material-icons mr-1 text-[hsl(var(--secondary-500))]">toll</span>
-            <span className="text-sm font-medium text-neutral-700">Credits: <span>{user?.credits || 0}</span></span>
+          <div className="hidden md:flex items-center px-3 py-1 mr-4 rounded-full bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">
+            <span className="material-icons mr-1 text-[hsl(var(--secondary-500))] dark:text-[hsl(var(--secondary-400))]">toll</span>
+            <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Credits: <span>{user?.credits || 0}</span></span>
           </div>
 
           {/* Notification Button */}
-          <button className="p-2 text-neutral-400 rounded-full hover:text-neutral-500 relative">
+          <button className="p-2 text-neutral-500 dark:text-neutral-400 rounded-full hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 relative transition-colors">
             <span className="material-icons">notifications</span>
             <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-[hsl(var(--accent-500))]"></span>
           </button>
@@ -79,7 +79,8 @@ const Header = () => {
           {/* AI Assistant Button */}
           <Button 
             onClick={toggleAssistant}
-            className="ml-3 text-sm font-medium text-white bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))]"
+            className="ml-3 text-sm font-semibold text-white bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] dark:bg-[hsl(var(--primary-600))] dark:hover:bg-[hsl(var(--primary-700))]"
+            data-testid="button-prompt-ai"
           >
             <span className="material-icons mr-1 text-sm">smart_toy</span>
             <span>Prompt AI</span>

@@ -12,9 +12,9 @@ const Sidebar = () => {
 
   return (
     <aside className="hidden lg:flex lg:flex-shrink-0">
-      <div className="flex flex-col w-64 bg-white border-r border-neutral-200">
+      <div className="flex flex-col w-64 bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-700">
         {/* Logo */}
-        <div className="flex items-center justify-center h-16 px-4 border-b border-neutral-200 bg-[hsl(var(--primary-500))]">
+        <div className="flex items-center justify-center h-16 px-4 border-b border-neutral-200 dark:border-neutral-700 bg-[hsl(var(--primary-500))] dark:bg-[hsl(var(--primary-600))]">
           <h1 className="text-2xl font-semibold text-white">
             PromptSubmissions
           </h1>
@@ -184,7 +184,7 @@ const Sidebar = () => {
         </div>
 
         {/* User Profile */}
-        <div className="flex items-center p-4 border-t border-neutral-200">
+        <div className="flex items-center p-4 border-t border-neutral-200 dark:border-neutral-700">
           <div className="flex-shrink-0">
             <Avatar>
               <AvatarImage src={(user as any)?.profileImage || ""} alt={(user as any)?.displayName || user?.email || ""} />
@@ -192,8 +192,8 @@ const Sidebar = () => {
             </Avatar>
           </div>
           <div className="ml-3">
-            <p className="text-sm font-medium text-neutral-700">{(user as any)?.displayName || user?.email || "User"}</p>
-            <p className="text-xs text-neutral-500">{(user as any)?.role || "User"}</p>
+            <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{(user as any)?.displayName || user?.email || "User"}</p>
+            <p className="text-xs text-neutral-600 dark:text-neutral-400">{(user as any)?.role || "User"}</p>
           </div>
           <Button 
             onClick={() => logoutMutation.mutate()}

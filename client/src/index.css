@@ -117,19 +117,19 @@
   }
 
   .sidebar-link.active {
-    @apply text-neutral-800 bg-[hsl(var(--primary-50))];
+    @apply text-neutral-900 dark:text-neutral-100 bg-[hsl(var(--primary-50))] dark:bg-[hsl(var(--primary-900))];
   }
 
   .sidebar-link.active .sidebar-icon {
-    @apply text-primary;
+    @apply text-primary dark:text-[hsl(var(--primary-300))];
   }
 
   .sidebar-link:not(.active) {
-    @apply text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900;
+    @apply text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100;
   }
 
   .sidebar-link:not(.active) .sidebar-icon {
-    @apply text-neutral-400;
+    @apply text-neutral-500 dark:text-neutral-400;
   }
 
   .sidebar-icon {
@@ -137,11 +137,11 @@
   }
 
   .sidebar-section {
-    @apply space-y-1 mt-3 pt-3 border-t border-neutral-200;
+    @apply space-y-1 mt-3 pt-3 border-t border-neutral-200 dark:border-neutral-700;
   }
 
   .sidebar-heading {
-    @apply px-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider;
+    @apply px-3 text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider;
   }
   
   .sidebar-sublink {

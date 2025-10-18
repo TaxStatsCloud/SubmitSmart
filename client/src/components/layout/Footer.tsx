@@ -2,13 +2,13 @@ import { Link } from "wouter";
 
 export function Footer() {
   return (
-    <footer className="mt-auto border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
+    <footer className="mt-auto border-t border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900">
       <div className="container mx-auto px-6 py-8">
         {/* Footer Links */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-6">
           <div>
-            <h4 className="font-semibold text-neutral-900 dark:text-neutral-100 mb-3">Company</h4>
-            <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400">
+            <h4 className="font-semibold text-neutral-900 dark:text-white mb-3">Company</h4>
+            <ul className="space-y-2 text-sm text-neutral-700 dark:text-neutral-300">
               <li>
                 <Link href="/about" className="hover:text-primary hover:underline">
                   About Us
@@ -31,8 +31,8 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="font-semibold text-neutral-900 dark:text-neutral-100 mb-3">Legal</h4>
-            <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400">
+            <h4 className="font-semibold text-neutral-900 dark:text-white mb-3">Legal</h4>
+            <ul className="space-y-2 text-sm text-neutral-700 dark:text-neutral-300">
               <li>
                 <Link href="/terms" className="hover:text-primary hover:underline">
                   Terms of Service
@@ -52,8 +52,8 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="font-semibold text-neutral-900 dark:text-neutral-100 mb-3">Resources</h4>
-            <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400">
+            <h4 className="font-semibold text-neutral-900 dark:text-white mb-3">Resources</h4>
+            <ul className="space-y-2 text-sm text-neutral-700 dark:text-neutral-300">
               <li>
                 <a 
                   href="https://www.gov.uk/government/organisations/companies-house" 
@@ -88,8 +88,8 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="font-semibold text-neutral-900 dark:text-neutral-100 mb-3">Professional Bodies</h4>
-            <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400">
+            <h4 className="font-semibold text-neutral-900 dark:text-white mb-3">Professional Bodies</h4>
+            <ul className="space-y-2 text-sm text-neutral-700 dark:text-neutral-300">
               <li>
                 <a 
                   href="https://www.icaew.com/membership/find-a-chartered-accountant" 
@@ -125,13 +125,13 @@ export function Footer() {
         </div>
 
         {/* Copyright & Compact Disclaimer */}
-        <div className="border-t border-neutral-200 dark:border-neutral-800 pt-6">
+        <div className="border-t border-neutral-300 dark:border-neutral-700 pt-6">
           <div className="flex flex-col items-center text-center space-y-3">
-            <p className="text-xs text-neutral-500 dark:text-neutral-500 max-w-4xl">
+            <p className="text-xs text-neutral-700 dark:text-neutral-300 max-w-4xl font-medium">
               PromptSubmissions is a software tool only. You remain legally responsible for all filings. 
-              Professional review recommended. See our <Link href="/disclaimer" className="underline hover:text-primary">full disclaimer</Link>.
+              Professional review recommended. See our <Link href="/disclaimer" className="underline hover:text-primary font-semibold">full disclaimer</Link>.
             </p>
-            <div className="flex flex-col md:flex-row justify-between items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-2 text-xs text-neutral-700 dark:text-neutral-300">
               <p>
                 © {new Date().getFullYear()} PromptSubmissions Ltd. All rights reserved.
               </p>
