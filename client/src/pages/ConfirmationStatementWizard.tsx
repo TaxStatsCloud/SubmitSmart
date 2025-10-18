@@ -787,6 +787,321 @@ export default function ConfirmationStatementWizard() {
                   />
 
                   <div className="space-y-6 mt-6">
+                    {/* Shareholder List */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold">Shareholder Register</h3>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const current = form.getValues("shareholders");
+                            form.setValue("shareholders", [...current, { name: "", sharesHeld: 0, shareClass: "Ordinary" }]);
+                          }}
+                          data-testid="button-add-shareholder"
+                        >
+                          Add Shareholder
+                        </Button>
+                      </div>
+
+                      {form.watch("shareholders")?.map((_, index) => (
+                        <Card key={index} className="p-4 bg-muted/30">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <FormField
+                              control={form.control}
+                              name={`shareholders.${index}.name`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Shareholder Name *</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="John Smith" {...field} data-testid={`input-shareholder-name-${index}`} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name={`shareholders.${index}.sharesHeld`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Shares Held *</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="100" 
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                      data-testid={`input-shares-held-${index}`}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name={`shareholders.${index}.shareClass`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Share Class *</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="Ordinary" {...field} data-testid={`input-share-class-${index}`} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          {form.watch("shareholders").length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="mt-2 text-destructive"
+                              onClick={() => {
+                                const current = form.getValues("shareholders");
+                                form.setValue("shareholders", current.filter((_, i) => i !== index));
+                              }}
+                              data-testid={`button-remove-shareholder-${index}`}
+                            >
+                              Remove Shareholder
+                            </Button>
+                          )}
+                        </Card>
+                      ))}
+                    </div>
+
+                    <Separator />
+
+                    {/* Share Classes */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold">Share Class Breakdown</h3>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const current = form.getValues("shareClasses");
+                            form.setValue("shareClasses", [
+                              ...current,
+                              {
+                                className: "",
+                                currency: "GBP",
+                                totalShares: 0,
+                                nominalValue: 1.00,
+                                votingRights: true,
+                                dividendRights: true,
+                                capitalRights: true,
+                                restrictionOnTransfer: false,
+                              },
+                            ]);
+                          }}
+                          data-testid="button-add-share-class"
+                        >
+                          Add Share Class
+                        </Button>
+                      </div>
+
+                      {form.watch("shareClasses")?.map((_, index) => (
+                        <Card key={index} className="p-4 bg-muted/30">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <FormField
+                              control={form.control}
+                              name={`shareClasses.${index}.className`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Class Name *</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="Ordinary" {...field} data-testid={`input-class-name-${index}`} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name={`shareClasses.${index}.totalShares`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Total Shares *</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="1000" 
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                      data-testid={`input-total-shares-${index}`}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name={`shareClasses.${index}.nominalValue`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Nominal Value *</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      step="0.01"
+                                      placeholder="1.00" 
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      data-testid={`input-class-nominal-${index}`}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                            <FormField
+                              control={form.control}
+                              name={`shareClasses.${index}.votingRights`}
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                      data-testid={`checkbox-voting-${index}`}
+                                    />
+                                  </FormControl>
+                                  <FormLabel className="text-sm font-normal">Voting Rights</FormLabel>
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name={`shareClasses.${index}.dividendRights`}
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                      data-testid={`checkbox-dividend-${index}`}
+                                    />
+                                  </FormControl>
+                                  <FormLabel className="text-sm font-normal">Dividend Rights</FormLabel>
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name={`shareClasses.${index}.capitalRights`}
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                      data-testid={`checkbox-capital-${index}`}
+                                    />
+                                  </FormControl>
+                                  <FormLabel className="text-sm font-normal">Capital Rights</FormLabel>
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name={`shareClasses.${index}.restrictionOnTransfer`}
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                      data-testid={`checkbox-restriction-${index}`}
+                                    />
+                                  </FormControl>
+                                  <FormLabel className="text-sm font-normal">Transfer Restrictions</FormLabel>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+
+                          {form.watch("shareClasses").length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="mt-2 text-destructive"
+                              onClick={() => {
+                                const current = form.getValues("shareClasses");
+                                form.setValue("shareClasses", current.filter((_, i) => i !== index));
+                              }}
+                              data-testid={`button-remove-class-${index}`}
+                            >
+                              Remove Share Class
+                            </Button>
+                          )}
+                        </Card>
+                      ))}
+                    </div>
+
+                    <Separator />
+
+                    {/* Statutory Registers Location */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold">Statutory Registers Location</h3>
+                      <FormField
+                        control={form.control}
+                        name="statutoryRegistersLocation"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Where are your statutory registers kept? *</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger data-testid="select-registers-location">
+                                  <SelectValue placeholder="Select location" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="registered_office">Registered Office</SelectItem>
+                                <SelectItem value="sail_address">Single Alternative Inspection Location (SAIL)</SelectItem>
+                                <SelectItem value="other">Other Inspection Location</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormDescription>
+                              Location where company registers can be inspected
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {(form.watch("statutoryRegistersLocation") === "other" || form.watch("statutoryRegistersLocation") === "sail_address") && (
+                        <FormField
+                          control={form.control}
+                          name="statutoryRegistersOtherAddress"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Address *</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Full address of inspection location" 
+                                  {...field} 
+                                  data-testid="input-registers-address" 
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
+                    </div>
+
+                    <Separator />
+
                 <FormField
                   control={form.control}
                   name="shareCapitalChanged"
@@ -978,6 +1293,35 @@ export default function ConfirmationStatementWizard() {
                       <span className="text-sm text-muted-foreground">Companies House fee: £34.00</span>
                     </AlertDescription>
                   </Alert>
+
+                  <Separator className="my-6" />
+
+                  {/* Statement of Lawful Purposes Declaration */}
+                  <FormField
+                    control={form.control}
+                    name="statementOfLawfulPurposes"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-lg border p-4 bg-amber-50 dark:bg-amber-950 border-amber-200">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            data-testid="checkbox-lawful-purposes"
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel className="text-base font-semibold flex items-center gap-2">
+                            <Shield className="h-4 w-4" />
+                            Statement of Lawful Purposes *
+                          </FormLabel>
+                          <FormDescription className="text-sm">
+                            I confirm that the company's registered office is appropriate to serve as its registered office, and that the company will have access to this address for the purposes of receiving and acknowledging formal documents and legal notices. I also confirm that the company intends to use its registered office address for lawful purposes only.
+                          </FormDescription>
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
                 </div>
 
                 <div className="flex justify-between mt-6">
@@ -992,7 +1336,7 @@ export default function ConfirmationStatementWizard() {
                   <Button 
                     type="button" 
                     onClick={onSubmit}
-                    disabled={submitToCompaniesHouseMutation.isPending}
+                    disabled={submitToCompaniesHouseMutation.isPending || !form.watch("statementOfLawfulPurposes")}
                     data-testid="button-submit"
                   >
                     {submitToCompaniesHouseMutation.isPending ? "Submitting..." : "Submit to Companies House"}
