@@ -13,7 +13,7 @@ import { storage } from '../storage';
 import { z } from 'zod';
 import { hashPassword } from '../auth';
 import { db } from '../db';
-import { users, creditTransactions, creditPackages, filings, companies } from '@shared/schema';
+import { users, creditTransactions, creditPackages, filings, companies, auditLogs } from '@shared/schema';
 import { eq, desc, and, gte, lte, sql } from 'drizzle-orm';
 
 const router = Router();
@@ -454,6 +454,262 @@ router.get('/analytics/filings', async (req, res) => {
   } catch (error) {
     console.error('Error fetching filing analytics:', error);
     res.status(500).json({ error: 'Failed to fetch filing analytics' });
+  }
+});
+
+/**
+ * PRODUCTION MONITORING ANALYTICS ROUTES
+ */
+
+// Get error trends and analytics
+router.get('/analytics/production/errors', async (req, res) => {
+  try {
+    const { days = '7' } = req.query;
+    const daysAgo = new Date();
+    daysAgo.setDate(daysAgo.getDate() - parseInt(days as string));
+    
+    const errorLogs = await db.query.auditLogs.findMany({
+      where: and(
+        eq(auditLogs.action, 'error'),
+        gte(auditLogs.createdAt, daysAgo)
+      ),
+      orderBy: [desc(auditLogs.createdAt)],
+    });
+    
+    // Group by severity
+    const bySeverity = {
+      critical: errorLogs.filter(e => (e.metadata as any)?.severity === 'critical').length,
+      high: errorLogs.filter(e => (e.metadata as any)?.severity === 'high').length,
+      medium: errorLogs.filter(e => (e.metadata as any)?.severity === 'medium').length,
+      low: errorLogs.filter(e => (e.metadata as any)?.severity === 'low').length,
+    };
+    
+    // Group by date
+    const errorsByDate = errorLogs.reduce((acc, log) => {
+      const date = log.createdAt.toISOString().split('T')[0];
+      acc[date] = (acc[date] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    // Get top error messages
+    const errorMessages = errorLogs.reduce((acc, log) => {
+      const message = (log.metadata as any)?.message || 'Unknown error';
+      acc[message] = (acc[message] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const topErrors = Object.entries(errorMessages)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 10)
+      .map(([message, count]) => ({ message, count }));
+    
+    // Recent errors (last 20)
+    const recentErrors = errorLogs.slice(0, 20).map(log => ({
+      id: log.id,
+      severity: (log.metadata as any)?.severity || 'medium',
+      message: (log.metadata as any)?.message || 'Unknown error',
+      context: (log.metadata as any)?.context,
+      timestamp: log.createdAt,
+      userId: log.userId,
+    }));
+    
+    res.json({
+      total: errorLogs.length,
+      bySeverity,
+      errorsByDate,
+      topErrors,
+      recentErrors,
+    });
+  } catch (error) {
+    console.error('Error fetching error analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch error analytics' });
+  }
+});
+
+// Get API performance metrics
+router.get('/analytics/production/api-performance', async (req, res) => {
+  try {
+    const { days = '7' } = req.query;
+    const daysAgo = new Date();
+    daysAgo.setDate(daysAgo.getDate() - parseInt(days as string));
+    
+    const apiLogs = await db.query.auditLogs.findMany({
+      where: and(
+        eq(auditLogs.action, 'api_call'),
+        gte(auditLogs.createdAt, daysAgo)
+      ),
+      orderBy: [desc(auditLogs.createdAt)],
+    });
+    
+    // Calculate average response time
+    const responseTimes = apiLogs
+      .map(log => (log.metadata as any)?.responseTime)
+      .filter(time => typeof time === 'number');
+    
+    const avgResponseTime = responseTimes.length > 0
+      ? responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length
+      : 0;
+    
+    // Group by status code
+    const byStatusCode = {
+      success: apiLogs.filter(log => {
+        const status = (log.metadata as any)?.statusCode;
+        return status >= 200 && status < 300;
+      }).length,
+      clientError: apiLogs.filter(log => {
+        const status = (log.metadata as any)?.statusCode;
+        return status >= 400 && status < 500;
+      }).length,
+      serverError: apiLogs.filter(log => {
+        const status = (log.metadata as any)?.statusCode;
+        return status >= 500;
+      }).length,
+    };
+    
+    // Group by endpoint
+    const endpointStats = apiLogs.reduce((acc, log) => {
+      const endpoint = (log.metadata as any)?.url || 'unknown';
+      if (!acc[endpoint]) {
+        acc[endpoint] = { count: 0, totalTime: 0, errors: 0 };
+      }
+      acc[endpoint].count++;
+      acc[endpoint].totalTime += (log.metadata as any)?.responseTime || 0;
+      const status = (log.metadata as any)?.statusCode;
+      if (status >= 400) acc[endpoint].errors++;
+      return acc;
+    }, {} as Record<string, { count: number; totalTime: number; errors: number }>);
+    
+    const slowestEndpoints = Object.entries(endpointStats)
+      .map(([endpoint, stats]) => ({
+        endpoint,
+        avgResponseTime: stats.totalTime / stats.count,
+        calls: stats.count,
+        errorRate: (stats.errors / stats.count) * 100,
+      }))
+      .sort((a, b) => b.avgResponseTime - a.avgResponseTime)
+      .slice(0, 10);
+    
+    // Group by date
+    const callsByDate = apiLogs.reduce((acc, log) => {
+      const date = log.createdAt.toISOString().split('T')[0];
+      acc[date] = (acc[date] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    res.json({
+      totalCalls: apiLogs.length,
+      avgResponseTime: Math.round(avgResponseTime),
+      byStatusCode,
+      slowestEndpoints,
+      callsByDate,
+    });
+  } catch (error) {
+    console.error('Error fetching API performance analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch API performance analytics' });
+  }
+});
+
+// Get user activity analytics
+router.get('/analytics/production/user-activity', async (req, res) => {
+  try {
+    const { days = '7' } = req.query;
+    const daysAgo = new Date();
+    daysAgo.setDate(daysAgo.getDate() - parseInt(days as string));
+    
+    const activityLogs = await db.query.auditLogs.findMany({
+      where: and(
+        eq(auditLogs.action, 'user_action'),
+        gte(auditLogs.createdAt, daysAgo)
+      ),
+      orderBy: [desc(auditLogs.createdAt)],
+    });
+    
+    // Group by action type
+    const byActionType = activityLogs.reduce((acc, log) => {
+      const actionType = (log.metadata as any)?.actionType || 'unknown';
+      acc[actionType] = (acc[actionType] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const topActions = Object.entries(byActionType)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 10)
+      .map(([action, count]) => ({ action, count }));
+    
+    // Group by date
+    const actionsByDate = activityLogs.reduce((acc, log) => {
+      const date = log.createdAt.toISOString().split('T')[0];
+      acc[date] = (acc[date] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    // Active users count
+    const activeUsers = new Set(activityLogs.map(log => log.userId).filter(Boolean)).size;
+    
+    res.json({
+      totalActions: activityLogs.length,
+      activeUsers,
+      topActions,
+      actionsByDate,
+    });
+  } catch (error) {
+    console.error('Error fetching user activity analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch user activity analytics' });
+  }
+});
+
+// Get filing progress/drop-off analytics
+router.get('/analytics/production/filing-progress', async (req, res) => {
+  try {
+    const { days = '30' } = req.query;
+    const daysAgo = new Date();
+    daysAgo.setDate(daysAgo.getDate() - parseInt(days as string));
+    
+    const progressLogs = await db.query.auditLogs.findMany({
+      where: and(
+        eq(auditLogs.action, 'filing_progress'),
+        gte(auditLogs.createdAt, daysAgo)
+      ),
+    });
+    
+    // Group by filing type and step
+    const progressByType = progressLogs.reduce((acc, log) => {
+      const filingType = (log.metadata as any)?.filingType || 'unknown';
+      const step = (log.metadata as any)?.step || 0;
+      
+      if (!acc[filingType]) {
+        acc[filingType] = {};
+      }
+      acc[filingType][step] = (acc[filingType][step] || 0) + 1;
+      return acc;
+    }, {} as Record<string, Record<number, number>>);
+    
+    // Calculate drop-off rates
+    const dropOffAnalysis = Object.entries(progressByType).map(([filingType, steps]) => {
+      const sortedSteps = Object.entries(steps).sort(([a], [b]) => parseInt(a) - parseInt(b));
+      const dropOffs = sortedSteps.map(([step, count], index) => {
+        if (index === 0) return { step: parseInt(step), count, dropOffRate: 0 };
+        const prevCount = sortedSteps[index - 1][1];
+        return {
+          step: parseInt(step),
+          count,
+          dropOffRate: prevCount > 0 ? ((prevCount - count) / prevCount) * 100 : 0,
+        };
+      });
+      
+      return {
+        filingType,
+        steps: dropOffs,
+      };
+    });
+    
+    res.json({
+      totalProgressEvents: progressLogs.length,
+      dropOffAnalysis,
+    });
+  } catch (error) {
+    console.error('Error fetching filing progress analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch filing progress analytics' });
   }
 });
 
