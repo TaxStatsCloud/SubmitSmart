@@ -149,6 +149,11 @@ const Sidebar = () => {
                   User Management
                 </Link>
                 
+                <Link href="/admin/tiers" className={`sidebar-link ${isActive("/admin/tiers") ? "active" : ""}`} data-testid="link-tier-management">
+                  <span className="material-icons sidebar-icon">workspace_premium</span>
+                  Pricing Tiers
+                </Link>
+                
                 <Link href="/admin/subscriptions" className={`sidebar-link ${isActive("/admin/subscriptions") ? "active" : ""}`}>
                   <span className="material-icons sidebar-icon">shopping_bag</span>
                   Subscriptions

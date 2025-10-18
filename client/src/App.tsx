@@ -24,6 +24,7 @@ import { initWebSocket } from "@/lib/websocket";
 // Import the new page components
 import CompanyDetails from "@/pages/CompanyDetails";
 import UserManagement from "@/pages/UserManagement";
+import TierManagement from "@/pages/TierManagement";
 import DocumentLibrary from "@/pages/DocumentLibrary";
 import ConfirmationStatement from "@/pages/ConfirmationStatement";
 import AnnualAccounts from "@/pages/AnnualAccounts";
@@ -142,6 +143,7 @@ function Router() {
         <Route path="/analytics" component={AnalyticsDashboard} />
         <Route path="/admin/dashboard" component={AdminDashboard} />
         <Route path="/admin/users" component={UserManagement} />
+        <Route path="/admin/tiers" component={TierManagement} />
         <Route path="/admin/subscriptions" component={SubscriptionManagement} />
         <Route path="/admin/analytics" component={AdminAnalytics} />
         <Route path="/admin/monitoring" component={MonitoringDashboard} />

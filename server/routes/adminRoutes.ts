@@ -13,7 +13,7 @@ import { storage } from '../storage';
 import { z } from 'zod';
 import { hashPassword } from '../auth';
 import { db } from '../db';
-import { users, creditTransactions, creditPackages, filings, companies, auditLogs } from '@shared/schema';
+import { users, creditTransactions, creditPackages, filings, companies, auditLogs, insertSubscriptionTierSchema } from '@shared/schema';
 import { eq, desc, and, gte, lte, sql } from 'drizzle-orm';
 import { notificationService } from '../services/notificationService';
 
@@ -767,6 +767,100 @@ router.patch('/notifications/mark-all-read', async (req, res) => {
   } catch (error) {
     console.error('Error marking all notifications as read:', error);
     res.status(500).json({ error: 'Failed to mark all notifications as read' });
+  }
+});
+
+/**
+ * SUBSCRIPTION TIER MANAGEMENT ROUTES
+ */
+
+// Get all subscription tiers
+router.get('/tiers', async (req, res) => {
+  try {
+    const tiers = await storage.getAllSubscriptionTiers();
+    res.json(tiers);
+  } catch (error) {
+    console.error('Error fetching subscription tiers:', error);
+    res.status(500).json({ error: 'Failed to fetch subscription tiers' });
+  }
+});
+
+// Get tier by ID
+router.get('/tiers/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const tier = await storage.getSubscriptionTier(id);
+    
+    if (!tier) {
+      return res.status(404).json({ error: 'Subscription tier not found' });
+    }
+    
+    res.json(tier);
+  } catch (error) {
+    console.error('Error fetching subscription tier:', error);
+    res.status(500).json({ error: 'Failed to fetch subscription tier' });
+  }
+});
+
+// Create new tier
+router.post('/tiers', async (req, res) => {
+  try {
+    const validatedData = insertSubscriptionTierSchema.parse(req.body);
+    const tier = await storage.createSubscriptionTier(validatedData);
+    res.status(201).json(tier);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation error', details: error.errors });
+    }
+    console.error('Error creating subscription tier:', error);
+    res.status(500).json({ error: 'Failed to create subscription tier' });
+  }
+});
+
+// Update tier
+router.patch('/tiers/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const partialData = insertSubscriptionTierSchema.partial().parse(req.body);
+    const tier = await storage.updateSubscriptionTier(id, partialData);
+    res.json(tier);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation error', details: error.errors });
+    }
+    console.error('Error updating subscription tier:', error);
+    res.status(500).json({ error: 'Failed to update subscription tier' });
+  }
+});
+
+// Delete tier
+router.delete('/tiers/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await storage.deleteSubscriptionTier(id);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting subscription tier:', error);
+    res.status(500).json({ error: 'Failed to delete subscription tier' });
+  }
+});
+
+// Assign user to tier
+router.patch('/users/:id/tier', async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const { tierId } = req.body;
+    
+    if (!tierId && tierId !== null) {
+      return res.status(400).json({ error: 'tierId is required' });
+    }
+    
+    const user = await storage.updateUser(userId, { subscriptionTierId: tierId });
+    const { password, ...userWithoutPassword } = user;
+    res.json(userWithoutPassword);
+  } catch (error) {
+    console.error('Error assigning user to tier:', error);
+    res.status(500).json({ error: 'Failed to assign user to tier' });
   }
 });
 
