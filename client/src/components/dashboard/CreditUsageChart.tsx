@@ -17,7 +17,7 @@ interface CreditTransaction {
 const CreditUsageChart = () => {
   const { data: user } = useQuery<{ credits: number }>({ queryKey: ['/api/user'] });
   const { data: transactions, isLoading } = useQuery<CreditTransaction[]>({ 
-    queryKey: ['/api/credit-transactions'] 
+    queryKey: ['/api/billing/transactions'] 
   });
 
   if (isLoading || !user) {

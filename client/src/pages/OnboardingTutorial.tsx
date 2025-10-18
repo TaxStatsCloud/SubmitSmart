@@ -284,7 +284,7 @@ export default function OnboardingTutorial() {
       <div className="mb-8 text-center">
         <div className="flex items-center justify-center gap-2 mb-3">
           <Sparkles className="h-8 w-8 text-blue-600" />
-          <h1 className="text-3xl font-bold">Welcome to PromptSubmissions</h1>
+          <div className="text-3xl font-bold">Welcome to PromptSubmissions</div>
         </div>
         <p className="text-neutral-600">
           Let's get you started with automated UK corporate compliance
