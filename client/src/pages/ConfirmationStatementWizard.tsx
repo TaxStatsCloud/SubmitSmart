@@ -308,6 +308,33 @@ export default function ConfirmationStatementWizard() {
 
                 <FormField
                   control={form.control}
+                  name="registeredEmailAddress"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel className="flex items-center gap-2">
+                        Registered Email Address (Part 5) *
+                        <FieldHint 
+                          description="This is the official email address for your company where Companies House can send electronic communications and statutory notices. This information is publicly available."
+                          example="info@yourcompany.co.uk"
+                          type="help"
+                        />
+                      </FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="email" 
+                          placeholder="info@yourcompany.co.uk" 
+                          {...field} 
+                          data-testid="input-registered-email" 
+                        />
+                      </FormControl>
+                      <FormDescription>Official company email for statutory communications</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="sicCodes"
                   render={({ field }) => (
                     <FormItem>
@@ -349,6 +376,51 @@ export default function ConfirmationStatementWizard() {
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="tradingOnStockExchange"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 md:col-span-2">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">
+                          Trading on Stock Exchange
+                        </FormLabel>
+                        <FormDescription>
+                          Is your company's stock traded on a recognized stock exchange?
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          data-testid="checkbox-stock-exchange"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                {form.watch("tradingOnStockExchange") && (
+                  <FormField
+                    control={form.control}
+                    name="stockExchangeName"
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel>Stock Exchange Name *</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="e.g., London Stock Exchange, AIM" 
+                            {...field} 
+                            data-testid="input-stock-exchange-name" 
+                          />
+                        </FormControl>
+                        <FormDescription>Name of the stock exchange where shares are traded</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
                 <FormField
                   control={form.control}
