@@ -22,6 +22,7 @@ import { FieldHint, InlineHint } from "@/components/wizard/FieldHint";
 import { HelpPanel } from "@/components/wizard/HelpPanel";
 import { ValidationGuidance } from "@/components/wizard/ValidationGuidance";
 import { FilingSubmissionWarning } from "@/components/filing/FilingSubmissionWarning";
+import { DocumentSelector } from "@/components/filings/DocumentSelector";
 
 // Shareholder schema
 const shareholderSchema = z.object({
@@ -131,6 +132,7 @@ export default function ConfirmationStatementWizard() {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [showSubmissionWarning, setShowSubmissionWarning] = useState(false);
+  const [selectedDocumentIds, setSelectedDocumentIds] = useState<number[]>([]);
 
   const form = useForm<CS01FormData>({
     resolver: zodResolver(cs01Schema),
@@ -180,7 +182,10 @@ export default function ConfirmationStatementWizard() {
   // Submit to Companies House mutation
   const submitToCompaniesHouseMutation = useMutation({
     mutationFn: async (data: CS01FormData) => {
-      const response = await apiRequest('POST', '/api/confirmation-statement/submit', data);
+      const response = await apiRequest('POST', '/api/confirmation-statement/submit', {
+        ...data,
+        documentIds: selectedDocumentIds,
+      });
       return response.json();
     },
     onSuccess: () => {
@@ -189,7 +194,7 @@ export default function ConfirmationStatementWizard() {
         title: "Submitted Successfully",
         description: "Confirmation Statement has been submitted to Companies House",
       });
-      setCurrentStep(4);
+      setCurrentStep(5);
     },
     onError: (error: any) => {
       toast({
@@ -214,11 +219,11 @@ export default function ConfirmationStatementWizard() {
     }
   };
 
-  const progressPercentage = (currentStep / 4) * 100;
+  const progressPercentage = (currentStep / 5) * 100;
   
   // Estimated time per step in minutes
-  const stepTimes = [5, 8, 5, 2]; // Company Details, PSC & Directors, Share Capital, Submit
-  const remainingTime = currentStep >= 4 ? 0 : stepTimes.slice(currentStep - 1).reduce((a, b) => a + b, 0);
+  const stepTimes = [5, 8, 5, 5, 2]; // Company Details, PSC & Directors, Share Capital, Documents, Submit
+  const remainingTime = currentStep >= 5 ? 0 : stepTimes.slice(currentStep - 1).reduce((a, b) => a + b, 0);
 
   return (
     <>
@@ -247,7 +252,7 @@ export default function ConfirmationStatementWizard() {
           <span className="text-sm font-medium">Progress</span>
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">~{remainingTime} min remaining</span>
-            <span className="text-sm text-muted-foreground">Step {currentStep} of 4</span>
+            <span className="text-sm text-muted-foreground">Step {currentStep} of 5</span>
           </div>
         </div>
         <Progress value={progressPercentage} className="h-2" />
@@ -255,7 +260,8 @@ export default function ConfirmationStatementWizard() {
           <span className={`text-xs ${currentStep >= 1 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Company Details</span>
           <span className={`text-xs ${currentStep >= 2 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>PSC & Directors</span>
           <span className={`text-xs ${currentStep >= 3 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Share Capital</span>
-          <span className={`text-xs ${currentStep >= 4 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Submit</span>
+          <span className={`text-xs ${currentStep >= 4 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Documents</span>
+          <span className={`text-xs ${currentStep >= 5 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Submit</span>
         </div>
       </div>
 
@@ -1431,8 +1437,80 @@ export default function ConfirmationStatementWizard() {
           </div>
           )}
 
-          {/* Step 4: Success */}
+          {/* Step 4: Supporting Documents */}
           {currentStep === 4 && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <DocumentSelector
+                  selectedDocumentIds={selectedDocumentIds}
+                  onSelectionChange={setSelectedDocumentIds}
+                  filingType="confirmation_statement"
+                  recommendedTypes={["trial_balance", "bank_statement"]}
+                />
+
+                <div className="flex justify-between mt-6">
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    onClick={() => setCurrentStep(3)}
+                    data-testid="button-back"
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                  </Button>
+                  <Button 
+                    type="button" 
+                    onClick={handleSubmit}
+                    data-testid="button-submit"
+                  >
+                    Submit to Companies House
+                    <Send className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="lg:col-span-1">
+                <HelpPanel 
+                  title="Why Attach Documents?"
+                  sections={[
+                    {
+                      icon: FileCheck,
+                      title: "Evidence & Verification",
+                      description: "Attach documents that verify the information in your CS01.",
+                      tips: [
+                        "Share register showing current shareholders",
+                        "Board minutes approving changes",
+                        "PSC register with ownership details",
+                        "Updated Articles of Association (if changed)"
+                      ]
+                    },
+                    {
+                      icon: AlertTriangle,
+                      title: "Best Practice",
+                      description: "Maintain a complete record of company changes.",
+                      tips: [
+                        "Keep evidence for all reported changes",
+                        "Document shareholder resolutions",
+                        "Track PSC notification dates",
+                        "Maintain statutory registers"
+                      ]
+                    }
+                  ]}
+                  documentRequirements={{
+                    required: [],
+                    optional: [
+                      "Share register",
+                      "PSC register",
+                      "Board minutes",
+                      "Articles of Association"
+                    ]
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Step 5: Success */}
+          {currentStep === 5 && (
             <Card className="p-6">
               <div className="text-center py-8">
                 <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
