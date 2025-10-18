@@ -27,7 +27,7 @@ router.post('/submit', async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const formData = req.body;
+    const { documentIds, ...formData } = req.body;
 
     // Validate required fields
     if (!formData.companyName || !formData.companyNumber) {
@@ -95,6 +95,7 @@ router.post('/submit', async (req, res) => {
           type: 'confirmation_statement',
           status: 'submitted',
           data: cs01Data,
+          documentIds: documentIds || [], // Link source documents
           dueDate: new Date(formData.madeUpToDate), // Due date is the made up to date + 14 days
         },
         REQUIRED_CREDITS,

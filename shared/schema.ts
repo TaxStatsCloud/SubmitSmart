@@ -28,7 +28,7 @@ export const users = pgTable("users", {
   fullName: text("full_name"),
   profileImage: text("profile_image"),
   // Common fields
-  role: text("role").notNull().default("director"), // director, accountant, admin
+  role: text("role").notNull().default("director"), // director, accountant, admin, auditor
   companyId: integer("company_id").references(() => companies.id),
   subscriptionTierId: integer("subscription_tier_id").references(() => subscriptionTiers.id),
   credits: integer("credits").notNull().default(50),
@@ -683,6 +683,36 @@ export const insertComparativePeriodSchema = createInsertSchema(comparativePerio
   isActive: true,
 });
 
+// Auditor Invitations
+export const auditorInvitations = pgTable("auditor_invitations", {
+  id: serial("id").primaryKey(),
+  invitedBy: integer("invited_by").notNull().references(() => users.id),
+  companyId: integer("company_id").notNull().references(() => companies.id),
+  auditorEmail: text("auditor_email").notNull(),
+  auditorName: text("auditor_name"),
+  token: text("token").notNull().unique(),
+  status: text("status").notNull().default("pending"), // pending, accepted, expired, cancelled
+  accessLevel: text("access_level").notNull().default("read_only"), // read_only (can view filings & docs)
+  filingIds: integer("filing_ids").array(), // Specific filings to grant access to (null = all filings)
+  expiresAt: timestamp("expires_at").notNull(),
+  acceptedAt: timestamp("accepted_at"),
+  acceptedUserId: integer("accepted_user_id").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertAuditorInvitationSchema = createInsertSchema(auditorInvitations).pick({
+  invitedBy: true,
+  companyId: true,
+  auditorEmail: true,
+  auditorName: true,
+  token: true,
+  status: true,
+  accessLevel: true,
+  filingIds: true,
+  expiresAt: true,
+});
+
 // Companies House Filing History
 export const companiesHouseFilings = pgTable("companies_house_filings", {
   id: serial("id").primaryKey(),
@@ -794,6 +824,9 @@ export type InsertPriorYearData = z.infer<typeof insertPriorYearDataSchema>;
 export type ComparativePeriod = typeof comparativePeriods.$inferSelect;
 export type InsertComparativePeriod = z.infer<typeof insertComparativePeriodSchema>;
 
+export type AuditorInvitation = typeof auditorInvitations.$inferSelect;
+export type InsertAuditorInvitation = z.infer<typeof insertAuditorInvitationSchema>;
+
 export type CompaniesHouseFiling = typeof companiesHouseFilings.$inferSelect;
 export type InsertCompaniesHouseFiling = z.infer<typeof insertCompaniesHouseFilingSchema>;
 
@@ -810,7 +843,8 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   assistantMessages: many(assistantMessages),
   transactions: many(creditTransactions),
   subscriptions: many(userSubscriptions),
-  userCompanies: many(userCompanies)
+  userCompanies: many(userCompanies),
+  auditorInvitationsSent: many(auditorInvitations),
 }));
 
 export const companiesRelations = relations(companies, ({ many }) => ({
@@ -914,6 +948,13 @@ export const priorYearDataRelations = relations(priorYearData, ({ one }) => ({
 // Comparative periods relations
 export const comparativePeriodsRelations = relations(comparativePeriods, ({ one }) => ({
   company: one(companies, { fields: [comparativePeriods.companyId], references: [companies.id] })
+}));
+
+// Auditor invitations relations
+export const auditorInvitationsRelations = relations(auditorInvitations, ({ one }) => ({
+  inviter: one(users, { fields: [auditorInvitations.invitedBy], references: [users.id] }),
+  company: one(companies, { fields: [auditorInvitations.companyId], references: [companies.id] }),
+  acceptedUser: one(users, { fields: [auditorInvitations.acceptedUserId], references: [users.id] })
 }));
 
 // Companies House filings relations

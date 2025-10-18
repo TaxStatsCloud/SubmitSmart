@@ -219,3 +219,21 @@ export function isAdmin(req: any, res: any, next: any) {
   
   return next();
 }
+
+// Middleware to protect auditor routes
+export function isAuditor(req: any, res: any, next: any) {
+  if (!req.isAuthenticated()) {
+    console.log('[isAuditor] User not authenticated');
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  
+  const userRole = req.user?.role;
+  console.log(`[isAuditor] User ${req.user?.email} role: ${userRole}`);
+  
+  if (userRole !== 'auditor' && userRole !== 'admin') {
+    console.log(`[isAuditor] Access denied for role: ${userRole}`);
+    return res.status(403).json({ message: "Forbidden: Auditor access required" });
+  }
+  
+  return next();
+}

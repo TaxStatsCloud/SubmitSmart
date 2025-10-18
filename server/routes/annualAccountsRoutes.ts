@@ -130,7 +130,7 @@ router.post('/submit', async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const { ixbrlData, ...formData } = req.body;
+    const { ixbrlData, documentIds, ...formData } = req.body;
 
     // Define required credits for Annual Accounts
     const REQUIRED_CREDITS = 25; // Annual Accounts filing cost
@@ -160,6 +160,7 @@ router.post('/submit', async (req, res) => {
             ixbrlData,
             submittedAt: new Date().toISOString(),
           },
+          documentIds: documentIds || [], // Link source documents
           dueDate: new Date(Date.now() + 270 * 24 * 60 * 60 * 1000), // 9 months from now
         },
         REQUIRED_CREDITS,

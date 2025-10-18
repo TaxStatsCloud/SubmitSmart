@@ -12,6 +12,7 @@ PromptSubmissions is an AI-powered platform for UK corporate compliance, automat
 - Maintain comprehensive documentation and error handling
 - **Critical Priority**: Maximum accuracy in all filings with comprehensive supporting documentation
 - **Auditor Trust**: Build features that provide transparency and detailed audit trails
+- **Auditor Access**: Enable users to invite external auditors to review filings and source documents with read-only access
 - **Documentation Guidance**: Provide hints and support for users to upload correct documentation
 - **Authority Compliance**: Ensure all filings meet the highest standards for HMRC and Companies House acceptance
 
@@ -127,6 +128,26 @@ Fixed 13+ endpoints with hardcoded `userId = 1` or `companyId = 1` that would ha
 - Confirmation Statement ← Annual Accounts (officer details, registered office)
 - Next Year's Annual Accounts ← Previous Year (comparative figures, opening balances)
 - Multi-year P&L trends with auto-calculated YoY growth
+
+### Auditor Access System (January 2025)
+**Feature**: Invitation-based auditor access for external accountants/auditors
+
+**Implementation**:
+- New role: `auditor` (read-only access to filings + source documents)
+- Auditor invitations table: Token-based, email invitations with 7-day expiry
+- Email integration: SendGrid sends professional invitation emails
+- Endpoints:
+  - `POST /api/auditors/invite` - Send invitation (requires auth + companyId)
+  - `GET /api/auditors/invitations` - List company invitations
+  - `POST /api/auditors/accept/:token` - Accept invitation, create/upgrade account
+  - `DELETE /api/auditors/invitations/:id` - Cancel invitation
+- Middleware: `isAuditor` for role-based access control (admin can also access)
+- Security: Invitations expire, can be cancelled, granular filing-level access control
+
+**Use Cases**:
+- Directors invite their accountant to review Annual Accounts before submission
+- External auditors review supporting documents for compliance
+- Accountants verify CT600 calculations and tax reliefs
 
 ### Known Minor Issues (Non-Blocking)
 - Admin analytics `/api/admin/analytics/user-activity` endpoint returns 500 error (ReferenceError: `users2` before initialization)

@@ -30,9 +30,10 @@ import monitoringRoutes from "./routes/monitoringRoutes";
 import analyticsRoutes from "./routes/analyticsRoutes";
 import recommendationRoutes from "./routes/recommendationRoutes";
 import Stripe from "stripe";
-import { setupAuth, isAuthenticated, isAdmin, hashPassword } from "./auth";
+import { setupAuth, isAuthenticated, isAdmin, isAuditor, hashPassword } from "./auth";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
+import { randomBytes } from "crypto";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -2977,15 +2978,16 @@ Generate the note content:`;
       const hmrcService = new HMRCCTService();
 
       // Prepare CT600 data
+      const { documentIds, ...bodyData } = req.body;
       const ct600Data = {
-        companyName: req.body.companyName,
-        companyNumber: req.body.companyNumber,
-        utr: req.body.utr,
-        accountingPeriodStart: req.body.accountingPeriodStart,
-        accountingPeriodEnd: req.body.accountingPeriodEnd,
-        turnover: req.body.turnover,
-        taxDue: req.body.computation?.corporationTaxDue || 0,
-        computation: req.body.computation,
+        companyName: bodyData.companyName,
+        companyNumber: bodyData.companyNumber,
+        utr: bodyData.utr,
+        accountingPeriodStart: bodyData.accountingPeriodStart,
+        accountingPeriodEnd: bodyData.accountingPeriodEnd,
+        turnover: bodyData.turnover,
+        taxDue: bodyData.computation?.corporationTaxDue || 0,
+        computation: bodyData.computation,
       };
 
       // Generate CT600 XML
@@ -3015,7 +3017,8 @@ Generate the note content:`;
             type: 'corporation_tax',
             status: 'submitted',
             data: ct600Data,
-            dueDate: new Date(req.body.accountingPeriodEnd),
+            documentIds: documentIds || [], // Link source documents
+            dueDate: new Date(bodyData.accountingPeriodEnd),
           },
           REQUIRED_CREDITS,
           `CT600 Corporation Tax return for ${ct600Data.companyName}`
@@ -3126,6 +3129,223 @@ Generate the note content:`;
     } catch (error: any) {
       console.error('Contact form error:', error);
       res.status(500).json({ error: 'Failed to send message. Please try again later.' });
+    }
+  });
+
+  // ==================== AUDITOR INVITATION ENDPOINTS ====================
+  
+  /**
+   * POST /api/auditors/invite
+   * Invite an auditor to review company filings
+   */
+  app.post('/api/auditors/invite', isAuthenticated, express.json(), async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.companyId) {
+        return res.status(400).json({ error: 'User must be associated with a company' });
+      }
+
+      const { auditorEmail, auditorName, filingIds, expiresInDays = 7 } = req.body;
+
+      if (!auditorEmail) {
+        return res.status(400).json({ error: 'Auditor email is required' });
+      }
+
+      // Generate unique token
+      const token = randomBytes(32).toString('hex');
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + expiresInDays);
+
+      // Create invitation
+      await db.insert(schema.auditorInvitations).values({
+        invitedBy: userId,
+        companyId: user.companyId,
+        auditorEmail,
+        auditorName: auditorName || null,
+        token,
+        status: 'pending',
+        accessLevel: 'read_only',
+        filingIds: filingIds || null,
+        expiresAt,
+      });
+
+      // Send invitation email
+      await emailService.sendEmail({
+        to: auditorEmail,
+        subject: `You've been invited to review ${user.company?.name || 'company'} filings`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2>Auditor Invitation</h2>
+            <p>Hello${auditorName ? ' ' + auditorName : ''},</p>
+            <p>${user.fullName || user.email} has invited you to review their company filings on PromptSubmissions.</p>
+            <p>Click the link below to accept the invitation and create your auditor account:</p>
+            <a href="${process.env.FRONTEND_URL || 'http://localhost:5000'}/auditor/accept/${token}" 
+               style="background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;">
+              Accept Invitation
+            </a>
+            <p>This invitation expires on ${expiresAt.toLocaleDateString('en-GB')}.</p>
+            <p style="color: #666; font-size: 12px; margin-top: 30px;">
+              If you didn't expect this invitation, you can safely ignore this email.
+            </p>
+          </div>
+        `,
+      });
+
+      res.status(201).json({ 
+        success: true,
+        message: 'Invitation sent successfully',
+        expiresAt 
+      });
+    } catch (error: any) {
+      console.error('Auditor invitation error:', error);
+      res.status(500).json({ error: 'Failed to send invitation' });
+    }
+  });
+
+  /**
+   * GET /api/auditors/invitations
+   * Get all auditor invitations for user's company
+   */
+  app.get('/api/auditors/invitations', isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.companyId) {
+        return res.status(400).json({ error: 'User must be associated with a company' });
+      }
+
+      const invitations = await db.query.auditorInvitations.findMany({
+        where: eq(schema.auditorInvitations.companyId, user.companyId),
+        orderBy: (invitations, { desc }) => [desc(invitations.createdAt)],
+      });
+
+      res.json(invitations);
+    } catch (error: any) {
+      console.error('Get invitations error:', error);
+      res.status(500).json({ error: 'Failed to fetch invitations' });
+    }
+  });
+
+  /**
+   * POST /api/auditors/accept/:token
+   * Accept auditor invitation and create account
+   */
+  app.post('/api/auditors/accept/:token', express.json(), async (req, res) => {
+    try {
+      const { token } = req.params;
+      const { password, fullName } = req.body;
+
+      if (!password) {
+        return res.status(400).json({ error: 'Password is required' });
+      }
+
+      // Find invitation
+      const invitation = await db.query.auditorInvitations.findFirst({
+        where: and(
+          eq(schema.auditorInvitations.token, token),
+          eq(schema.auditorInvitations.status, 'pending')
+        ),
+      });
+
+      if (!invitation) {
+        return res.status(404).json({ error: 'Invalid or expired invitation' });
+      }
+
+      // Check expiration
+      if (new Date() > new Date(invitation.expiresAt)) {
+        await db.update(schema.auditorInvitations)
+          .set({ status: 'expired' })
+          .where(eq(schema.auditorInvitations.id, invitation.id));
+        return res.status(400).json({ error: 'Invitation has expired' });
+      }
+
+      // Check if user already exists
+      let existingUser = await storage.getUserByEmail(invitation.auditorEmail);
+      
+      if (existingUser) {
+        // Update existing user to auditor role
+        await db.update(schema.users)
+          .set({ role: 'auditor' })
+          .where(eq(schema.users.id, existingUser.id));
+        
+        // Mark invitation as accepted
+        await db.update(schema.auditorInvitations)
+          .set({ 
+            status: 'accepted',
+            acceptedAt: new Date(),
+            acceptedUserId: existingUser.id
+          })
+          .where(eq(schema.auditorInvitations.id, invitation.id));
+
+        return res.json({ 
+          success: true,
+          message: 'Invitation accepted. You can now log in with your existing credentials.' 
+        });
+      }
+
+      // Create new auditor user
+      const hashedPassword = await hashPassword(password);
+      const newUser = await storage.createUser({
+        email: invitation.auditorEmail,
+        password: hashedPassword,
+        fullName: fullName || invitation.auditorName || invitation.auditorEmail,
+        role: 'auditor',
+      });
+
+      // Mark invitation as accepted
+      await db.update(schema.auditorInvitations)
+        .set({ 
+          status: 'accepted',
+          acceptedAt: new Date(),
+          acceptedUserId: newUser.id
+        })
+        .where(eq(schema.auditorInvitations.id, invitation.id));
+
+      res.status(201).json({ 
+        success: true,
+        message: 'Account created successfully. You can now log in.' 
+      });
+    } catch (error: any) {
+      console.error('Accept invitation error:', error);
+      res.status(500).json({ error: 'Failed to accept invitation' });
+    }
+  });
+
+  /**
+   * DELETE /api/auditors/invitations/:id
+   * Cancel an auditor invitation
+   */
+  app.delete('/api/auditors/invitations/:id', isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const invitationId = parseInt(req.params.id);
+
+      // Verify invitation belongs to user's company
+      const invitation = await db.query.auditorInvitations.findFirst({
+        where: eq(schema.auditorInvitations.id, invitationId),
+      });
+
+      if (!invitation) {
+        return res.status(404).json({ error: 'Invitation not found' });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user || user.companyId !== invitation.companyId) {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+
+      // Update status to cancelled
+      await db.update(schema.auditorInvitations)
+        .set({ status: 'cancelled', updatedAt: new Date() })
+        .where(eq(schema.auditorInvitations.id, invitationId));
+
+      res.json({ success: true, message: 'Invitation cancelled' });
+    } catch (error: any) {
+      console.error('Cancel invitation error:', error);
+      res.status(500).json({ error: 'Failed to cancel invitation' });
     }
   });
 
