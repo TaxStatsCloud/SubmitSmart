@@ -92,7 +92,10 @@ router.post('/create-payment-intent', async (req, res) => {
     
     res.json({
       clientSecret: result.clientSecret,
-      package: result.package
+      package: result.package,
+      discountApplied: result.discountApplied,
+      finalPrice: result.finalPrice,
+      originalPrice: result.package.price
     });
   } catch (error) {
     console.error('Error creating payment intent:', error);

@@ -23,7 +23,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 export async function createCreditPackagePaymentIntent(
   userId: number, 
   packageId: number
-): Promise<{ clientSecret: string; package: CreditPackage }> {
+): Promise<{ clientSecret: string; package: CreditPackage; discountApplied?: number; finalPrice?: number }> {
   // Get the credit package
   const creditPackage = await storage.getCreditPackage(packageId);
   
@@ -38,22 +38,48 @@ export async function createCreditPackagePaymentIntent(
     throw new Error(`User with ID ${userId} not found`);
   }
   
+  // Apply Enterprise tier volume discounts
+  let finalPrice = creditPackage.price;
+  let discountApplied = 0;
+  
+  if (user.subscriptionTierId) {
+    const tier = await storage.getSubscriptionTier(user.subscriptionTierId);
+    
+    if (tier && tier.features) {
+      const features = tier.features as any;
+      
+      // Apply volume discount based on credit amount
+      if (creditPackage.creditAmount >= 100 && features.volume_discount_100_filings) {
+        discountApplied = features.volume_discount_100_filings; // e.g., 10%
+        finalPrice = Math.round(creditPackage.price * (100 - discountApplied) / 100);
+      } else if (creditPackage.creditAmount >= 50 && features.volume_discount_50_filings) {
+        discountApplied = features.volume_discount_50_filings; // e.g., 5%
+        finalPrice = Math.round(creditPackage.price * (100 - discountApplied) / 100);
+      }
+    }
+  }
+  
   // Create a payment intent with Stripe
   const paymentIntent = await stripe.paymentIntents.create({
-    amount: creditPackage.price, // Price is already in pence/cents
+    amount: finalPrice, // Apply volume discount if applicable
     currency: 'gbp',
-    description: `Credit Package: ${creditPackage.name} (${creditPackage.creditAmount} credits)`,
+    description: `Credit Package: ${creditPackage.name} (${creditPackage.creditAmount} credits)${discountApplied > 0 ? ` - ${discountApplied}% Enterprise discount` : ''}`,
     metadata: {
       userId: userId.toString(),
       packageId: packageId.toString(),
       packageName: creditPackage.name,
-      creditAmount: creditPackage.creditAmount.toString()
+      creditAmount: creditPackage.creditAmount.toString(),
+      originalPrice: creditPackage.price.toString(),
+      discountApplied: discountApplied.toString(),
+      finalPrice: finalPrice.toString()
     }
   });
   
   return {
     clientSecret: paymentIntent.client_secret,
-    package: creditPackage
+    package: creditPackage,
+    discountApplied: discountApplied > 0 ? discountApplied : undefined,
+    finalPrice: discountApplied > 0 ? finalPrice : undefined
   };
 }
 
