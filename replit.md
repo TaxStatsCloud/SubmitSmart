@@ -125,9 +125,8 @@ Implemented comprehensive CT600 validation system mapped to all 165 HMRC form bo
 - **Authority Compliance**: Ensure all filings meet the highest standards for HMRC and Companies House acceptance
 
 ## Production Deployment Strategy
-- **Environment Detection**: Uses `REPLIT_DEPLOYMENT` environment variable (set to '1' when published)
-- **Demo Features**: "Real-World Filing Demo" automatically hidden in production via conditional rendering in Sidebar
-- **Development-Only Features**: Any testing or demo features wrapped in `!isProduction` checks to ensure clean production UI
+- **Real-World Filing Demo**: Kept visible in production as a valuable feature showcase for users
+- **Environment Detection**: `REPLIT_DEPLOYMENT` environment variable available (set to '1' when published) for future conditional features if needed
 
 ## System Architecture
 The platform features a React frontend (TypeScript), a Node.js/Express backend, and a PostgreSQL database with Drizzle ORM. The UI/UX emphasizes a Silicon Valley-level design with glass morphism and gradient backgrounds. Core functionalities include AI-driven document processing, comprehensive financial reporting (P&L, Balance Sheet, Cash Flow), and an Extended Trial Balance system. Filing automation integrates with HMRC and Companies House via XML Gateway for iXBRL and CT600 submissions.
