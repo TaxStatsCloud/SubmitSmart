@@ -265,16 +265,27 @@ export function computeCT600Tax(data: CT600FormData): CT600Computation {
   const effectiveRate = totalProfitsChargeable > 0 ? (corporationTaxDue / totalProfitsChargeable) * 100 : 0;
 
   // Step 9: Calculate Due Dates
-  const periodEnd = new Date(data.accountingPeriodEnd);
+  let paymentDueDate = '';
+  let filingDueDate = '';
   
-  // Payment due: 9 months and 1 day after period end
-  const paymentDue = new Date(periodEnd);
-  paymentDue.setMonth(paymentDue.getMonth() + 9);
-  paymentDue.setDate(paymentDue.getDate() + 1);
-  
-  // Filing due: 12 months after period end
-  const filingDue = new Date(periodEnd);
-  filingDue.setFullYear(filingDue.getFullYear() + 1);
+  if (data.accountingPeriodEnd) {
+    const periodEnd = new Date(data.accountingPeriodEnd);
+    
+    // Validate that we have a valid date
+    if (!isNaN(periodEnd.getTime())) {
+      // Payment due: 9 months and 1 day after period end
+      const paymentDue = new Date(periodEnd);
+      paymentDue.setMonth(paymentDue.getMonth() + 9);
+      paymentDue.setDate(paymentDue.getDate() + 1);
+      
+      // Filing due: 12 months after period end
+      const filingDue = new Date(periodEnd);
+      filingDue.setFullYear(filingDue.getFullYear() + 1);
+      
+      paymentDueDate = paymentDue.toISOString().split('T')[0];
+      filingDueDate = filingDue.toISOString().split('T')[0];
+    }
+  }
 
   return {
     grossProfit,
@@ -294,8 +305,8 @@ export function computeCT600Tax(data: CT600FormData): CT600Computation {
     lowerThreshold,
     upperThreshold,
     effectiveRate,
-    paymentDueDate: paymentDue.toISOString().split('T')[0],
-    filingDueDate: filingDue.toISOString().split('T')[0]
+    paymentDueDate,
+    filingDueDate
   };
 }
 
