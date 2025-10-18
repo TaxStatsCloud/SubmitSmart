@@ -97,7 +97,32 @@ const cs01Schema = z.object({
   // Confirmation
   statementDate: z.string().min(1, "Statement date is required"),
   madeUpToDate: z.string().min(1, "Made up to date is required"),
-});
+}).refine(
+  (data) => {
+    // If trading on stock exchange, stock exchange name is required
+    if (data.tradingOnStockExchange && (!data.stockExchangeName || data.stockExchangeName.trim() === "")) {
+      return false;
+    }
+    return true;
+  },
+  {
+    message: "Stock exchange name is required when trading on stock exchange",
+    path: ["stockExchangeName"],
+  }
+).refine(
+  (data) => {
+    // If statutory registers location is SAIL or Other, address is required
+    if ((data.statutoryRegistersLocation === "sail_address" || data.statutoryRegistersLocation === "other") && 
+        (!data.statutoryRegistersOtherAddress || data.statutoryRegistersOtherAddress.trim() === "")) {
+      return false;
+    }
+    return true;
+  },
+  {
+    message: "Address is required for SAIL or other inspection locations",
+    path: ["statutoryRegistersOtherAddress"],
+  }
+);
 
 type CS01FormData = z.infer<typeof cs01Schema>;
 
@@ -124,12 +149,12 @@ export default function ConfirmationStatementWizard() {
       pscDateOfBirth: "",
       pscServiceAddress: "",
       pscNatureOfControl: [],
-      shareholders: [{ name: "", sharesHeld: 0, shareClass: "Ordinary" }],
+      shareholders: [{ name: "", sharesHeld: 1, shareClass: "Ordinary" }],
       shareClasses: [
         {
           className: "Ordinary",
           currency: "GBP",
-          totalShares: 0,
+          totalShares: 1,
           nominalValue: 1.00,
           votingRights: true,
           dividendRights: true,
@@ -138,12 +163,12 @@ export default function ConfirmationStatementWizard() {
         },
       ],
       shareCapitalChanged: false,
-      numberOfShares: 0,
-      nominalValue: 1.00,
+      numberOfShares: undefined,
+      nominalValue: undefined,
       currency: "GBP",
-      aggregateNominalValue: 0,
-      amountPaidUp: 0,
-      amountUnpaid: 0,
+      aggregateNominalValue: undefined,
+      amountPaidUp: undefined,
+      amountUnpaid: undefined,
       statutoryRegistersLocation: "registered_office",
       statutoryRegistersOtherAddress: "",
       statementOfLawfulPurposes: false,
