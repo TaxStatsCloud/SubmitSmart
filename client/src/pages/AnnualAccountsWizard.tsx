@@ -560,232 +560,558 @@ export default function AnnualAccountsWizard() {
                   <TabsTrigger value="capital">Capital</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="fixed-assets" className="mt-6 space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="intangibleAssets"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2">
-                          Intangible Assets
-                          <FieldHint 
-                            description="Non-physical assets with long-term value, including goodwill, patents, trademarks, software, and brand names."
-                            example="£50,000 for purchased software licenses"
-                            type="help"
-                          />
-                        </FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="0.00" 
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            data-testid="input-intangible-assets"
-                          />
-                        </FormControl>
-                        <FormDescription>Goodwill, patents, trademarks</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <TabsContent value="fixed-assets" className="mt-6">
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="border-b-2 border-primary/20">
+                          <th className="text-left py-3 px-2 font-semibold">Account</th>
+                          <th className="text-right py-3 px-2 font-semibold w-32">Current Year (£)</th>
+                          <th className="text-right py-3 px-2 font-semibold w-32 text-muted-foreground">Prior Year (£)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/50">
+                        <tr>
+                          <td className="py-3 px-2">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">Intangible Assets</span>
+                              <FieldHint 
+                                description="Non-physical assets with long-term value, including goodwill, patents, trademarks, software, and brand names."
+                                example="£50,000 for purchased software licenses"
+                                type="help"
+                              />
+                            </div>
+                            <p className="text-sm text-muted-foreground">Goodwill, patents, trademarks</p>
+                          </td>
+                          <td className="py-3 px-2">
+                            <FormField
+                              control={form.control}
+                              name="intangibleAssets"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="text-right"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      data-testid="input-intangible-assets"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </td>
+                          <td className="py-3 px-2">
+                            <FormField
+                              control={form.control}
+                              name="intangibleAssetsPrior"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="text-right bg-muted/30"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      data-testid="input-intangible-assets-prior"
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </td>
+                        </tr>
+                        
+                        <tr>
+                          <td className="py-3 px-2">
+                            <span className="font-medium">Tangible Assets</span>
+                            <p className="text-sm text-muted-foreground">Property, equipment, vehicles</p>
+                          </td>
+                          <td className="py-3 px-2">
+                            <FormField
+                              control={form.control}
+                              name="tangibleAssets"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="text-right"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      data-testid="input-tangible-assets"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </td>
+                          <td className="py-3 px-2">
+                            <FormField
+                              control={form.control}
+                              name="tangibleAssetsPrior"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="text-right bg-muted/30"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      data-testid="input-tangible-assets-prior"
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </td>
+                        </tr>
 
-                  <FormField
-                    control={form.control}
-                    name="tangibleAssets"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tangible Assets</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="0.00" 
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            data-testid="input-tangible-assets"
-                          />
-                        </FormControl>
-                        <FormDescription>Property, equipment, vehicles</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="investments"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Investments</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="0.00" 
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            data-testid="input-investments"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                        <tr>
+                          <td className="py-3 px-2">
+                            <span className="font-medium">Investments</span>
+                            <p className="text-sm text-muted-foreground">Shares in subsidiaries, long-term investments</p>
+                          </td>
+                          <td className="py-3 px-2">
+                            <FormField
+                              control={form.control}
+                              name="investments"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="text-right"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      data-testid="input-investments"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </td>
+                          <td className="py-3 px-2">
+                            <FormField
+                              control={form.control}
+                              name="investmentsPrior"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="text-right bg-muted/30"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      data-testid="input-investments-prior"
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
                 </TabsContent>
 
-                <TabsContent value="current-assets" className="mt-6 space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="stocks"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Stocks / Inventory</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="0.00" 
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            data-testid="input-stocks"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <TabsContent value="current-assets" className="mt-6">
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="border-b-2 border-primary/20">
+                          <th className="text-left py-3 px-2 font-semibold">Account</th>
+                          <th className="text-right py-3 px-2 font-semibold w-32">Current Year (£)</th>
+                          <th className="text-right py-3 px-2 font-semibold w-32 text-muted-foreground">Prior Year (£)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/50">
+                        <tr>
+                          <td className="py-3 px-2">
+                            <span className="font-medium">Stocks / Inventory</span>
+                            <p className="text-sm text-muted-foreground">Raw materials, work in progress, finished goods</p>
+                          </td>
+                          <td className="py-3 px-2">
+                            <FormField
+                              control={form.control}
+                              name="stocks"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="text-right"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      data-testid="input-stocks"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </td>
+                          <td className="py-3 px-2">
+                            <FormField
+                              control={form.control}
+                              name="stocksPrior"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="text-right bg-muted/30"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      data-testid="input-stocks-prior"
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </td>
+                        </tr>
 
-                  <FormField
-                    control={form.control}
-                    name="debtors"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Debtors (Amounts Receivable)</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="0.00" 
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            data-testid="input-debtors"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                        <tr>
+                          <td className="py-3 px-2">
+                            <span className="font-medium">Debtors (Amounts Receivable)</span>
+                            <p className="text-sm text-muted-foreground">Trade debtors, prepayments, other receivables</p>
+                          </td>
+                          <td className="py-3 px-2">
+                            <FormField
+                              control={form.control}
+                              name="debtors"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="text-right"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      data-testid="input-debtors"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </td>
+                          <td className="py-3 px-2">
+                            <FormField
+                              control={form.control}
+                              name="debtorsPrior"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="text-right bg-muted/30"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      data-testid="input-debtors-prior"
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </td>
+                        </tr>
 
-                  <FormField
-                    control={form.control}
-                    name="cashAtBank"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Cash at Bank and in Hand</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="0.00" 
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            data-testid="input-cash"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                        <tr>
+                          <td className="py-3 px-2">
+                            <span className="font-medium">Cash at Bank and in Hand</span>
+                            <p className="text-sm text-muted-foreground">Bank accounts, petty cash</p>
+                          </td>
+                          <td className="py-3 px-2">
+                            <FormField
+                              control={form.control}
+                              name="cashAtBank"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="text-right"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      data-testid="input-cash"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </td>
+                          <td className="py-3 px-2">
+                            <FormField
+                              control={form.control}
+                              name="cashAtBankPrior"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="text-right bg-muted/30"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      data-testid="input-cash-prior"
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
                 </TabsContent>
 
-                <TabsContent value="liabilities" className="mt-6 space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="creditorsDueWithinYear"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2">
-                          Creditors: Amounts Falling Due Within One Year
-                          <FieldHint 
-                            description="All debts payable within 12 months of the balance sheet date, including trade payables, bank overdrafts, PAYE/NI, VAT, and corporation tax due."
-                            example="£25,000 (trade creditors £15k, HMRC £10k)"
-                            type="help"
-                          />
-                        </FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="0.00" 
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            data-testid="input-creditors-within-year"
-                          />
-                        </FormControl>
-                        <FormDescription>Trade creditors, bank overdraft, taxation</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <TabsContent value="liabilities" className="mt-6">
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="border-b-2 border-primary/20">
+                          <th className="text-left py-3 px-2 font-semibold">Account</th>
+                          <th className="text-right py-3 px-2 font-semibold w-32">Current Year (£)</th>
+                          <th className="text-right py-3 px-2 font-semibold w-32 text-muted-foreground">Prior Year (£)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/50">
+                        <tr>
+                          <td className="py-3 px-2">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">Creditors: Due Within One Year</span>
+                              <FieldHint 
+                                description="All debts payable within 12 months of the balance sheet date, including trade payables, bank overdrafts, PAYE/NI, VAT, and corporation tax due."
+                                example="£25,000 (trade creditors £15k, HMRC £10k)"
+                                type="help"
+                              />
+                            </div>
+                            <p className="text-sm text-muted-foreground">Trade creditors, bank overdraft, taxation</p>
+                          </td>
+                          <td className="py-3 px-2">
+                            <FormField
+                              control={form.control}
+                              name="creditorsDueWithinYear"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="text-right"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      data-testid="input-creditors-within-year"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </td>
+                          <td className="py-3 px-2">
+                            <FormField
+                              control={form.control}
+                              name="creditorsDueWithinYearPrior"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="text-right bg-muted/30"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      data-testid="input-creditors-within-year-prior"
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </td>
+                        </tr>
 
-                  <FormField
-                    control={form.control}
-                    name="creditorsDueAfterYear"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Creditors: Amounts Falling Due After One Year</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="0.00" 
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            data-testid="input-creditors-after-year"
-                          />
-                        </FormControl>
-                        <FormDescription>Long-term loans, mortgages</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                        <tr>
+                          <td className="py-3 px-2">
+                            <span className="font-medium">Creditors: Due After One Year</span>
+                            <p className="text-sm text-muted-foreground">Long-term loans, mortgages</p>
+                          </td>
+                          <td className="py-3 px-2">
+                            <FormField
+                              control={form.control}
+                              name="creditorsDueAfterYear"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="text-right"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      data-testid="input-creditors-after-year"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </td>
+                          <td className="py-3 px-2">
+                            <FormField
+                              control={form.control}
+                              name="creditorsDueAfterYearPrior"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="text-right bg-muted/30"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      data-testid="input-creditors-after-year-prior"
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
                 </TabsContent>
 
-                <TabsContent value="capital" className="mt-6 space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="calledUpShareCapital"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Called Up Share Capital</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="0.00" 
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            data-testid="input-share-capital"
-                          />
-                        </FormControl>
-                        <FormDescription>Issued share capital</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <TabsContent value="capital" className="mt-6">
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="border-b-2 border-primary/20">
+                          <th className="text-left py-3 px-2 font-semibold">Account</th>
+                          <th className="text-right py-3 px-2 font-semibold w-32">Current Year (£)</th>
+                          <th className="text-right py-3 px-2 font-semibold w-32 text-muted-foreground">Prior Year (£)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/50">
+                        <tr>
+                          <td className="py-3 px-2">
+                            <span className="font-medium">Called Up Share Capital</span>
+                            <p className="text-sm text-muted-foreground">Issued share capital</p>
+                          </td>
+                          <td className="py-3 px-2">
+                            <FormField
+                              control={form.control}
+                              name="calledUpShareCapital"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="text-right"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      data-testid="input-share-capital"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </td>
+                          <td className="py-3 px-2">
+                            <FormField
+                              control={form.control}
+                              name="calledUpShareCapitalPrior"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="text-right bg-muted/30"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      data-testid="input-share-capital-prior"
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </td>
+                        </tr>
 
-                  <FormField
-                    control={form.control}
-                    name="profitAndLossAccount"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Profit and Loss Account Reserve</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="0.00" 
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            data-testid="input-pl-reserve"
-                          />
-                        </FormControl>
-                        <FormDescription>Retained earnings from previous years</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                        <tr>
+                          <td className="py-3 px-2">
+                            <span className="font-medium">Profit and Loss Account Reserve</span>
+                            <p className="text-sm text-muted-foreground">Retained earnings from previous years</p>
+                          </td>
+                          <td className="py-3 px-2">
+                            <FormField
+                              control={form.control}
+                              name="profitAndLossAccount"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="text-right"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      data-testid="input-pl-reserve"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </td>
+                          <td className="py-3 px-2">
+                            <FormField
+                              control={form.control}
+                              name="profitAndLossAccountPrior"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="text-right bg-muted/30"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      data-testid="input-pl-reserve-prior"
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
                 </TabsContent>
               </Tabs>
 
@@ -883,83 +1209,178 @@ export default function AnnualAccountsWizard() {
                     </AlertDescription>
                   </Alert>
 
+                  <div className="overflow-x-auto mb-6">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="border-b-2 border-primary/20">
+                          <th className="text-left py-3 px-2 font-semibold">Account</th>
+                          <th className="text-right py-3 px-2 font-semibold w-32">Current Year (£)</th>
+                          <th className="text-right py-3 px-2 font-semibold w-32 text-muted-foreground">Prior Year (£)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/50">
+                        <tr>
+                          <td className="py-3 px-2">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">Turnover *</span>
+                              <FieldHint 
+                                description="Total revenue from sales and services before VAT. This is your gross income for the financial year."
+                                example="£500,000 (all sales excluding VAT)"
+                                type="help"
+                              />
+                            </div>
+                            <p className="text-sm text-muted-foreground">Total revenue for the financial year</p>
+                          </td>
+                          <td className="py-3 px-2">
+                            <FormField
+                              control={form.control}
+                              name="turnover"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="text-right"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      data-testid="input-turnover"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </td>
+                          <td className="py-3 px-2">
+                            <FormField
+                              control={form.control}
+                              name="turnoverPrior"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="text-right bg-muted/30"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      data-testid="input-turnover-prior"
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </td>
+                        </tr>
+
+                        <tr>
+                          <td className="py-3 px-2">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">Cost of Sales</span>
+                              <FieldHint 
+                                description="Direct costs of producing goods or services: materials, direct labor, and other costs directly linked to sales."
+                                example="£200,000 (materials £150k, direct labour £50k)"
+                                type="help"
+                              />
+                            </div>
+                            <p className="text-sm text-muted-foreground">Direct costs of goods/services sold</p>
+                          </td>
+                          <td className="py-3 px-2">
+                            <FormField
+                              control={form.control}
+                              name="costOfSales"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="text-right"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      data-testid="input-cost-of-sales"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </td>
+                          <td className="py-3 px-2">
+                            <FormField
+                              control={form.control}
+                              name="costOfSalesPrior"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="text-right bg-muted/30"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      data-testid="input-cost-of-sales-prior"
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </td>
+                        </tr>
+
+                        <tr>
+                          <td className="py-3 px-2">
+                            <span className="font-medium">Administrative Expenses</span>
+                            <p className="text-sm text-muted-foreground">Rent, salaries, utilities, marketing</p>
+                          </td>
+                          <td className="py-3 px-2">
+                            <FormField
+                              control={form.control}
+                              name="administrativeExpenses"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="text-right"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      data-testid="input-admin-expenses"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </td>
+                          <td className="py-3 px-2">
+                            <FormField
+                              control={form.control}
+                              name="administrativeExpensesPrior"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="text-right bg-muted/30"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                      data-testid="input-admin-expenses-prior"
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
                   <div className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="turnover"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        Turnover *
-                        <FieldHint 
-                          description="Total revenue from sales and services before VAT. This is your gross income for the financial year."
-                          example="£500,000 (all sales excluding VAT)"
-                          type="help"
-                        />
-                      </FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="0.00" 
-                          {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                          data-testid="input-turnover"
-                        />
-                      </FormControl>
-                      <FormDescription>Total revenue for the financial year</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="costOfSales"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        Cost of Sales
-                        <FieldHint 
-                          description="Direct costs of producing goods or services: materials, direct labor, and other costs directly linked to sales."
-                          example="£200,000 (materials £150k, direct labour £50k)"
-                          type="help"
-                        />
-                      </FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="0.00" 
-                          {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                          data-testid="input-cost-of-sales"
-                        />
-                      </FormControl>
-                      <FormDescription>Direct costs of goods/services sold</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="administrativeExpenses"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Administrative Expenses</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="0.00" 
-                          {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                          data-testid="input-admin-expenses"
-                        />
-                      </FormControl>
-                      <FormDescription>Rent, salaries, utilities, marketing</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
                 <Separator className="my-4" />
 
