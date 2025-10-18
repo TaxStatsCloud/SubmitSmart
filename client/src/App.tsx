@@ -50,6 +50,7 @@ import FilingReview from "@/pages/FilingReview";
 import Landing from "@/pages/Landing";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
+import Disclaimer from "@/pages/Disclaimer";
 import ProspectsDashboard from "@/pages/ProspectsDashboard";
 import AnalyticsDashboard from "@/pages/AnalyticsDashboard";
 import AuthPage from "@/pages/AuthPage";
@@ -75,6 +76,7 @@ function Router() {
         <Route path="/auth" component={AuthPage} />
         <Route path="/terms" component={Terms} />
         <Route path="/privacy" component={Privacy} />
+        <Route path="/disclaimer" component={Disclaimer} />
         <Route path="/contact" component={Contact} />
         <Route path="/faq" component={FAQ} />
         <Route path="/blog" component={Blog} />
@@ -95,6 +97,7 @@ function Router() {
         <Route path="/auth" component={AuthPage} />
         <Route path="/terms" component={Terms} />
         <Route path="/privacy" component={Privacy} />
+        <Route path="/disclaimer" component={Disclaimer} />
         <Route path="/contact" component={Contact} />
         <Route path="/faq" component={FAQ} />
         <Route path="/blog" component={Blog} />
