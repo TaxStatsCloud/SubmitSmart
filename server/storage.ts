@@ -12,7 +12,8 @@ import {
   creditTransactions, type CreditTransaction, type InsertCreditTransaction,
   priorYearData, type PriorYearData, type InsertPriorYearData,
   comparativePeriods, type ComparativePeriod, type InsertComparativePeriod,
-  companiesHouseFilings, type CompaniesHouseFiling, type InsertCompaniesHouseFiling
+  companiesHouseFilings, type CompaniesHouseFiling, type InsertCompaniesHouseFiling,
+  userCompanies, type UserCompany, type InsertUserCompany
 } from "@shared/schema";
 import { eq, and, gte, sql } from "drizzle-orm";
 import { db } from "./db";
@@ -35,6 +36,13 @@ export interface IStorage {
   createCompany(company: InsertCompany): Promise<Company>;
   updateCompany(id: number, companyData: Partial<Company>): Promise<Company>;
   deleteCompany(id: number): Promise<void>;
+  
+  // Multi-company management methods (Professional/Enterprise tiers)
+  getUserCompanies(userId: number): Promise<(UserCompany & { company: Company })[]>;
+  getUserCompanyCount(userId: number): Promise<number>;
+  addUserCompany(userCompany: InsertUserCompany): Promise<UserCompany>;
+  removeUserCompany(userId: number, companyId: number): Promise<void>;
+  createCompanyWithUser(company: InsertCompany, userId: number, role?: string): Promise<{ company: Company; userCompany: UserCompany }>;
   
   // Document methods
   getDocument(id: number): Promise<Document | undefined>;
@@ -1290,6 +1298,83 @@ export class DatabaseStorage implements IStorage {
 
   async deleteCompany(id: number): Promise<void> {
     await db.delete(companies).where(eq(companies.id, id));
+  }
+
+  // Multi-company management methods (Professional/Enterprise tiers)
+  async getUserCompanies(userId: number): Promise<(UserCompany & { company: Company })[]> {
+    const results = await db
+      .select({
+        id: userCompanies.id,
+        userId: userCompanies.userId,
+        companyId: userCompanies.companyId,
+        role: userCompanies.role,
+        isActive: userCompanies.isActive,
+        createdAt: userCompanies.createdAt,
+        company: companies
+      })
+      .from(userCompanies)
+      .innerJoin(companies, eq(userCompanies.companyId, companies.id))
+      .where(and(
+        eq(userCompanies.userId, userId),
+        eq(userCompanies.isActive, true)
+      ));
+    
+    return results;
+  }
+
+  async getUserCompanyCount(userId: number): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(userCompanies)
+      .where(and(
+        eq(userCompanies.userId, userId),
+        eq(userCompanies.isActive, true)
+      ));
+    
+    return Number(result[0]?.count || 0);
+  }
+
+  async addUserCompany(insertUserCompany: InsertUserCompany): Promise<UserCompany> {
+    const [userCompany] = await db
+      .insert(userCompanies)
+      .values(insertUserCompany)
+      .returning();
+    
+    return userCompany;
+  }
+
+  async removeUserCompany(userId: number, companyId: number): Promise<void> {
+    await db
+      .update(userCompanies)
+      .set({ isActive: false })
+      .where(and(
+        eq(userCompanies.userId, userId),
+        eq(userCompanies.companyId, companyId)
+      ));
+  }
+
+  async createCompanyWithUser(insertCompany: InsertCompany, userId: number, role: string = 'owner'): Promise<{ company: Company; userCompany: UserCompany }> {
+    // Use a transaction to ensure both records are created atomically
+    return await db.transaction(async (tx) => {
+      // Create the company
+      const [company] = await tx
+        .insert(companies)
+        .values(insertCompany)
+        .returning();
+      
+      // Link the company to the user
+      const [userCompany] = await tx
+        .insert(userCompanies)
+        .values({
+          userId,
+          companyId: company.id,
+          role,
+          isActive: true
+        })
+        .returning();
+      
+      return { company, userCompany };
+    });
   }
 
   // Document methods

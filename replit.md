@@ -54,6 +54,14 @@ A critical component is the iXBRL Generation Service, designed for Companies Hou
 
 ## Recent Changes (October 2025)
 
+### Multi-Company Management (Professional/Enterprise Tiers - October 2025)
+- **User-Company Junction Table**: Created `user_companies` table enabling many-to-many relationships between users and companies
+- **Tier-Based Limits**: Basic tier limited to 1 company, Professional tier allows up to 25 companies, Enterprise tier unlimited
+- **Storage Layer**: Implemented 5 new methods - getUserCompanies(), getUserCompanyCount(), addUserCompany(), removeUserCompany(), createCompanyWithUser()
+- **API Routes**: 3 new endpoints - GET/POST /api/user/companies, DELETE /api/user/companies/:companyId with automatic tier limit enforcement
+- **Multi-Company Dashboard**: Professional-tier UI showing all user companies with stats, add/remove functionality, role indicators (owner/accountant/viewer)
+- **Transaction Safety**: createCompanyWithUser() uses database transactions to ensure atomic operations
+
 ### Authentication & Admin Access
 - Fixed dev-login endpoint session serialization bug (corrected passportUser object structure)
 - Verified admin credentials: admin@promptsubmissions.com / Admin123! (documented in ADMIN_CREDENTIALS.md)

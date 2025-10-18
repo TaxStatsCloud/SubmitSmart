@@ -25,6 +25,7 @@ import { initWebSocket } from "@/lib/websocket";
 import CompanyDetails from "@/pages/CompanyDetails";
 import UserManagement from "@/pages/UserManagement";
 import TierManagement from "@/pages/TierManagement";
+import MultiCompanyDashboard from "@/pages/MultiCompanyDashboard";
 import DocumentLibrary from "@/pages/DocumentLibrary";
 import ConfirmationStatement from "@/pages/ConfirmationStatement";
 import AnnualAccounts from "@/pages/AnnualAccounts";
@@ -125,6 +126,7 @@ function Router() {
         {/* Account routes */}
         <Route path="/profile" component={UserProfile} />
         <Route path="/company" component={CompanyDetails} />
+        <Route path="/companies" component={MultiCompanyDashboard} />
         <Route path="/users" component={UserManagement} />
         
         {/* Billing routes */}

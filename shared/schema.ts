@@ -72,6 +72,29 @@ export const insertCompanySchema = createInsertSchema(companies).pick({
   status: true,
 });
 
+export type Company = typeof companies.$inferSelect;
+export type InsertCompany = z.infer<typeof insertCompanySchema>;
+
+// User Companies Junction Table - for multi-company management (Professional/Enterprise tiers)
+export const userCompanies = pgTable("user_companies", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  companyId: integer("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  role: text("role").notNull().default("owner"), // owner, accountant, viewer
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertUserCompanySchema = createInsertSchema(userCompanies).pick({
+  userId: true,
+  companyId: true,
+  role: true,
+  isActive: true,
+});
+
+export type UserCompany = typeof userCompanies.$inferSelect;
+export type InsertUserCompany = z.infer<typeof insertUserCompanySchema>;
+
 // E-Filing Credentials for Companies House XML Gateway
 export const eFilingCredentials = pgTable("efiling_credentials", {
   id: serial("id").primaryKey(),
@@ -782,7 +805,8 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   activities: many(activities),
   assistantMessages: many(assistantMessages),
   transactions: many(creditTransactions),
-  subscriptions: many(userSubscriptions)
+  subscriptions: many(userSubscriptions),
+  userCompanies: many(userCompanies)
 }));
 
 export const companiesRelations = relations(companies, ({ many }) => ({
@@ -795,7 +819,13 @@ export const companiesRelations = relations(companies, ({ many }) => ({
   priorYearData: many(priorYearData),
   comparativePeriods: many(comparativePeriods),
   companiesHouseFilings: many(companiesHouseFilings),
-  openingTrialBalances: many(openingTrialBalances)
+  openingTrialBalances: many(openingTrialBalances),
+  userCompanies: many(userCompanies)
+}));
+
+export const userCompaniesRelations = relations(userCompanies, ({ one }) => ({
+  user: one(users, { fields: [userCompanies.userId], references: [users.id] }),
+  company: one(companies, { fields: [userCompanies.companyId], references: [companies.id] })
 }));
 
 export const prospectsRelations = relations(prospects, ({ many, one }) => ({

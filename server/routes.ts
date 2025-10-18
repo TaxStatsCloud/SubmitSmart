@@ -1076,6 +1076,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Multi-company management routes (Professional/Enterprise tiers)
+  app.get('/api/user/companies', async (req, res) => {
+    try {
+      const userId = (req.user as any)?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+      
+      const userCompanies = await storage.getUserCompanies(userId);
+      res.json(userCompanies);
+    } catch (error: any) {
+      res.status(500).json({ message: 'Failed to fetch companies' });
+    }
+  });
+
+  app.post('/api/user/companies', async (req, res) => {
+    try {
+      const userId = (req.user as any)?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+      
+      // Get user with subscription tier info
+      const user = await storage.getUser(userId);
+      if (!user || !user.subscriptionTierId) {
+        return res.status(400).json({ message: 'User subscription tier not found' });
+      }
+      
+      // Get user's tier
+      const tier = await storage.getSubscriptionTier(user.subscriptionTierId);
+      if (!tier) {
+        return res.status(400).json({ message: 'Invalid subscription tier' });
+      }
+      
+      // Check current company count
+      const currentCount = await storage.getUserCompanyCount(userId);
+      const maxCompanies = tier.maxCompanies;
+      
+      // maxCompanies is nullable for unlimited (Enterprise)
+      if (maxCompanies !== null && currentCount >= maxCompanies) {
+        return res.status(403).json({ 
+          message: `Company limit reached. Your ${tier.displayName} tier allows up to ${maxCompanies} ${maxCompanies === 1 ? 'company' : 'companies'}.`,
+          currentCount,
+          maxCompanies,
+          tierName: tier.displayName
+        });
+      }
+      
+      // Validate company data
+      const validatedData = insertCompanySchema.parse(req.body);
+      
+      // Create company and link to user
+      const result = await storage.createCompanyWithUser(validatedData, userId, 'owner');
+      
+      res.status(201).json(result);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: error.errors });
+      } else {
+        res.status(500).json({ message: error.message || 'Failed to create company' });
+      }
+    }
+  });
+
+  app.delete('/api/user/companies/:companyId', async (req, res) => {
+    try {
+      const userId = (req.user as any)?.id;
+      const companyId = parseInt(req.params.companyId);
+      
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+      
+      await storage.removeUserCompany(userId, companyId);
+      res.json({ message: 'Company removed successfully' });
+    } catch (error: any) {
+      res.status(500).json({ message: 'Failed to remove company' });
+    }
+  });
+
   // Remove duplicate tax filing routes (handled above)
 
   app.get('/api/tax-filings/:companyId/:period', async (req, res) => {
