@@ -9,12 +9,12 @@ import { EntitySize } from './EntitySizeDetector';
 export interface AnnualAccountsPackageData {
   context: IXBRLContext;
   balanceSheet: {
-    current: BalanceSheetData;
-    previous?: BalanceSheetData;
+    currentYear: BalanceSheetData;
+    previousYear?: BalanceSheetData;
   };
   profitLoss: {
-    current: ProfitLossData;
-    previous?: ProfitLossData;
+    currentYear: ProfitLossData;
+    previousYear?: ProfitLossData;
   };
   directorsReport: DirectorsReportData;
   notes: NotesToAccountsData;
@@ -30,7 +30,7 @@ export class IXBRLPackagingService {
 
     // Start document
     let html = IXBRLGenerator.generateDocumentHeader(context);
-    html += IXBRLGenerator.generateContexts(context, !!balanceSheet.previous);
+    html += IXBRLGenerator.generateContexts(context, !!balanceSheet.previousYear);
 
     // Main content container
     html += '<div class="annual-accounts">\n';
@@ -43,19 +43,20 @@ export class IXBRLPackagingService {
     // Generate Balance Sheet
     html += '<div class="balance-sheet">\n';
     html += BalanceSheetGenerator.generate(
-      balanceSheet.current,
-      balanceSheet.previous,
-      entitySize
+      context,
+      balanceSheet
     );
     html += '</div>\n';
     html += '<br/><div class="page-break"></div><br/>\n';
 
     // Generate Profit & Loss Account
+    const profitLossFormat = entitySize === 'micro' ? 'abridged' : 
+                            entitySize === 'small' ? 'standard' : 'detailed';
     html += '<div class="profit-loss">\n';
     html += ProfitLossGenerator.generate(
-      profitLoss.current,
-      profitLoss.previous,
-      entitySize
+      context,
+      profitLoss,
+      profitLossFormat
     );
     html += '</div>\n';
     html += '<br/><div class="page-break"></div><br/>\n';
@@ -115,7 +116,7 @@ export class IXBRLPackagingService {
     }
 
     // Validate balance sheet totals match
-    const bsData = data.balanceSheet.current;
+    const bsData = data.balanceSheet.currentYear;
     const totalAssets = (bsData.intangibleAssets || 0) + 
                        (bsData.tangibleAssets || 0) + 
                        (bsData.investments || 0) +
@@ -130,10 +131,10 @@ export class IXBRLPackagingService {
     const netAssets = totalAssets - totalLiabilities;
 
     const totalCapital = (bsData.calledUpShareCapital || 0) + 
-                        (bsData.sharePreference || 0) + 
+                        (bsData.sharePremium || 0) + 
                         (bsData.revaluationReserve || 0) + 
                         (bsData.otherReserves || 0) + 
-                        (bsData.profitLossAccountReserve || 0);
+                        (bsData.profitAndLossAccount || 0);
 
     // Allow small rounding differences (£1)
     if (Math.abs(netAssets - totalCapital) > 1) {

@@ -15,6 +15,7 @@ import { TrialBalanceValidationAgent, FinancialStatementValidationAgent } from "
 import { DrillDownService } from "./services/drillDownService";
 import { companiesHouseService } from "./services/companiesHouseService";
 import { companiesHouseFilingService } from "./services/companiesHouseFilingService";
+import { AnnualAccountsFilingService } from "./services/filing/AnnualAccountsFilingService";
 import { emailService } from "./services/emailService";
 import multer from "multer";
 import path from "path";
@@ -2568,7 +2569,7 @@ Generate the note content:`;
         companyName,
         companyId,
         accounts, 
-        directors
+        directors = []
       } = req.body;
 
       const userId = (req.user as any).id;
@@ -2580,22 +2581,64 @@ Generate the note content:`;
         });
       }
 
-      // Submit to Companies House (service now handles filing record persistence)
-      const submissionResult = await companiesHouseFilingService.submitAnnualAccounts({
-        companyNumber,
-        companyName,
-        accounts: {
-          balanceSheet: accounts.balanceSheet,
-          profitLoss: accounts.profitLoss,
-          notes: accounts.notes,
-          accountsType: accounts.accountsType || 'micro',
-          accountingPeriodEnd: accounts.accountingPeriodEnd,
-          accountingPeriodStart: accounts.accountingPeriodStart
-        },
-        directors: directors || [],
+      if (!directors || directors.length === 0) {
+        return res.status(400).json({
+          error: 'At least one director is required for annual accounts submission'
+        });
+      }
+
+      // Submit to Companies House using new Annual Accounts Filing Service
+      // Map request data to AnnualAccountsSubmissionData structure
+      const submissionRequest = {
+        filingId: 0, // Will be created during submission
+        companyId,
         userId,
-        companyId
-      });
+        accountsData: {
+          context: {
+            companyNumber,
+            companyName,
+            periodStart: accounts.accountingPeriodStart,
+            periodEnd: accounts.accountingPeriodEnd,
+            balanceSheetDate: accounts.accountingPeriodEnd,
+            entitySize: accounts.accountsType || 'micro'
+          },
+          balanceSheet: {
+            currentYear: accounts.balanceSheet.current,
+            previousYear: accounts.balanceSheet.previous
+          },
+          profitLoss: {
+            currentYear: accounts.profitLoss.current,
+            previousYear: accounts.profitLoss.previous
+          },
+          directorsReport: {
+            companyName,
+            companyNumber,
+            periodEnd: accounts.accountingPeriodEnd,
+            directors: directors.map((d: any) => ({ name: d.name || d })),
+            principalActivities: accounts.principalActivities || 'Trading company',
+            auditExemption: accounts.auditExemption !== false,
+            smallCompanyRegime: accounts.accountsType === 'micro' || accounts.accountsType === 'small',
+            directorApprovalDate: accounts.approvalDate || accounts.accountingPeriodEnd,
+            directorSignature: accounts.signatoryDirector || directors[0]?.name || directors[0],
+            directorPosition: 'Director'
+          },
+          notes: {
+            accountingPolicies: {
+              companyName,
+              companyNumber,
+              periodEnd: accounts.accountingPeriodEnd,
+              accountingFramework: accounts.accountingStandard || 'FRS 102',
+              goingConcern: true,
+              turnoverRecognitionPolicy: 'Turnover is measured at the fair value of the consideration received.',
+              tangibleFixedAssetsDepreciationPolicy: 'Depreciation is provided to write off the cost over the expected useful lives.',
+              taxationPolicy: 'Current tax is provided at amounts expected to be paid.'
+            }
+          },
+          entitySize: accounts.accountsType || 'micro'
+        }
+      };
+
+      const submissionResult = await AnnualAccountsFilingService.submitAnnualAccounts(submissionRequest);
 
       res.json({
         success: true,
