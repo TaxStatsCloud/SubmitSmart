@@ -68,12 +68,24 @@ export function setupAuth(app: Express) {
       { usernameField: 'email', passwordField: 'password' },
       async (email, password, done) => {
         try {
+          console.log('[LocalStrategy] Attempting login for email:', email);
           const user = await storage.getUserByEmail(email);
-          if (!user || !user.password || !(await comparePasswords(password, user.password))) {
+          console.log('[LocalStrategy] User found:', user ? 'yes' : 'no');
+          if (!user || !user.password) {
+            console.log('[LocalStrategy] No user or no password');
             return done(null, false, { message: 'Invalid email or password' });
           }
+          console.log('[LocalStrategy] Verifying password...');
+          const passwordMatch = await comparePasswords(password, user.password);
+          console.log('[LocalStrategy] Password match:', passwordMatch);
+          if (!passwordMatch) {
+            console.log('[LocalStrategy] Password does not match');
+            return done(null, false, { message: 'Invalid email or password' });
+          }
+          console.log('[LocalStrategy] Authentication successful');
           return done(null, user);
         } catch (error) {
+          console.log('[LocalStrategy] Error during authentication:', error);
           return done(error);
         }
       }
@@ -129,13 +141,16 @@ export function setupAuth(app: Express) {
   app.post("/api/login", (req, res, next) => {
     passport.authenticate("local", (err: any, user: SelectUser, info: any) => {
       if (err) {
+        console.error('[LOGIN] Passport authentication error:', err);
         return res.status(500).json({ message: "Authentication error" });
       }
       if (!user) {
+        console.log('[LOGIN] Authentication failed:', info?.message || "No user returned");
         return res.status(401).json({ message: info?.message || "Invalid email or password" });
       }
       req.login(user, (loginErr) => {
         if (loginErr) {
+          console.error('[LOGIN] Session creation error:', loginErr);
           return res.status(500).json({ message: "Login failed" });
         }
         // Remove password from response

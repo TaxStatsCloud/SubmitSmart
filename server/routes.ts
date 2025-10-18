@@ -979,6 +979,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Note: /api/login endpoint is defined in setupAuth() in server/auth.ts
+
   app.post('/api/auth/login', async (req, res) => {
     try {
       const { username, password } = req.body;
