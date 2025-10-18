@@ -384,11 +384,63 @@ export default function AnnualAccountsWizard() {
     submitToCompaniesHouseMutation.mutate();
   };
 
-  const progressPercentage = (currentStep / 6) * 100;
+  // Dynamic step calculation based on entity size
+  const calculateTotalSteps = () => {
+    let steps = 7; // Base: Company Info, Balance Sheet, P&L, Directors/Notes, Exemptions, Documents, Review
+    if (entitySize === 'medium' || entitySize === 'large') {
+      steps += 1; // Add Cash Flow step
+    }
+    if (entitySize === 'large') {
+      steps += 1; // Add Strategic Report step
+    }
+    return steps;
+  };
   
-  // Estimated time per step in minutes
-  const stepTimes = [5, 10, 10, 5, 3, 2]; // Company Info, Balance Sheet, P&L, Documents, Review, Submit
-  const remainingTime = currentStep >= 6 ? 0 : stepTimes.slice(currentStep - 1).reduce((a, b) => a + b, 0);
+  const totalSteps = calculateTotalSteps();
+  const progressPercentage = (currentStep / totalSteps) * 100;
+  
+  // Estimated time per step in minutes (dynamic based on entity size)
+  const getStepTimes = () => {
+    const baseTimes = [5, 10, 10]; // Company Info, Balance Sheet, P&L
+    if (entitySize === 'medium' || entitySize === 'large') {
+      baseTimes.push(8); // Cash Flow
+    }
+    baseTimes.push(7); // Directors Report & Notes
+    if (entitySize === 'large') {
+      baseTimes.push(6); // Strategic Report
+    }
+    baseTimes.push(5, 5, 3); // Exemptions, Documents, Review
+    return baseTimes;
+  };
+  
+  const stepTimes = getStepTimes();
+  const remainingTime = currentStep >= totalSteps ? 0 : stepTimes.slice(currentStep - 1).reduce((a, b) => a + b, 0);
+
+  // Helper to get the correct step numbers based on entity size
+  const getStepNumber = (stepName: string): number => {
+    const stepMap: Record<string, number> = {};
+    let stepNum = 1;
+    
+    stepMap['company'] = stepNum++;
+    stepMap['balanceSheet'] = stepNum++;
+    stepMap['pl'] = stepNum++;
+    
+    if (entitySize === 'medium' || entitySize === 'large') {
+      stepMap['cashFlow'] = stepNum++;
+    }
+    
+    stepMap['directorsReport'] = stepNum++;
+    
+    if (entitySize === 'large') {
+      stepMap['strategicReport'] = stepNum++;
+    }
+    
+    stepMap['exemptions'] = stepNum++;
+    stepMap['documents'] = stepNum++;
+    stepMap['review'] = stepNum++;
+    
+    return stepMap[stepName] || stepNum;
+  };
 
   return (
     <>
@@ -417,17 +469,27 @@ export default function AnnualAccountsWizard() {
           <span className="text-sm font-medium">Progress</span>
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">~{remainingTime} min remaining</span>
-            <span className="text-sm text-muted-foreground">Step {currentStep} of 6</span>
+            <span className="text-sm text-muted-foreground">Step {currentStep} of {totalSteps}</span>
+            <Badge variant="outline" className="text-xs" data-testid="badge-entity-size-header">
+              {entitySize.toUpperCase()}
+            </Badge>
           </div>
         </div>
         <Progress value={progressPercentage} className="h-2" />
-        <div className="flex justify-between mt-2">
-          <span className={`text-xs ${currentStep >= 1 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Company Info</span>
-          <span className={`text-xs ${currentStep >= 2 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Balance Sheet</span>
-          <span className={`text-xs ${currentStep >= 3 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>P&L Account</span>
-          <span className={`text-xs ${currentStep >= 4 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Documents</span>
-          <span className={`text-xs ${currentStep >= 5 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Review</span>
-          <span className={`text-xs ${currentStep >= 6 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Submit</span>
+        <div className="flex justify-between mt-2 text-xs">
+          <span className={currentStep >= 1 ? 'text-primary font-medium' : 'text-muted-foreground'}>Company</span>
+          <span className={currentStep >= 2 ? 'text-primary font-medium' : 'text-muted-foreground'}>Balance Sheet</span>
+          <span className={currentStep >= 3 ? 'text-primary font-medium' : 'text-muted-foreground'}>P&L</span>
+          {(entitySize === 'medium' || entitySize === 'large') && (
+            <span className={currentStep >= 4 ? 'text-primary font-medium' : 'text-muted-foreground'}>Cash Flow</span>
+          )}
+          <span className={currentStep >= (entitySize === 'medium' || entitySize === 'large' ? 5 : 4) ? 'text-primary font-medium' : 'text-muted-foreground'}>Reports</span>
+          {entitySize === 'large' && (
+            <span className={currentStep >= 6 ? 'text-primary font-medium' : 'text-muted-foreground'}>Strategic</span>
+          )}
+          <span className={currentStep >= totalSteps - 2 ? 'text-primary font-medium' : 'text-muted-foreground'}>Exemptions</span>
+          <span className={currentStep >= totalSteps - 1 ? 'text-primary font-medium' : 'text-muted-foreground'}>Documents</span>
+          <span className={currentStep >= totalSteps ? 'text-primary font-medium' : 'text-muted-foreground'}>Review</span>
         </div>
       </div>
 
