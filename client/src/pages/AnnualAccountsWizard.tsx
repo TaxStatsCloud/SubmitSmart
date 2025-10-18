@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -98,23 +99,62 @@ const annualAccountsSchema = z.object({
   auditExempt: z.boolean().default(true),
   accountingPolicies: z.string().optional(),
   
-  // Cash Flow Statement (Medium/Large companies only)
+  // Exemptions & Special Filings
+  abbreviatedAccounts: z.boolean().default(false),
+  dormantCompany: z.boolean().default(false),
+  
+  // Directors Report
+  directorsReport: z.string().optional(),
+  principalActivities: z.string().optional(),
+  businessReview: z.string().optional(),
+  resultsAndDividends: z.string().optional(),
+  futureDevelopments: z.string().optional(),
+  
+  // Cash Flow Statement (Medium/Large companies only - FRS 102 Indirect Method)
+  // Operating Activities
   profitBeforeTax: z.coerce.number().default(0).optional(),
   depreciation: z.coerce.number().min(0).default(0).optional(),
   increaseDecreaseInStocks: z.coerce.number().default(0).optional(),
   increaseDecreaseInDebtors: z.coerce.number().default(0).optional(),
   increaseDecreaseInCreditors: z.coerce.number().default(0).optional(),
+  interestPaid: z.coerce.number().min(0).default(0).optional(),
   taxPaid: z.coerce.number().min(0).default(0).optional(),
+  netCashFromOperatingActivities: z.coerce.number().default(0).optional(),
+  
+  // Investing Activities
   purchaseOfTangibleAssets: z.coerce.number().min(0).default(0).optional(),
+  proceedsFromSaleOfAssets: z.coerce.number().min(0).default(0).optional(),
+  purchaseOfInvestments: z.coerce.number().min(0).default(0).optional(),
+  netCashFromInvestingActivities: z.coerce.number().default(0).optional(),
+  
+  // Financing Activities
   newLoansReceived: z.coerce.number().min(0).default(0).optional(),
   repaymentOfBorrowings: z.coerce.number().min(0).default(0).optional(),
+  dividendsPaid: z.coerce.number().min(0).default(0).optional(),
+  netCashFromFinancingActivities: z.coerce.number().default(0).optional(),
+  
+  // Cash Flow Summary
+  netIncreaseDecreaseInCash: z.coerce.number().default(0).optional(),
   openingCash: z.coerce.number().default(0).optional(),
   closingCash: z.coerce.number().default(0).optional(),
+  cashFlowStatement: z.string().optional(), // Full formatted statement
   
   // Strategic Report (Large companies only)
   businessModel: z.string().optional(),
   principalRisks: z.string().optional(),
   keyPerformanceIndicators: z.string().optional(),
+  section172Statement: z.string().optional(),
+  esgMatters: z.string().optional(),
+  strategicReport: z.string().optional(), // Full formatted report
+  
+  // Notes to Accounts
+  notesToAccounts: z.string().optional(),
+  
+  // AI Assistance Flags (track which sections used AI)
+  usedAIDirectorsReport: z.boolean().default(false),
+  usedAIStrategicReport: z.boolean().default(false),
+  usedAINotesToAccounts: z.boolean().default(false),
+  usedAICashFlowStatement: z.boolean().default(false),
 });
 
 type AnnualAccountsFormData = z.infer<typeof annualAccountsSchema>;
@@ -169,26 +209,54 @@ export default function AnnualAccountsWizard() {
       grossProfitPrior: 0,
       administrativeExpensesPrior: 0,
       operatingProfitPrior: 0,
-      // Other
+      // Directors & Audit
       directorNames: "",
       auditExempt: true,
       accountingPolicies: "",
+      // Exemptions
+      abbreviatedAccounts: false,
+      dormantCompany: false,
+      // Directors Report
+      directorsReport: "",
+      principalActivities: "",
+      businessReview: "",
+      resultsAndDividends: "",
+      futureDevelopments: "",
       // Cash Flow Statement
       profitBeforeTax: 0,
       depreciation: 0,
       increaseDecreaseInStocks: 0,
       increaseDecreaseInDebtors: 0,
       increaseDecreaseInCreditors: 0,
+      interestPaid: 0,
       taxPaid: 0,
+      netCashFromOperatingActivities: 0,
       purchaseOfTangibleAssets: 0,
+      proceedsFromSaleOfAssets: 0,
+      purchaseOfInvestments: 0,
+      netCashFromInvestingActivities: 0,
       newLoansReceived: 0,
       repaymentOfBorrowings: 0,
+      dividendsPaid: 0,
+      netCashFromFinancingActivities: 0,
+      netIncreaseDecreaseInCash: 0,
       openingCash: 0,
       closingCash: 0,
+      cashFlowStatement: "",
       // Strategic Report
       businessModel: "",
       principalRisks: "",
       keyPerformanceIndicators: "",
+      section172Statement: "",
+      esgMatters: "",
+      strategicReport: "",
+      // Notes to Accounts
+      notesToAccounts: "",
+      // AI Assistance Flags
+      usedAIDirectorsReport: false,
+      usedAIStrategicReport: false,
+      usedAINotesToAccounts: false,
+      usedAICashFlowStatement: false,
     },
   });
   
