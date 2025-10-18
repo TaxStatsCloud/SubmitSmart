@@ -1,114 +1,7 @@
 # PromptSubmissions - AI-Powered UK Corporate Compliance Platform
 
 ## Overview
-PromptSubmissions is an AI-powered platform designed for UK corporate compliance, automating the submission of Confirmation Statements, Annual Accounts, and Corporation Tax returns. It leverages AI for tax preparation, employs agentic workflows for company onboarding and deadline management, and provides administrative monitoring dashboards. The platform operates on a credit-based billing system and aims to address the upcoming mandatory software filing requirement by Companies House by April 2027, targeting the significant UK corporate compliance market.
-
-## Recent Enhancements (October 18, 2025)
-
-### **Document Management & Auditor Access System** ✅ COMPLETED
-Complete end-to-end document management and auditor access system for filing transparency and compliance:
-
-1. **Unified DocumentSelector Component:**
-   - Reusable component integrated into all three filing wizards (Annual Accounts Step 4, CT600 Step 3, CS01 Step 4)
-   - Real-time document filtering by type with recommended document types per filing
-   - Visual selection state with count badges and responsive grid layout
-   - Filing-specific guidance and document requirement hints via HelpPanel integration
-
-2. **Document Audit Trail (`/documents/audit-trail`):**
-   - Comprehensive view of all filings with attached supporting documents
-   - Statistics dashboard showing total filings, document count, and coverage percentage
-   - Advanced filtering by filing type (Annual Accounts, CT600, Confirmation Statement, All)
-   - Export to CSV functionality for auditor review and compliance reporting
-   - Document metadata display: filename, type, upload date, processing status
-
-3. **Auditor Management System (`/auditors`):**
-   - Invitation-based auditor access with email-based workflow via SendGrid
-   - Granular access control: company-specific or all current/future filings
-   - Invitation lifecycle management: pending, accepted, expired, cancelled
-   - 7-day expiration window for security with visual countdown
-   - Statistics dashboard tracking active auditors, pending invitations, total invited
-
-4. **Auditor Portal (`/auditor-portal`):**
-   - Read-only dashboard for external auditors (requires `auditor` role)
-   - Access to all assigned filings with supporting documents
-   - Document download capabilities for offline review
-   - Role-based access enforcement preventing unauthorized access
-
-5. **Critical Security Fix:**
-   - Auditor invitation expiration properly enforced in filing access endpoint
-   - Expired invitations no longer grant data access (status AND expiresAt validation)
-   - Comprehensive E2E testing verified all security controls
-
-**E2E Testing Results:** All document upload, selection, audit trail, and auditor access flows tested and verified working. Minor issues (SendGrid 403 in test environment, CSP warnings) are expected and non-blocking.
-
-### **Comparative Year Support for UK Accounting Compliance**
-Implemented full comparative year (prior period) functionality to meet UK accounting standards requiring companies to show current year alongside prior year figures in financial statements:
-
-1. **Annual Accounts Wizard - Side-by-Side Comparative Tables:**
-   - All Balance Sheet sections (Fixed Assets, Current Assets, Liabilities, Capital) display current year and prior year columns
-   - P&L Account shows current year vs. prior year for all line items (Turnover, Cost of Sales, Administrative Expenses)
-   - Clean table format with "Current Year (£)" and "Prior Year (£)" headers
-   - Prior year fields have muted background (bg-muted/30) for visual distinction
-   - 15 comparative fields added: intangibleAssetsPrior, tangibleAssetsPrior, investmentsPrior, stocksPrior, debtorsPrior, cashAtBankPrior, creditorsDueWithinYearPrior, creditorsDueAfterYearPrior, calledUpShareCapitalPrior, profitAndLossAccountPrior, turnoverPrior, costOfSalesPrior, grossProfitPrior, administrativeExpensesPrior, operatingProfitPrior
-
-2. **Auto-Population from Database:**
-   - Backend endpoint GET /api/annual-accounts/prior-year/:companyId fetches comparative figures from priorYearData table
-   - Frontend useQuery hook and useEffect automatically load and pre-fill prior year data
-   - Visual notification shows user when prior year data is loaded (year ending date and source type)
-   - Data fetched once per session (staleTime: Infinity) for performance
-
-3. **CT600 Enhanced Schema Foundation:**
-   - Activity detection questions added: hasPropertyIncome, isCloseCompany, hasOverseasIncome, hasControlledForeignCompanies, hasGroupRelief, paidDividends, hasTransferPricing
-   - 11 prior period comparison fields: turnoverPrior, costOfSalesPrior, operatingExpensesPrior, interestReceivedPrior, dividendsReceivedPrior, propertyIncomePrior, depreciationAddBackPrior, capitalAllowancesPrior, lossesBroughtForwardPrior, rdReliefClaimPrior, charitableDonationsPrior
-   - New propertyIncome field to support CT600C supplementary page requirements
-   - Schema foundation ready for conditional sections (CT600A-J) and comprehensive HMRC box-by-box validation
-
-### **CT600 HMRC Box-by-Box Validation & Enhanced Compliance** ✅ COMPLETED
-Implemented comprehensive CT600 validation system mapped to all 165 HMRC form boxes with prior year comparison and intelligent supplementary page detection:
-
-1. **CT600 Box Mapping System (`shared/ct600BoxMapping.ts`):**
-   - Comprehensive reference mapping for all 165 HMRC CT600 form boxes
-   - Each box includes: number, description, validation rules, dependencies, and conditional logic
-   - Supplementary pages (CT600A-J) defined with trigger conditions based on company activities
-   - Activity-based page detection: CT600C (Close Companies), CT600D (Loans to Participators), CT600H (Controlled Foreign Companies), CT600I (Cross-border), CT600J (Group Companies)
-
-2. **Enhanced Validation Engine (`shared/ct600Validation.ts`):**
-   - Three-tier validation system: errors (blocking), warnings (non-blocking), info (guidance)
-   - Box-by-box HMRC compliance checks with field-specific validation rules
-   - Automatic computation of all tax calculation boxes (40-165)
-   - Prior year variance analysis with alert thresholds for significant changes
-   - Intelligent supplementary page detection based on activity flags
-   - Marginal relief calculation for profits between £50k-£250k
-
-3. **Helper Components:**
-   - `PriorYearComparisonTable`: Side-by-side current vs prior year display with variance analysis and color-coded alerts (>30% change)
-   - `CT600BoxGuidance`: Box-level contextual help showing HMRC box number, description, validation rules, and examples
-   - `CT600BoxSummary`: Complete box breakdown component for review display
-
-4. **Enhanced Backend (`/api/ct600/compute`):**
-   - Integrated comprehensive validation and computation logic
-   - Returns categorized validation results (errors, warnings, info)
-   - Identifies required supplementary pages based on company activities
-   - Generates complete box-by-box breakdown for HMRC form mapping
-   - Prior year data integration for comparative analysis
-
-5. **Enhanced CT600 Wizard:**
-   - **Step 2 - Clear Period Labeling:** All financial input fields clearly labeled as "Current Period" to eliminate ambiguity about which period users are filing for
-   - **HMRC Compliance Messaging:** Prominent compliance banners in Steps 2 and 4 reassuring users that the system implements full CT600 box-by-box validation (165 HMRC boxes) with automatic compliance checks
-   - **Step 4 Review Enhancements:**
-     - HMRC CT600 validation banners confirming compliance with all UK Corporation Tax rules
-     - Validation warnings display with suggested actions (when applicable)
-     - Required supplementary pages alert (CT600A-J) based on activity detection
-     - Complete box-by-box breakdown table showing all HMRC boxes with computed values
-     - Enhanced tax computation summary with marginal relief details
-   - **Prior Period Note:** Informational alert explaining that prior period fields are available in the schema for future comparative analysis features, while current period data is validated for full HMRC compliance
-
-**Technical Implementation:**
-- Box mapping supports conditional logic for complex dependencies (e.g., Box 155 only shown if Box 150 > 0)
-- Validation engine performs real-time checks against HMRC rules (e.g., negative profits validation, associated companies limits)
-- All 165 HMRC CT600 form boxes mapped and validated
-- Supplementary page triggers align with HMRC CT600 guidance and Companies Act requirements
-- Clear user messaging ensures confidence in filing compliant returns
+PromptSubmissions is an AI-powered platform for UK corporate compliance, automating the submission of Confirmation Statements, Annual Accounts, and Corporation Tax returns. It uses AI for tax preparation, agentic workflows for onboarding and deadline management, and provides administrative monitoring dashboards. The platform operates on a credit-based billing system, addressing the upcoming mandatory software filing requirement by Companies House by April 2027 and targeting the UK corporate compliance market.
 
 ## User Preferences
 - **Silicon Valley-level UI/UX**: Premium design with glass morphism, gradients, and professional visual hierarchy
@@ -124,25 +17,12 @@ Implemented comprehensive CT600 validation system mapped to all 165 HMRC form bo
 - **Documentation Guidance**: Provide hints and support for users to upload correct documentation
 - **Authority Compliance**: Ensure all filings meet the highest standards for HMRC and Companies House acceptance
 
-## Production Deployment Strategy
-- **Real-World Filing Demo**: Kept visible in production as a valuable feature showcase for users
-- **Environment Detection**: `REPLIT_DEPLOYMENT` environment variable available (set to '1' when published) for future conditional features if needed
-
 ## System Architecture
-The platform features a React frontend (TypeScript), a Node.js/Express backend, and a PostgreSQL database with Drizzle ORM. The UI/UX emphasizes a Silicon Valley-level design with glass morphism and gradient backgrounds. Core functionalities include AI-driven document processing, comprehensive financial reporting (P&L, Balance Sheet, Cash Flow), and an Extended Trial Balance system. Filing automation integrates with HMRC and Companies House via XML Gateway for iXBRL and CT600 submissions.
+The platform utilizes a React frontend (TypeScript), a Node.js/Express backend, and a PostgreSQL database with Drizzle ORM. The UI/UX emphasizes a Silicon Valley-level design with glass morphism and gradient backgrounds. Key functionalities include AI-driven document processing, comprehensive financial reporting (P&L, Balance Sheet, Cash Flow), an Extended Trial Balance system, and an iXBRL Generation Service supporting FRC 2025 Taxonomy.
 
-A sophisticated multi-agent system automates customer acquisition, including a Companies House Discovery Agent for lead generation, an Email Enrichment Service via Hunter.io, and a three-tier Outreach Campaign System. Admin dashboards offer real-time lead pipelines, agent control, conversion analytics, and user management with role-based access control. Authentication is handled via email/password with Passport.js, scrypt hashing, and PostgreSQL-backed session storage.
+Filing automation integrates with HMRC and Companies House via XML Gateway for iXBRL and CT600 submissions, including sophisticated authentication for both government APIs. A multi-agent system automates customer acquisition, featuring a Companies House Discovery Agent, an Email Enrichment Service, and a three-tier Outreach Campaign System. Admin dashboards provide real-time lead pipelines, agent control, conversion analytics, and user management with role-based access control. Authentication is handled via email/password with Passport.js, scrypt hashing, and PostgreSQL-backed session storage.
 
-The platform includes a critical iXBRL Generation Service supporting Companies House's mandatory filing requirements, incorporating the FRC 2025 Taxonomy and automatic entity size detection. An enhanced iXBRL Validation Service ensures comprehensive validation. A professional accountant review dashboard (`/filings/review`) provides summary metrics, validation results, and an approval workflow.
-
-Recent enhancements include multi-company management with tier-based limits, secure backend AI chatbot integration, and smart recommendation security for tenant isolation. The agent system has been improved with broader industry targeting and Exa AI integration for comprehensive company data enrichment. UX improvements include a UK Accounting Expert AI Chatbot, deadline warnings, credit usage visualization, and AI-powered smart filing recommendations. Guided filing workflows for Annual Accounts, Confirmation Statements, and CT600 offer contextual help. Advanced pricing tiers (Basic, Professional, Enterprise) and mobile optimization with PWA support are also implemented.
-
-Legal disclaimers are integrated at three levels with optimized UX:
-1. **Compact Footer Disclaimer** - Single-line summary with link to full disclaimer page
-2. **Filing Submission Warnings** - Comprehensive modal dialog requiring explicit acknowledgment before submission
-3. **AI Assistant Disclaimer** - Context-specific warnings for AI-generated advice
-
-All disclaimers emphasize user responsibility and disclaim professional advice while minimizing screen real estate impact. Critical production hardening involved removing hardcoded user/company IDs and enforcing authentication middleware and role-based authorization across all sensitive endpoints. Features like automatic form pre-fill from Annual Accounts to CT600 and an invitation-based Auditor Access System with a read-only `auditor` role have been implemented.
+The system incorporates multi-company management with tier-based limits, a secure backend AI chatbot, and smart recommendation security with tenant isolation. UX includes a UK Accounting Expert AI Chatbot, deadline warnings, credit usage visualization, and AI-powered smart filing recommendations. Guided filing workflows for Annual Accounts, Confirmation Statements, and CT600 offer contextual help. An invitation-based Auditor Access System provides a read-only `auditor` role. Legal disclaimers are integrated at three levels to ensure compliance and user responsibility without impacting user experience. The platform also supports comparative year functionality for UK accounting standards, and a comprehensive CT600 validation system mapped to all 165 HMRC form boxes, including intelligent supplementary page detection and prior year comparison.
 
 ## External Dependencies
 - **OpenAI**: AI-driven document processing, financial data extraction, and smart filing recommendations.
