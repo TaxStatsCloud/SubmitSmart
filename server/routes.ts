@@ -1760,19 +1760,24 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
     }
   });
 
-  app.post('/api/documents/upload', upload.single('file'), async (req, res) => {
+  app.post('/api/documents/upload', isAuthenticated, upload.single('file'), async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+      
       const file = req.file;
       
       if (!file) {
         return res.status(400).json({ message: 'No file uploaded' });
       }
       
-      // In a real app, would get user ID from session
-      const userId = 1; // Sample user ID
+      const userId = (req.user as any).id;
+      const companyId = (req.user as any).companyId;
       
-      // In a real app, would get company ID from request
-      const companyId = 1; // Sample company ID
+      if (!companyId) {
+        return res.status(400).json({ message: 'User must be associated with a company' });
+      }
       
       const documentData = {
         companyId,
