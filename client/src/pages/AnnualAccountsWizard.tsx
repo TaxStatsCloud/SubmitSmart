@@ -271,7 +271,7 @@ export default function AnnualAccountsWizard() {
   const hasInsufficientCredits = userCredits < FILING_COST;
 
   // Fetch prior year data for auto-population
-  const { data: priorYearData } = useQuery({
+  const { data: priorYearData } = useQuery<{ success: boolean; data?: any }>({
     queryKey: ['/api/annual-accounts/prior-year', user?.companyId],
     enabled: !!user?.companyId && !priorYearDataLoaded,
     staleTime: Infinity, // Don't refetch once loaded
