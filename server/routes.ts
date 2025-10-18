@@ -996,26 +996,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ message: 'Logout successful' });
   });
 
-  app.get('/api/auth/me', async (req, res) => {
-    // In a real app, this would use session information
-    // For now, return a sample user
-    const user = await storage.getUserByUsername('sarah.thompson');
-    
-    if (!user) {
-      return res.status(401).json({ message: 'Not authenticated' });
+  app.get('/api/auth/me', isAuthenticated, async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Not authenticated' });
+      }
+      
+      const userId = (req.user as any).id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(401).json({ message: 'User not found' });
+      }
+      
+      // Remove password from response
+      const { password, ...userWithoutPassword } = user;
+      
+      res.json(userWithoutPassword);
+    } catch (error: any) {
+      res.status(500).json({ message: 'Failed to fetch user data' });
     }
-    
-    // Remove password from response
-    const { password, ...userWithoutPassword } = user;
-    
-    res.json(userWithoutPassword);
   });
 
-  app.patch('/api/auth/me', async (req, res) => {
+  app.patch('/api/auth/me', isAuthenticated, async (req, res) => {
     try {
-      // In a real app, would verify user from session
-      const userId = 1; // Sample user ID
+      if (!req.user) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
       
+      const userId = (req.user as any).id;
       const { fullName, email, currentPassword, newPassword } = req.body;
       
       // Verify current password if changing password
