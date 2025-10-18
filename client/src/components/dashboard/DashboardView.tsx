@@ -79,9 +79,9 @@ const DashboardView = () => {
   return (
     <div className="pb-6">
       {/* Welcome and Quick Stats */}
-      <div className="mb-6 md:mb-8">
-        <h1 className="text-xl md:text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-3">Welcome, {firstName}</h1>
-        <p className="text-sm md:text-base text-neutral-900 dark:text-neutral-100 max-w-3xl font-medium">
+      <div className="mb-6 md:mb-8 bg-white dark:bg-neutral-900 p-6 rounded-lg border-2 border-neutral-200 dark:border-neutral-700 shadow-sm">
+        <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-3">Welcome, {firstName}</h1>
+        <p className="text-sm md:text-base text-gray-800 dark:text-gray-200 max-w-3xl font-medium leading-relaxed">
           Your dashboard shows an overview of your upcoming filings and compliance status. Upload documents to get started with automated filing preparation.
         </p>
       </div>
