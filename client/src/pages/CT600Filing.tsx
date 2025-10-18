@@ -1170,6 +1170,62 @@ export default function CT600Filing() {
                     </AlertDescription>
                   </Alert>
                 )}
+
+                {/* Validation Warnings */}
+                {computation.validation && computation.validation.warnings && computation.validation.warnings.length > 0 && (
+                  <div>
+                    <h3 className="font-medium mb-3 text-yellow-600 dark:text-yellow-400">Validation Warnings</h3>
+                    <div className="space-y-2">
+                      {computation.validation.warnings.map((warning: any, idx: number) => (
+                        <Alert key={idx} className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950">
+                          <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                          <AlertDescription className="text-yellow-900 dark:text-yellow-100">
+                            <strong>{warning.field || 'General'}:</strong> {warning.message}
+                            {warning.suggestedAction && <div className="mt-1 text-sm">Suggested: {warning.suggestedAction}</div>}
+                          </AlertDescription>
+                        </Alert>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Required Supplementary Pages Alert */}
+                {computation.validation && computation.validation.requiredSupplementaryPages && computation.validation.requiredSupplementaryPages.length > 0 && (
+                  <Alert className="border-blue-500 bg-blue-50 dark:bg-blue-950">
+                    <FileText className="h-4 w-4 text-blue-600" />
+                    <AlertDescription className="text-blue-900 dark:text-blue-100">
+                      <strong>Required Supplementary Pages:</strong> Based on your company's activities, you must complete the following supplementary forms:
+                      <ul className="mt-2 ml-4 list-disc">
+                        {computation.validation.requiredSupplementaryPages.map((page: string, idx: number) => (
+                          <li key={idx}>{page}</li>
+                        ))}
+                      </ul>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Box-by-Box Breakdown */}
+                {computation.boxBreakdown && (
+                  <div>
+                    <h3 className="font-medium mb-3">HMRC Form CT600 - Box Breakdown</h3>
+                    <div className="border rounded-md overflow-hidden">
+                      <div className="bg-muted/50 p-3 border-b font-medium grid grid-cols-3 gap-2">
+                        <div>Box Number</div>
+                        <div>Description</div>
+                        <div className="text-right">Value</div>
+                      </div>
+                      {Object.entries(computation.boxBreakdown).map(([boxNum, boxData]: [string, any]) => (
+                        <div key={boxNum} className="p-3 border-b last:border-b-0 grid grid-cols-3 gap-2 items-center hover:bg-muted/30">
+                          <div className="font-mono text-sm font-medium">{boxNum}</div>
+                          <div className="text-sm">{boxData.description}</div>
+                          <div className="text-right font-medium">
+                            {typeof boxData.value === 'number' ? `£${boxData.value.toFixed(2)}` : boxData.value}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-between mt-6">
