@@ -9,6 +9,9 @@ const Sidebar = () => {
   const { user, logoutMutation } = useAuth();
   
   const isActive = (path: string) => location === path;
+  
+  // Hide demo features in production
+  const isProduction = import.meta.env.REPLIT_DEPLOYMENT === '1';
 
   return (
     <aside className="hidden lg:flex lg:flex-shrink-0">
@@ -50,10 +53,13 @@ const Sidebar = () => {
                 Corporation Tax (CT600)
               </Link>
               
-              <Link href="/real-world-filing" className={`sidebar-link ${isActive("/real-world-filing") ? "active" : ""}`}>
-                <span className="material-icons sidebar-icon">assignment</span>
-                Real-World Filing Demo
-              </Link>
+              {/* Only show demo feature in development */}
+              {!isProduction && (
+                <Link href="/real-world-filing" className={`sidebar-link ${isActive("/real-world-filing") ? "active" : ""}`}>
+                  <span className="material-icons sidebar-icon">assignment</span>
+                  Real-World Filing Demo
+                </Link>
+              )}
               
               <Link href="/trial-balance" className={`sidebar-link ${isActive("/trial-balance") ? "active" : ""}`}>
                 <span className="material-icons sidebar-icon">balance</span>
