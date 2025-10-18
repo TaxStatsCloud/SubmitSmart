@@ -125,7 +125,7 @@ export function AIChatbot({ className }: AIChatbotProps) {
             <Bot className="h-4 w-4" />
           </div>
           <div>
-            <CardTitle className="text-sm font-semibold">AI Compliance Assistant</CardTitle>
+            <CardTitle className="text-sm font-semibold">Prompt AI</CardTitle>
             <p className="text-xs text-blue-100">UK Tax & Accounting Expert</p>
           </div>
         </div>
@@ -156,7 +156,7 @@ export function AIChatbot({ className }: AIChatbotProps) {
               <div className="space-y-4">
                 <div className="text-center text-gray-500 mb-6">
                   <Sparkles className="h-8 w-8 mx-auto mb-2 text-blue-500" />
-                  <p className="text-sm">Hi! I'm your AI compliance assistant.</p>
+                  <p className="text-sm">Hi! I'm Prompt AI, your compliance assistant.</p>
                   <p className="text-xs">Ask me about UK accounting, tax rules, or how to use the platform.</p>
                 </div>
                 
