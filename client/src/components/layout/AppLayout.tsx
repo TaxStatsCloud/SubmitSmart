@@ -24,7 +24,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         <Header />
 
         {/* Main Content - Extra padding on mobile for bottom tab bar */}
-        <main className="flex-1 overflow-y-auto bg-[hsl(var(--neutral-50))] p-4 md:p-6 pb-20 md:pb-6">
+        <main className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-neutral-950 p-4 md:p-6 pb-20 md:pb-6">
           {children}
         </main>
 
