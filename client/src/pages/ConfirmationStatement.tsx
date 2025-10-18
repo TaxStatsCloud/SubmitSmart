@@ -35,6 +35,7 @@ const ConfirmationStatement = () => {
       progress={filingData?.progress || 0}
       dueDate={filingData?.dueDate}
       documents={filingData?.documentIds ? [{ name: "Company Information Document" }] : []}
+      wizardRoute="/wizards/confirmation-statement"
     >
       <div className="space-y-6">
         <Alert>
@@ -55,7 +56,7 @@ const ConfirmationStatement = () => {
           </div>
           <div className="flex items-center justify-between mt-1">
             <span>PromptSubmissions Service:</span>
-            <span className="font-medium">10 credits</span>
+            <span className="font-medium">50 credits</span>
           </div>
         </div>
         

@@ -74,6 +74,11 @@ export default function AnnualAccountsWizard() {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [iXBRLPreview, setIXBRLPreview] = useState<any>(null);
+  
+  // Credit requirements
+  const FILING_COST = 25; // Annual Accounts filing cost in credits
+  const userCredits = user?.credits || 0;
+  const hasInsufficientCredits = userCredits < FILING_COST;
 
   const form = useForm<AnnualAccountsFormData>({
     resolver: zodResolver(annualAccountsSchema),
@@ -223,6 +228,33 @@ export default function AnnualAccountsWizard() {
           <span className={`text-xs ${currentStep >= 5 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Submit</span>
         </div>
       </div>
+
+      {/* Credit Requirement Alert */}
+      {hasInsufficientCredits ? (
+        <Alert className="mb-6 border-red-500 bg-red-50 dark:bg-red-950">
+          <AlertTriangle className="h-4 w-4 text-red-600" />
+          <AlertTitle className="text-red-900 dark:text-red-100">Insufficient Credits</AlertTitle>
+          <AlertDescription className="text-red-800 dark:text-red-200">
+            <div className="space-y-2">
+              <p>This filing requires <strong>{FILING_COST} credits</strong>, but you only have <strong>{userCredits} credits</strong>.</p>
+              <p>You can continue filling out the form, but you'll need to top up before submitting.</p>
+              <Link href="/credits">
+                <Button variant="outline" size="sm" className="mt-2 bg-white hover:bg-red-50" data-testid="button-top-up-credits">
+                  Top Up Credits Now
+                </Button>
+              </Link>
+            </div>
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <Alert className="mb-6 border-emerald-500 bg-emerald-50 dark:bg-emerald-950">
+          <CheckCircle className="h-4 w-4 text-emerald-600" />
+          <AlertTitle className="text-emerald-900 dark:text-emerald-100">Credit Requirement</AlertTitle>
+          <AlertDescription className="text-emerald-800 dark:text-emerald-200">
+            This filing costs <strong>{FILING_COST} credits</strong>. You have <strong>{userCredits} credits</strong> available.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* April 2027 Alert */}
       <Alert className="mb-6 border-amber-500 bg-amber-50 dark:bg-amber-950">
@@ -1061,7 +1093,7 @@ export default function AnnualAccountsWizard() {
                 {/* Credit Cost */}
                 <Alert>
                   <AlertDescription className="flex items-center justify-between">
-                    <span>Filing cost: <strong>120 credits</strong></span>
+                    <span>Filing cost: <strong>{FILING_COST} credits</strong></span>
                     <span className="text-sm text-muted-foreground">Companies House fee: FREE</span>
                   </AlertDescription>
                 </Alert>
@@ -1115,7 +1147,7 @@ export default function AnnualAccountsWizard() {
                     </div>
                     <div className="flex justify-between">
                       <span>Credits Used:</span>
-                      <span className="font-medium">120</span>
+                      <span className="font-medium">{FILING_COST}</span>
                     </div>
                   </div>
                 </div>

@@ -321,7 +321,7 @@ const Credits = () => {
               <CardTitle>Confirmation Statement</CardTitle>
             </CardHeader>
             <CardContent className="text-center">
-              <div className="text-5xl font-bold mb-2">10</div>
+              <div className="text-5xl font-bold mb-2">50</div>
               <div className="text-lg">credits per filing</div>
             </CardContent>
             <CardFooter className="text-sm text-muted-foreground">

@@ -832,6 +832,39 @@ export default function CT600Filing() {
                 </AlertDescription>
               </Alert>
 
+              {/* Credit Requirement Alert */}
+              {(() => {
+                const FILING_COST = 30;
+                const availableCredits = user?.credits || 0;
+                const hasSufficientCredits = availableCredits >= FILING_COST;
+
+                return (
+                  <Alert 
+                    className={`mb-6 ${hasSufficientCredits ? 'border-green-500 bg-green-50 dark:bg-green-950' : 'border-red-500 bg-red-50 dark:bg-red-950'}`}
+                    data-testid="alert-credit-requirement"
+                  >
+                    <AlertDescription className={hasSufficientCredits ? 'text-green-900 dark:text-green-100' : 'text-red-900 dark:text-red-100'}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-medium">Filing cost: {FILING_COST} credits</span>
+                          <span className="ml-2">| Available: {availableCredits} credits</span>
+                        </div>
+                        {!hasSufficientCredits && (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => window.location.href = '/credits'}
+                            className="border-red-600 text-red-600 hover:bg-red-100 dark:hover:bg-red-900"
+                          >
+                            Top Up Credits Now
+                          </Button>
+                        )}
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                );
+              })()}
+
               <div className="space-y-6">
                 {/* Trading Profit */}
                 <div>

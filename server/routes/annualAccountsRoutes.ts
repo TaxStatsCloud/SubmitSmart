@@ -133,7 +133,7 @@ router.post('/submit', async (req, res) => {
     const { ixbrlData, ...formData } = req.body;
 
     // Define required credits for Annual Accounts
-    const REQUIRED_CREDITS = 120;
+    const REQUIRED_CREDITS = 25; // Annual Accounts filing cost
     
     // Get user to check company association
     const user = await storage.getUser(userId);

@@ -18,13 +18,11 @@ const router = Router();
 // Get current user's credits
 router.get('/credits', async (req, res) => {
   try {
-    // For demo purposes, using sample user - in production use req.isAuthenticated()
-    // if (!req.isAuthenticated()) {
-    //   return res.status(401).json({ error: 'Not authenticated' });
-    // }
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
     
-    // For demo purposes - in production use req.user.id
-    const userId = 1;
+    const userId = (req.user as any).id;
     const credits = await storage.getUserCredits(userId);
     res.json({ credits });
   } catch (error) {
@@ -47,13 +45,11 @@ router.get('/packages', async (req, res) => {
 // Get tier-specific credit packages for current user
 router.get('/packages/user', async (req, res) => {
   try {
-    // For demo purposes, using sample user
-    // if (!req.isAuthenticated()) {
-    //   return res.status(401).json({ error: 'Not authenticated' });
-    // }
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
     
-    // For demo purposes - in production use req.user.id
-    const userId = 1;
+    const userId = (req.user as any).id;
     
     const packages = await storage.getCreditPackagesForUser(userId);
     res.json(packages);
@@ -77,13 +73,11 @@ router.get('/filing-costs', async (req, res) => {
 // Get user's credit transaction history
 router.get('/transactions', async (req, res) => {
   try {
-    // For demo purposes, using sample user
-    // if (!req.isAuthenticated()) {
-    //   return res.status(401).json({ error: 'Not authenticated' });
-    // }
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
     
-    // For demo purposes - in production use req.user.id
-    const userId = 1;
+    const userId = (req.user as any).id;
     const transactions = await storage.getCreditTransactionsByUser(userId);
     res.json(transactions);
   } catch (error) {
@@ -95,17 +89,15 @@ router.get('/transactions', async (req, res) => {
 // Create a payment intent for credit purchase
 router.post('/create-payment-intent', async (req, res) => {
   try {
-    // For demo purposes, using sample user
-    // if (!req.isAuthenticated()) {
-    //   return res.status(401).json({ error: 'Not authenticated' });
-    // }
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
     
     const { packageId } = z.object({
       packageId: z.number()
     }).parse(req.body);
     
-    // For demo purposes - in production use req.user.id
-    const userId = 1;
+    const userId = (req.user as any).id;
     
     const result = await createCreditPackagePaymentIntent(userId, packageId);
     
@@ -125,18 +117,16 @@ router.post('/create-payment-intent', async (req, res) => {
 // Create a payment intent for filing payment
 router.post('/create-filing-payment', async (req, res) => {
   try {
-    // For demo purposes, using sample user
-    // if (!req.isAuthenticated()) {
-    //   return res.status(401).json({ error: 'Not authenticated' });
-    // }
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
     
     const { filingId, filingType } = z.object({
       filingId: z.number(),
       filingType: z.string()
     }).parse(req.body);
     
-    // For demo purposes - in production use req.user.id
-    const userId = 1;
+    const userId = (req.user as any).id;
     
     const result = await createFilingPaymentIntent(userId, filingId, filingType);
     
@@ -186,18 +176,16 @@ router.post('/webhook', json({ type: 'application/json' }), async (req, res) => 
 // Deduct credits for a filing 
 router.post('/deduct-credits', async (req, res) => {
   try {
-    // For demo purposes, using sample user
-    // if (!req.isAuthenticated()) {
-    //   return res.status(401).json({ error: 'Not authenticated' });
-    // }
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
     
     const { filingType, filingId } = z.object({
       filingType: z.string(),
       filingId: z.number()
     }).parse(req.body);
     
-    // For demo purposes - in production use req.user.id
-    const userId = 1;
+    const userId = (req.user as any).id;
     const success = await storage.deductCreditsForFiling(userId, filingType, filingId);
     
     if (!success) {

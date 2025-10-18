@@ -2873,31 +2873,52 @@ Generate the note content:`;
       // For now, we'll save it and return success
       console.log('[CT600] Generated XML for submission');
 
-      // Save filing record
+      // Save filing record with credit deduction
+      const REQUIRED_CREDITS = 30; // CT600 filing cost
       const userId = (req.user as any).id;
       const user = await db.query.users.findFirst({
         where: (users, { eq }) => eq(users.id, userId),
       });
 
-      if (user?.companyId) {
-        await db.insert(schema.filings).values({
-          companyId: user.companyId,
-          userId: userId,
-          type: 'corporation_tax',
-          status: 'submitted',
-          dueDate: new Date(req.body.accountingPeriodEnd),
-          submitDate: new Date(),
-          data: ct600Data,
-          progress: 100,
-        });
+      if (!user?.companyId) {
+        return res.status(400).json({ error: 'User does not have an associated company' });
       }
 
-      res.json({
-        success: true,
-        message: 'CT600 submitted successfully to HMRC',
-        reference: `CT600-${Date.now()}`,
-        xml: ct600XML.substring(0, 500) + '...', // Preview
-      });
+      try {
+        // Atomically create filing with credit deduction
+        const { filing, remainingCredits } = await storage.createFilingWithCreditDeduction(
+          {
+            userId,
+            companyId: user.companyId,
+            type: 'corporation_tax',
+            status: 'submitted',
+            data: ct600Data,
+            dueDate: new Date(req.body.accountingPeriodEnd),
+          },
+          REQUIRED_CREDITS,
+          `CT600 Corporation Tax return for ${ct600Data.companyName}`
+        );
+
+        res.json({
+          success: true,
+          message: 'CT600 submitted successfully to HMRC',
+          reference: `CT600-${Date.now()}`,
+          creditsUsed: REQUIRED_CREDITS,
+          remainingCredits,
+          xml: ct600XML.substring(0, 500) + '...', // Preview
+        });
+      } catch (error: any) {
+        // Handle insufficient credits
+        if (error.message?.includes('does not have enough credits')) {
+          const currentUser = await storage.getUser(userId);
+          return res.status(402).json({
+            error: 'Insufficient credits',
+            required: REQUIRED_CREDITS,
+            available: currentUser?.credits || 0,
+          });
+        }
+        throw error;
+      }
     } catch (error: any) {
       console.error('[CT600] Submission error:', error);
       res.status(500).json({ 

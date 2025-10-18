@@ -39,6 +39,7 @@ const CorporationTax = () => {
         { name: "Tax Computation" },
         { name: "iXBRL Accounts" }
       ] : []}
+      wizardRoute="/wizards/ct600"
     >
       <div className="space-y-6">
         <Alert>
