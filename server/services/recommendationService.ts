@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { db } from "../db";
-import { companies, filings, filingReminders, filingCosts } from "@shared/schema";
+import { companies, filings, filingReminders, filingCosts, users } from "@shared/schema";
 import { eq, and, gte, desc } from "drizzle-orm";
 
 const openai = new OpenAI({
@@ -30,23 +30,31 @@ export interface RecommendationContext {
 
 /**
  * Generate AI-powered filing recommendations based on company data
+ * SECURITY: Only generates recommendations for the authenticated user's own company
  */
 export async function generateFilingRecommendations(
-  userId: number,
-  companyId?: number
+  userId: number
 ): Promise<FilingRecommendation[]> {
   try {
-    // Get user's company
-    const userCompanies = await db.query.companies.findMany({
-      where: eq(companies.id, companyId || 1),
-      limit: 1,
+    // SECURITY: Always fetch the authenticated user's company (never trust external companyId)
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
     });
-
-    if (!userCompanies || userCompanies.length === 0) {
+    
+    if (!user || !user.companyId) {
+      console.log(`No company found for user ${userId}`);
       return getDefaultRecommendations();
     }
 
-    const company = userCompanies[0];
+    // Get the user's company data (user owns this company)
+    const company = await db.query.companies.findFirst({
+      where: eq(companies.id, user.companyId),
+    });
+
+    if (!company) {
+      console.log(`Company ${user.companyId} not found for user ${userId}`);
+      return getDefaultRecommendations();
+    }
 
     // Get recent filings for this company
     const recentFilings = await db.query.filings.findMany({

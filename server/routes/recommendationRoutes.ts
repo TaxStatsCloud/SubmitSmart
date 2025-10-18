@@ -14,14 +14,14 @@ router.get('/', async (req, res) => {
     }
 
     const userId = req.user.id;
-    const companyId = req.query.companyId ? parseInt(req.query.companyId as string) : undefined;
-
-    const recommendations = await generateFilingRecommendations(userId, companyId);
+    
+    // SECURITY: Never accept companyId from query params to prevent cross-tenant access
+    // Always use the authenticated user's own company
+    const recommendations = await generateFilingRecommendations(userId);
     
     res.json({
       recommendations,
-      generatedAt: new Date().toISOString(),
-      companyId: companyId || null
+      generatedAt: new Date().toISOString()
     });
   } catch (error) {
     console.error('Error fetching filing recommendations:', error);
