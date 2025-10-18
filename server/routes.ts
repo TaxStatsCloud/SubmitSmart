@@ -587,9 +587,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Tax Engine API endpoints
-  app.get('/api/tax-filings/:companyId/:period', async (req, res) => {
+  app.get('/api/tax-filings/:companyId/:period', isAuthenticated, async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
       const { companyId, period } = req.params;
+      const userId = (req.user as any).id;
       
       // Get or create tax filing record
       const existingFiling = await storage.getFilingsByCompany(Number(companyId));
@@ -602,7 +607,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const newFiling = await storage.createFiling({
           type: 'corporation_tax',
           companyId: Number(companyId),
-          userId: (req as any).user?.uid || 1,
+          userId,
           data: { period, sections: {}, progress: 0 },
           status: 'draft',
           progress: 0
@@ -614,9 +619,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post('/api/tax-filings/:companyId/:period/section', async (req, res) => {
+  app.post('/api/tax-filings/:companyId/:period/section', isAuthenticated, async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
       const { companyId, period } = req.params;
+      const userId = (req.user as any).id;
       
       // CRITICAL: Validate input to prevent data corruption
       const validationResult = taxFilingSectionDataSchema.safeParse(req.body);
@@ -649,7 +659,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Create a new filing if it doesn't exist
         taxFiling = await storage.createFiling({
           companyId: Number(companyId),
-          userId: 1, // Default user for demo
+          userId,
           type: 'corporation_tax',
           status: 'in_progress',
           data: {
