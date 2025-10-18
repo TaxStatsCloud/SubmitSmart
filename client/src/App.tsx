@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import Upload from "@/pages/Upload";
 import DocumentAuditTrail from "@/pages/DocumentAuditTrail";
+import AuditorManagement from "@/pages/AuditorManagement";
 import NewFiling from "@/pages/NewFiling";
 import UserProfile from "@/pages/UserProfile";
 import Billing from "@/pages/Billing";
@@ -136,6 +137,7 @@ function Router() {
         <Route path="/upload" component={Upload} />
         <Route path="/documents" component={DocumentLibrary} />
         <Route path="/documents/audit-trail" component={DocumentAuditTrail} />
+        <Route path="/auditors" component={AuditorManagement} />
         
         {/* Account routes */}
         <Route path="/profile" component={UserProfile} />
