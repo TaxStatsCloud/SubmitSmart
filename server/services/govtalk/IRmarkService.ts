@@ -1,5 +1,8 @@
 import crypto from 'crypto';
 import { DOMParser } from '@xmldom/xmldom';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
 const c14n = require('xml-c14n')();
 
 export class IRmarkService {

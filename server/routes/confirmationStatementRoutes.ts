@@ -10,6 +10,8 @@ import { isAuthenticated } from '../auth';
 import { logger } from '../utils/logger';
 import { storage } from '../storage';
 import { auditService } from '../services/auditService';
+import { CS01FilingService } from '../services/filing/CS01FilingService';
+import { CS01Data } from '../services/filing/CS01XMLGenerator';
 
 const router = Router();
 router.use(isAuthenticated);
@@ -27,7 +29,7 @@ router.post('/submit', async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const { documentIds, ...formData } = req.body;
+    const { documentIds, paymentMethodId, ...formData } = req.body;
 
     // Validate required fields
     if (!formData.companyName || !formData.companyNumber) {
@@ -36,6 +38,10 @@ router.post('/submit', async (req, res) => {
 
     if (!formData.pscName || !formData.directors) {
       return res.status(400).json({ error: 'Missing required PSC or director information' });
+    }
+
+    if (!paymentMethodId) {
+      return res.status(400).json({ error: 'Payment method is required. Companies House filing fee of £34.00 must be paid.' });
     }
 
     // Define required credits for CS01
@@ -53,63 +59,107 @@ router.post('/submit', async (req, res) => {
     }
 
     // Build CS01 submission data
-    const cs01Data = {
-      companyDetails: {
-        name: formData.companyName,
-        number: formData.companyNumber,
-        registeredOffice: formData.registeredOffice,
-        sicCodes: formData.sicCodes.split(',').map((code: string) => code.trim()),
-        tradingStatus: formData.tradingStatus,
-      },
-      directors: formData.directors.split(',').map((name: string) => name.trim()),
-      psc: {
-        name: formData.pscName,
-        nationality: formData.pscNationality,
-        dateOfBirth: formData.pscDateOfBirth,
-        serviceAddress: formData.pscServiceAddress,
-        natureOfControl: formData.pscNatureOfControl,
-      },
-      shareCapital: formData.shareCapitalChanged ? {
-        changed: true,
-        numberOfShares: formData.numberOfShares,
-        nominalValue: formData.nominalValue,
-        currency: formData.currency,
-        aggregateNominalValue: formData.aggregateNominalValue,
-        amountPaidUp: formData.amountPaidUp,
-        amountUnpaid: formData.amountUnpaid,
-      } : {
-        changed: false,
-      },
+    const cs01Data: CS01Data = {
+      companyName: formData.companyName,
+      companyNumber: formData.companyNumber,
+      registeredOffice: formData.registeredOffice,
+      registeredEmailAddress: formData.registeredEmailAddress || 'noreply@example.com',
+      sicCodes: formData.sicCodes,
+      tradingStatus: formData.tradingStatus,
+      tradingOnStockExchange: formData.tradingOnStockExchange || false,
+      stockExchangeName: formData.stockExchangeName,
+      directors: formData.directors,
+      pscName: formData.pscName,
+      pscNationality: formData.pscNationality,
+      pscDateOfBirth: formData.pscDateOfBirth,
+      pscServiceAddress: formData.pscServiceAddress,
+      pscNatureOfControl: Array.isArray(formData.pscNatureOfControl) ? formData.pscNatureOfControl : [formData.pscNatureOfControl],
+      shareholders: formData.shareholders || [],
+      shareClasses: formData.shareClasses || [],
+      shareCapitalChanged: formData.shareCapitalChanged || false,
+      numberOfShares: formData.numberOfShares,
+      nominalValue: formData.nominalValue,
+      currency: formData.currency || 'GBP',
+      aggregateNominalValue: formData.aggregateNominalValue,
+      amountPaidUp: formData.amountPaidUp,
+      amountUnpaid: formData.amountUnpaid,
+      statutoryRegistersLocation: formData.statutoryRegistersLocation || 'registered_office',
+      statutoryRegistersOtherAddress: formData.statutoryRegistersOtherAddress,
+      statementOfLawfulPurposes: formData.statementOfLawfulPurposes !== false,
       statementDate: formData.statementDate,
       madeUpToDate: formData.madeUpToDate,
-      submittedAt: new Date().toISOString(),
     };
 
     try {
-      // Atomically create filing with credit deduction
-      // All operations (credit check, deduction, filing creation, transaction log) happen in a single DB transaction
+      // Create initial filing record
       const { filing, remainingCredits } = await storage.createFilingWithCreditDeduction(
         {
           userId,
           companyId: userCompanyId,
           type: 'confirmation_statement',
-          status: 'submitted',
+          status: 'processing',
           data: cs01Data,
-          documentIds: documentIds || [], // Link source documents
-          dueDate: new Date(formData.madeUpToDate), // Due date is the made up to date + 14 days
+          documentIds: documentIds || [],
+          dueDate: new Date(formData.madeUpToDate),
         },
         REQUIRED_CREDITS,
         `Confirmation Statement (CS01) for ${formData.companyName}`
       );
 
-      cs01Logger.info('Confirmation Statement submitted', {
+      // Submit to Companies House via CS01FilingService
+      const submissionResult = await CS01FilingService.submitCS01({
+        filingId: filing.id,
+        companyId: userCompanyId,
+        userId,
+        cs01Data,
+        paymentMethodId,
+      });
+
+      if (!submissionResult.success) {
+        // Update filing to failed status
+        await storage.updateFiling(filing.id, {
+          status: 'failed',
+          data: {
+            ...cs01Data,
+            submissionError: submissionResult.errors?.join('; '),
+            xmlResponse: submissionResult.xmlResponse,
+          }
+        });
+
+        cs01Logger.error('CS01 submission failed', {
+          userId,
+          filingId: filing.id,
+          errors: submissionResult.errors,
+        });
+
+        return res.status(400).json({
+          success: false,
+          error: submissionResult.errors?.[0] || 'Failed to submit to Companies House',
+          errors: submissionResult.errors,
+        });
+      }
+
+      // Update filing with success details
+      await storage.updateFiling(filing.id, {
+        status: 'submitted',
+        data: {
+          ...cs01Data,
+          submissionId: submissionResult.submissionId,
+          companiesHouseReference: submissionResult.companiesHouseReference,
+          paymentIntentId: submissionResult.paymentIntentId,
+          xmlRequest: submissionResult.xmlRequest,
+          xmlResponse: submissionResult.xmlResponse,
+        }
+      });
+
+      cs01Logger.info('Confirmation Statement submitted successfully', {
         userId,
         filingId: filing.id,
-        companyNumber: formData.companyNumber,
+        submissionId: submissionResult.submissionId,
+        companiesHouseReference: submissionResult.companiesHouseReference,
         creditsDeducted: REQUIRED_CREDITS,
       });
 
-      // Log audit event
       await auditService.logFilingSubmission({
         userId,
         filingId: filing.id,
@@ -121,10 +171,11 @@ router.post('/submit', async (req, res) => {
       res.json({
         success: true,
         filingId: filing.id,
-        submissionId: `CS01-${filing.id}-${Date.now()}`,
+        submissionId: submissionResult.submissionId,
+        companiesHouseReference: submissionResult.companiesHouseReference,
         creditsUsed: REQUIRED_CREDITS,
         remainingCredits,
-        companiesHouseFee: 34.00, // £34 Companies House fee
+        companiesHouseFee: 34.00,
         message: 'Confirmation Statement submitted successfully to Companies House',
       });
     } catch (error: any) {
