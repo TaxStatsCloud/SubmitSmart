@@ -18,7 +18,8 @@ import { Badge } from "@/components/ui/badge";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { FileSpreadsheet, Building2, Calculator, CheckCircle, AlertTriangle, Send, ArrowLeft, ArrowRight, Upload, FileCheck } from "lucide-react";
+import { FileSpreadsheet, Building2, Calculator, CheckCircle, AlertTriangle, Send, ArrowLeft, ArrowRight, Upload, FileCheck, FileText, TrendingUp, Sparkles, Shield } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { FieldHint, InlineHint } from "@/components/wizard/FieldHint";
 import { HelpPanel } from "@/components/wizard/HelpPanel";
 import { ValidationGuidance } from "@/components/wizard/ValidationGuidance";
@@ -104,51 +105,53 @@ const annualAccountsSchema = z.object({
   dormantCompany: z.boolean().default(false),
   
   // Directors Report
-  directorsReport: z.string().optional(),
-  principalActivities: z.string().optional(),
-  businessReview: z.string().optional(),
-  resultsAndDividends: z.string().optional(),
-  futureDevelopments: z.string().optional(),
+  directorsReport_principalActivities: z.string().default(""),
+  directorsReport_businessReview: z.string().default(""),
+  directorsReport_futureDevelopments: z.string().default(""),
   
   // Cash Flow Statement (Medium/Large companies only - FRS 102 Indirect Method)
   // Operating Activities
-  profitBeforeTax: z.coerce.number().default(0).optional(),
-  depreciation: z.coerce.number().min(0).default(0).optional(),
-  increaseDecreaseInStocks: z.coerce.number().default(0).optional(),
-  increaseDecreaseInDebtors: z.coerce.number().default(0).optional(),
-  increaseDecreaseInCreditors: z.coerce.number().default(0).optional(),
-  interestPaid: z.coerce.number().min(0).default(0).optional(),
-  taxPaid: z.coerce.number().min(0).default(0).optional(),
-  netCashFromOperatingActivities: z.coerce.number().default(0).optional(),
+  cashFlow_operatingProfit: z.coerce.number().default(0),
+  cashFlow_depreciation: z.coerce.number().default(0),
+  cashFlow_inventoryChange: z.coerce.number().default(0),
+  cashFlow_debtorsChange: z.coerce.number().default(0),
+  cashFlow_creditorsChange: z.coerce.number().default(0),
+  cashFlow_netCashFromOperating: z.coerce.number().default(0),
   
   // Investing Activities
-  purchaseOfTangibleAssets: z.coerce.number().min(0).default(0).optional(),
-  proceedsFromSaleOfAssets: z.coerce.number().min(0).default(0).optional(),
-  purchaseOfInvestments: z.coerce.number().min(0).default(0).optional(),
-  netCashFromInvestingActivities: z.coerce.number().default(0).optional(),
+  cashFlow_purchaseFixedAssets: z.coerce.number().default(0),
+  cashFlow_saleFixedAssets: z.coerce.number().default(0),
+  cashFlow_netCashFromInvesting: z.coerce.number().default(0),
   
   // Financing Activities
-  newLoansReceived: z.coerce.number().min(0).default(0).optional(),
-  repaymentOfBorrowings: z.coerce.number().min(0).default(0).optional(),
-  dividendsPaid: z.coerce.number().min(0).default(0).optional(),
-  netCashFromFinancingActivities: z.coerce.number().default(0).optional(),
+  cashFlow_shareCapitalIssued: z.coerce.number().default(0),
+  cashFlow_newLoans: z.coerce.number().default(0),
+  cashFlow_loanRepayments: z.coerce.number().default(0),
+  cashFlow_dividendsPaid: z.coerce.number().default(0),
+  cashFlow_netCashFromFinancing: z.coerce.number().default(0),
   
   // Cash Flow Summary
-  netIncreaseDecreaseInCash: z.coerce.number().default(0).optional(),
-  openingCash: z.coerce.number().default(0).optional(),
-  closingCash: z.coerce.number().default(0).optional(),
-  cashFlowStatement: z.string().optional(), // Full formatted statement
+  cashFlow_netCashChange: z.coerce.number().default(0),
+  cashFlow_openingCash: z.coerce.number().default(0),
+  cashFlow_closingCash: z.coerce.number().default(0),
   
   // Strategic Report (Large companies only)
-  businessModel: z.string().optional(),
-  principalRisks: z.string().optional(),
-  keyPerformanceIndicators: z.string().optional(),
-  section172Statement: z.string().optional(),
-  esgMatters: z.string().optional(),
-  strategicReport: z.string().optional(), // Full formatted report
+  strategicReport_businessModel: z.string().default(""),
+  strategicReport_strategy: z.string().default(""),
+  strategicReport_kpis: z.string().default(""),
+  strategicReport_principalRisks: z.string().default(""),
+  strategicReport_section172: z.string().default(""),
   
   // Notes to Accounts
-  notesToAccounts: z.string().optional(),
+  notes_basisOfPreparation: z.string().default(""),
+  notes_goingConcern: z.string().default(""),
+  notes_accountingPolicies: z.string().default(""),
+  
+  // Exemptions
+  exemptions_auditExempt: z.boolean().default(false),
+  exemptions_abbreviatedAccounts: z.boolean().default(false),
+  exemptions_dormant: z.boolean().default(false),
+  exemptions_shareholderConsent: z.string().default(""),
   
   // AI Assistance Flags (track which sections used AI)
   usedAIDirectorsReport: z.boolean().default(false),
@@ -1592,10 +1595,10 @@ export default function AnnualAccountsWizard() {
                     </Button>
                     <Button 
                       type="button" 
-                      onClick={() => setCurrentStep(4)}
+                      onClick={() => setCurrentStep(currentStep + 1)}
                       data-testid="button-next"
                     >
-                      Next: Documents <ArrowRight className="ml-2 h-4 w-4" />
+                      Next Step <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </div>
                 </Card>
@@ -1658,8 +1661,965 @@ export default function AnnualAccountsWizard() {
             </div>
           )}
 
-          {/* Step 4: Supporting Documents */}
-          {currentStep === 4 && (
+          {/* Step 4: Cash Flow Statement (Medium/Large Only) */}
+          {currentStep === getStepNumber('cashFlow') && (entitySize === 'medium' || entitySize === 'large') && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <Card className="p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    <h2 className="text-xl font-semibold">Cash Flow Statement</h2>
+                    <Badge variant="secondary" className="ml-2">Required for {entitySize === 'medium' ? 'Medium' : 'Large'} Entities</Badge>
+                  </div>
+
+                  <Alert className="mb-6">
+                    <Sparkles className="h-4 w-4" />
+                    <AlertDescription>
+                      <div className="flex items-center justify-between">
+                        <span>AI can generate this Cash Flow Statement from your Trial Balances (200 credits)</span>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          className="ml-4"
+                          data-testid="button-ai-cash-flow"
+                        >
+                          <Sparkles className="mr-2 h-4 w-4" /> Generate with AI
+                        </Button>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="font-medium mb-3">Operating Activities</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="cashFlow_operatingProfit"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Operating Profit</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} data-testid="input-cf-operating-profit" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="cashFlow_depreciation"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Depreciation & Amortization</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} data-testid="input-cf-depreciation" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="cashFlow_inventoryChange"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Increase in Inventories</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} data-testid="input-cf-inventory-change" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="cashFlow_debtorsChange"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Increase in Debtors</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} data-testid="input-cf-debtors-change" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="cashFlow_creditorsChange"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Increase in Creditors</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} data-testid="input-cf-creditors-change" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="cashFlow_netCashFromOperating"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="font-semibold">Net Cash from Operating Activities</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} data-testid="input-cf-net-operating" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    <div>
+                      <h3 className="font-medium mb-3">Investing Activities</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="cashFlow_purchaseFixedAssets"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Purchase of Fixed Assets</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} data-testid="input-cf-purchase-assets" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="cashFlow_saleFixedAssets"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Sale of Fixed Assets</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} data-testid="input-cf-sale-assets" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="cashFlow_netCashFromInvesting"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="font-semibold">Net Cash from Investing Activities</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} data-testid="input-cf-net-investing" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    <div>
+                      <h3 className="font-medium mb-3">Financing Activities</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="cashFlow_shareCapitalIssued"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Share Capital Issued</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} data-testid="input-cf-share-capital" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="cashFlow_newLoans"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>New Loans Received</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} data-testid="input-cf-new-loans" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="cashFlow_loanRepayments"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Loan Repayments</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} data-testid="input-cf-loan-repayments" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="cashFlow_dividendsPaid"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Dividends Paid</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} data-testid="input-cf-dividends" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="cashFlow_netCashFromFinancing"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="font-semibold">Net Cash from Financing Activities</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} data-testid="input-cf-net-financing" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    <div className="bg-muted p-4 rounded-lg">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="cashFlow_netCashChange"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="font-bold">Net Increase in Cash</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} data-testid="input-cf-net-change" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="cashFlow_openingCash"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Cash at Beginning of Year</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} data-testid="input-cf-opening-cash" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="cashFlow_closingCash"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="font-bold">Cash at End of Year</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} data-testid="input-cf-closing-cash" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between mt-6">
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={() => setCurrentStep(currentStep - 1)}
+                      data-testid="button-back"
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                    </Button>
+                    <Button 
+                      type="button" 
+                      onClick={() => setCurrentStep(currentStep + 1)}
+                      data-testid="button-next"
+                    >
+                      Next Step <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </Card>
+              </div>
+
+              <div className="lg:col-span-1">
+                <HelpPanel 
+                  title="Cash Flow Help"
+                  currentStep={currentStep}
+                  tips={[
+                    {
+                      icon: TrendingUp,
+                      title: "FRS 102 Requirement",
+                      description: "Medium and large companies must prepare a Cash Flow Statement using the indirect method.",
+                      tips: [
+                        "Start with operating profit",
+                        "Adjust for non-cash items (depreciation)",
+                        "Account for working capital changes",
+                        "Show investing and financing activities"
+                      ]
+                    },
+                    {
+                      icon: Calculator,
+                      title: "Working Capital Changes",
+                      description: "Changes in current assets and liabilities affect cash flow.",
+                      tips: [
+                        "Inventory increase = cash outflow (minus)",
+                        "Debtors increase = cash outflow (minus)",
+                        "Creditors increase = cash inflow (plus)",
+                        "Use current year minus prior year"
+                      ]
+                    }
+                  ]}
+                  documentRequirements={{
+                    required: [
+                      "Current year Trial Balance",
+                      "Prior year Trial Balance",
+                      "Fixed asset register"
+                    ],
+                    optional: [
+                      "Bank reconciliations",
+                      "Loan agreements"
+                    ]
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Step: Directors Report & Notes to Accounts */}
+          {currentStep === getStepNumber('directorsReport') && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <Card className="p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <FileText className="h-5 w-5 text-primary" />
+                    <h2 className="text-xl font-semibold">Directors' Report & Notes to Accounts</h2>
+                  </div>
+
+                  <div className="space-y-6">
+                    {/* Directors Report Section */}
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-medium">Directors' Report</h3>
+                        <Alert className="flex-1 ml-4">
+                          <Sparkles className="h-4 w-4" />
+                          <AlertDescription>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm">AI can generate this report (150 credits)</span>
+                              <Button 
+                                type="button" 
+                                variant="outline" 
+                                size="sm"
+                                className="ml-2"
+                                data-testid="button-ai-directors-report"
+                              >
+                                <Sparkles className="mr-2 h-4 w-4" /> Generate
+                              </Button>
+                            </div>
+                          </AlertDescription>
+                        </Alert>
+                      </div>
+
+                      <div className="space-y-4">
+                        <FormField
+                          control={form.control}
+                          name="directorsReport_principalActivities"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Principal Activities</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Describe the company's principal activities and business..." 
+                                  rows={3}
+                                  {...field} 
+                                  data-testid="input-directors-principal-activities"
+                                />
+                              </FormControl>
+                              <FormDescription>Required for small, medium, and large companies</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="directorsReport_businessReview"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Business Review</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Review of business operations, financial performance, and position..." 
+                                  rows={4}
+                                  {...field} 
+                                  data-testid="input-directors-business-review"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="directorsReport_futureDevelopments"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Future Developments</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Describe likely future developments and plans..." 
+                                  rows={3}
+                                  {...field} 
+                                  data-testid="input-directors-future-developments"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Notes to Accounts Section */}
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-medium">Notes to the Accounts</h3>
+                        <Alert className="flex-1 ml-4">
+                          <Sparkles className="h-4 w-4" />
+                          <AlertDescription>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm">AI can generate accounting notes (100 credits)</span>
+                              <Button 
+                                type="button" 
+                                variant="outline" 
+                                size="sm"
+                                className="ml-2"
+                                data-testid="button-ai-notes"
+                              >
+                                <Sparkles className="mr-2 h-4 w-4" /> Generate
+                              </Button>
+                            </div>
+                          </AlertDescription>
+                        </Alert>
+                      </div>
+
+                      <div className="space-y-4">
+                        <FormField
+                          control={form.control}
+                          name="notes_basisOfPreparation"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Basis of Preparation</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="These accounts have been prepared under FRS 102..." 
+                                  rows={2}
+                                  {...field} 
+                                  data-testid="input-notes-basis-preparation"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="notes_goingConcern"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Going Concern Assessment</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="The directors have assessed the company's ability to continue as a going concern..." 
+                                  rows={2}
+                                  {...field} 
+                                  data-testid="input-notes-going-concern"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="notes_accountingPolicies"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Accounting Policies</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Depreciation: Fixed assets are depreciated over their useful economic lives... Stocks: Valued at lower of cost and net realisable value..." 
+                                  rows={5}
+                                  {...field} 
+                                  data-testid="input-notes-accounting-policies"
+                                />
+                              </FormControl>
+                              <FormDescription>Include depreciation, stock valuation, revenue recognition, etc.</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between mt-6">
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={() => setCurrentStep(currentStep - 1)}
+                      data-testid="button-back"
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                    </Button>
+                    <Button 
+                      type="button" 
+                      onClick={() => setCurrentStep(currentStep + 1)}
+                      data-testid="button-next"
+                    >
+                      Next Step <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </Card>
+              </div>
+
+              <div className="lg:col-span-1">
+                <HelpPanel 
+                  title="Reports & Notes Help"
+                  currentStep={currentStep}
+                  tips={[
+                    {
+                      icon: FileText,
+                      title: "Directors' Report",
+                      description: "Required for all companies except micro-entities.",
+                      tips: [
+                        "Describe principal activities",
+                        "Review business performance",
+                        "Discuss future developments",
+                        "List directors and their interests"
+                      ]
+                    },
+                    {
+                      icon: FileCheck,
+                      title: "Notes to Accounts",
+                      description: "Provide detailed accounting policies and explanations.",
+                      tips: [
+                        "Basis of preparation (FRS 102)",
+                        "Going concern assessment",
+                        "Depreciation policies",
+                        "Stock valuation methods"
+                      ]
+                    }
+                  ]}
+                  documentRequirements={{
+                    required: [
+                      "List of current directors",
+                      "Details of accounting policies"
+                    ],
+                    optional: [
+                      "Previous year's report for comparison"
+                    ]
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Step: Strategic Report (Large Companies Only) */}
+          {currentStep === getStepNumber('strategicReport') && entitySize === 'large' && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <Card className="p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    <h2 className="text-xl font-semibold">Strategic Report</h2>
+                    <Badge variant="destructive" className="ml-2">Required for Large Companies</Badge>
+                  </div>
+
+                  <Alert className="mb-6">
+                    <Sparkles className="h-4 w-4" />
+                    <AlertDescription>
+                      <div className="flex items-center justify-between">
+                        <span>AI can generate a comprehensive Strategic Report (200 credits)</span>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          className="ml-4"
+                          data-testid="button-ai-strategic-report"
+                        >
+                          <Sparkles className="mr-2 h-4 w-4" /> Generate with AI
+                        </Button>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+
+                  <div className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="strategicReport_businessModel"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Business Model</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Describe how the company generates value and revenue..." 
+                              rows={3}
+                              {...field} 
+                              data-testid="input-strategic-business-model"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="strategicReport_strategy"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Strategy & Objectives</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Outline the company's strategy and how it plans to achieve its objectives..." 
+                              rows={3}
+                              {...field} 
+                              data-testid="input-strategic-strategy"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="strategicReport_kpis"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Key Performance Indicators (KPIs)</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Revenue growth: 15% YoY\nGross margin: 42%\nCustomer retention: 85%..." 
+                              rows={4}
+                              {...field} 
+                              data-testid="input-strategic-kpis"
+                            />
+                          </FormControl>
+                          <FormDescription>List the KPIs used to measure business performance</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="strategicReport_principalRisks"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Principal Risks & Uncertainties</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Market competition, regulatory changes, supply chain disruption..." 
+                              rows={4}
+                              {...field} 
+                              data-testid="input-strategic-risks"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="strategicReport_section172"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Section 172(1) Statement</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="The directors have acted in accordance with s172 duties, considering stakeholders including employees, suppliers, customers..." 
+                              rows={4}
+                              {...field} 
+                              data-testid="input-strategic-s172"
+                            />
+                          </FormControl>
+                          <FormDescription>Required statement on directors' duties to stakeholders</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex justify-between mt-6">
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={() => setCurrentStep(currentStep - 1)}
+                      data-testid="button-back"
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                    </Button>
+                    <Button 
+                      type="button" 
+                      onClick={() => setCurrentStep(currentStep + 1)}
+                      data-testid="button-next"
+                    >
+                      Next Step <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </Card>
+              </div>
+
+              <div className="lg:col-span-1">
+                <HelpPanel 
+                  title="Strategic Report Help"
+                  currentStep={currentStep}
+                  tips={[
+                    {
+                      icon: TrendingUp,
+                      title: "Large Company Requirement",
+                      description: "Large companies must produce a Strategic Report under Companies Act 2006.",
+                      tips: [
+                        "Business model description",
+                        "Strategy and objectives",
+                        "KPIs and performance metrics",
+                        "Principal risks and uncertainties",
+                        "Section 172(1) statement"
+                      ]
+                    },
+                    {
+                      icon: AlertTriangle,
+                      title: "Section 172 Statement",
+                      description: "Directors must explain how they've considered stakeholder interests.",
+                      tips: [
+                        "Employee interests and wellbeing",
+                        "Supplier and customer relationships",
+                        "Community and environmental impact",
+                        "Long-term success of the company"
+                      ]
+                    }
+                  ]}
+                  documentRequirements={{
+                    required: [
+                      "KPI data and metrics",
+                      "Risk register or assessment"
+                    ],
+                    optional: [
+                      "ESG disclosures",
+                      "Stakeholder engagement records"
+                    ]
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Step: Exemptions */}
+          {currentStep === getStepNumber('exemptions') && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <Card className="p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Shield className="h-5 w-5 text-primary" />
+                    <h2 className="text-xl font-semibold">Filing Exemptions</h2>
+                  </div>
+
+                  <Alert className="mb-6">
+                    <FileCheck className="h-4 w-4" />
+                    <AlertDescription>
+                      UK companies may be eligible for certain exemptions. Select any that apply to reduce filing requirements.
+                    </AlertDescription>
+                  </Alert>
+
+                  <div className="space-y-6">
+                    <FormField
+                      control={form.control}
+                      name="exemptions_auditExempt"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              data-testid="checkbox-audit-exempt"
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel className="font-semibold">
+                              Audit Exemption (s477 Companies Act 2006)
+                            </FormLabel>
+                            <FormDescription>
+                              Available to small companies with turnover ≤ £10.2m and balance sheet total ≤ £5.1m. 
+                              Directors must confirm shareholders have not required an audit.
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="exemptions_abbreviatedAccounts"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              data-testid="checkbox-abbreviated"
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel className="font-semibold">
+                              Abbreviated Accounts to Companies House
+                            </FormLabel>
+                            <FormDescription>
+                              Small companies can file abbreviated accounts to Companies House while providing full accounts to members.
+                              This reduces public disclosure while maintaining internal transparency.
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="exemptions_dormant"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              data-testid="checkbox-dormant"
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel className="font-semibold">
+                              Dormant Company Exemptions
+                            </FormLabel>
+                            <FormDescription>
+                              Company has had no significant accounting transactions. Dormant companies have simplified filing requirements 
+                              and may be exempt from certain disclosures.
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+
+                    {form.watch('exemptions_auditExempt') && (
+                      <FormField
+                        control={form.control}
+                        name="exemptions_shareholderConsent"
+                        render={({ field }) => (
+                          <FormItem className="bg-muted p-4 rounded-md">
+                            <FormLabel>Shareholder Consent Statement</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="The shareholders have not required the company to obtain an audit for the year..." 
+                                rows={2}
+                                {...field} 
+                                data-testid="input-shareholder-consent"
+                              />
+                            </FormControl>
+                            <FormDescription>Required when claiming audit exemption</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+                  </div>
+
+                  <div className="flex justify-between mt-6">
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={() => setCurrentStep(currentStep - 1)}
+                      data-testid="button-back"
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                    </Button>
+                    <Button 
+                      type="button" 
+                      onClick={() => setCurrentStep(currentStep + 1)}
+                      data-testid="button-next"
+                    >
+                      Next Step <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </Card>
+              </div>
+
+              <div className="lg:col-span-1">
+                <HelpPanel 
+                  title="Exemptions Help"
+                  currentStep={currentStep}
+                  tips={[
+                    {
+                      icon: Shield,
+                      title: "Audit Exemption",
+                      description: "Small companies can claim exemption from statutory audit.",
+                      tips: [
+                        "Turnover must be ≤ £10.2m",
+                        "Balance sheet total ≤ £5.1m",
+                        "Shareholders must not require audit",
+                        "Directors must make formal statement"
+                      ]
+                    },
+                    {
+                      icon: FileCheck,
+                      title: "Abbreviated Accounts",
+                      description: "Reduce public disclosure while maintaining compliance.",
+                      tips: [
+                        "File simplified accounts to Companies House",
+                        "Provide full accounts to shareholders",
+                        "Available to small companies only",
+                        "Reduces competitive intelligence exposure"
+                      ]
+                    }
+                  ]}
+                  documentRequirements={{
+                    required: [],
+                    optional: [
+                      "Shareholder resolutions",
+                      "Board minutes approving exemptions"
+                    ]
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Step: Supporting Documents */}
+          {currentStep === getStepNumber('documents') && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
                 <DocumentSelector
