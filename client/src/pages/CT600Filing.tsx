@@ -591,7 +591,7 @@ export default function CT600Filing() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="flex items-center gap-2">
-                              Cost of Sales
+                              Cost of Sales - Current Period
                               <FieldHint 
                                 description="Direct costs of producing goods or services sold. For CT purposes, include: raw materials, direct labour, manufacturing overheads. Exclude: depreciation, financing costs, head office expenses."
                                 example="£200,000 (materials £150k + direct labour £50k)"
@@ -607,7 +607,7 @@ export default function CT600Filing() {
                                 data-testid="input-cost-of-sales"
                               />
                             </FormControl>
-                            <FormDescription>Direct costs of goods/services sold</FormDescription>
+                            <FormDescription>Direct costs of goods/services sold in the current period</FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -619,7 +619,7 @@ export default function CT600Filing() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="flex items-center gap-2">
-                              Operating Expenses
+                              Operating Expenses - Current Period
                               <FieldHint 
                                 description="Business running costs. WARNING: Some expenses are NOT tax-deductible and must be added back: client entertainment (100%), depreciation (100%), business entertainment over £50/head, fines & penalties."
                                 example="£100,000 (includes £10k depreciation to add back later)"
@@ -635,7 +635,7 @@ export default function CT600Filing() {
                                 data-testid="input-operating-expenses"
                               />
                             </FormControl>
-                            <FormDescription>Admin, selling & distribution costs</FormDescription>
+                            <FormDescription>Admin, selling & distribution costs for the current period</FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -648,7 +648,7 @@ export default function CT600Filing() {
                         name="interestReceived"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Interest Received</FormLabel>
+                            <FormLabel>Interest Received - Current Period</FormLabel>
                             <FormControl>
                               <Input 
                                 type="number" 
@@ -658,7 +658,7 @@ export default function CT600Filing() {
                                 data-testid="input-interest-received"
                               />
                             </FormControl>
-                            <FormDescription>Bank interest and investment income</FormDescription>
+                            <FormDescription>Bank interest and investment income for the current period</FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -669,7 +669,7 @@ export default function CT600Filing() {
                         name="dividendsReceived"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Dividends Received</FormLabel>
+                            <FormLabel>Dividends Received - Current Period</FormLabel>
                             <FormControl>
                               <Input 
                                 type="number" 
@@ -679,7 +679,7 @@ export default function CT600Filing() {
                                 data-testid="input-dividends-received"
                               />
                             </FormControl>
-                            <FormDescription>Dividends from UK companies (usually exempt)</FormDescription>
+                            <FormDescription>Dividends from UK companies for the current period (usually exempt)</FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -693,7 +693,7 @@ export default function CT600Filing() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="flex items-center gap-2">
-                              Depreciation Add-Back
+                              Depreciation Add-Back - Current Period
                               <FieldHint 
                                 description="Depreciation is NOT tax-deductible for Corporation Tax. You must add it back to accounting profits and claim Capital Allowances instead. This is a fundamental CT adjustment."
                                 example="If P&L shows £10k depreciation, add back £10k here and claim £10k+ capital allowances"
@@ -709,7 +709,7 @@ export default function CT600Filing() {
                                 data-testid="input-depreciation-addback"
                               />
                             </FormControl>
-                            <FormDescription>Depreciation charged in P&L (not tax-deductible)</FormDescription>
+                            <FormDescription>Depreciation charged in P&L for the current period (not tax-deductible)</FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -721,7 +721,7 @@ export default function CT600Filing() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="flex items-center gap-2">
-                              Capital Allowances
+                              Capital Allowances - Current Period
                               <FieldHint 
                                 description="Tax relief for business assets. Annual Investment Allowance (AIA): 100% relief on first £1m qualifying expenditure. Main pool (plant & machinery): 18% writing down allowance. Special rate pool (integral features): 6%."
                                 example="£50k AIA claim on new equipment + £5k WDA on existing assets"
@@ -737,7 +737,7 @@ export default function CT600Filing() {
                                 data-testid="input-capital-allowances"
                               />
                             </FormControl>
-                            <FormDescription>AIA, plant & machinery allowances (tax-deductible)</FormDescription>
+                            <FormDescription>AIA, plant & machinery allowances for the current period (tax-deductible)</FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -751,7 +751,7 @@ export default function CT600Filing() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="flex items-center gap-2">
-                              Losses Brought Forward
+                              Losses Brought Forward - Current Period
                               <FieldHint 
                                 description="Trading losses from previous periods can be carried forward indefinitely and offset against future profits. Post-2017 rules: can offset up to 50% of profits over £5m (100% of first £5m)."
                                 example="£20k losses from 2023 can reduce 2024 profits"
@@ -767,7 +767,7 @@ export default function CT600Filing() {
                                 data-testid="input-losses-brought-forward"
                               />
                             </FormControl>
-                            <FormDescription>Previous trading losses to offset</FormDescription>
+                            <FormDescription>Previous trading losses to offset against current period profits</FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -779,7 +779,7 @@ export default function CT600Filing() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="flex items-center gap-2">
-                              R&D Relief Claim
+                              R&D Relief Claim - Current Period
                               <FieldHint 
                                 description="Research & Development tax relief for innovation projects. SME scheme (230% deduction): For companies with <500 staff, <€100m turnover. RDEC scheme (20% credit): For large companies or subcontracted R&D. Must be qualifying R&D activity."
                                 example="£100k R&D spend × 230% = £230k deduction (SME)"
@@ -795,7 +795,7 @@ export default function CT600Filing() {
                                 data-testid="input-rd-relief"
                               />
                             </FormControl>
-                            <FormDescription>Enhanced deduction for qualifying R&D</FormDescription>
+                            <FormDescription>Enhanced deduction for qualifying R&D in the current period</FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -807,7 +807,7 @@ export default function CT600Filing() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="flex items-center gap-2">
-                              Charitable Donations
+                              Charitable Donations - Current Period
                               <FieldHint 
                                 description="Qualifying charitable donations are fully deductible. Must be to UK registered charities or Community Amateur Sports Clubs (CASCs). Exclude: political donations, sponsorships with advertising benefits, gifts to individuals."
                                 example="£5,000 donation to Cancer Research UK (registered charity)"
@@ -823,7 +823,7 @@ export default function CT600Filing() {
                                 data-testid="input-charitable-donations"
                               />
                             </FormControl>
-                            <FormDescription>Qualifying donations to registered charities</FormDescription>
+                            <FormDescription>Qualifying donations to registered charities in the current period</FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
