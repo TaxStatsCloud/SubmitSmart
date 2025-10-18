@@ -57,12 +57,13 @@ Filing automation integrates with HMRC and Companies House via XML Gateway for i
 
 The system incorporates multi-company management with tier-based limits, a secure backend AI chatbot, and smart recommendation security with tenant isolation. UX includes a UK Accounting Expert AI Chatbot, deadline warnings, credit usage visualization, and AI-powered smart filing recommendations. Guided filing workflows for Annual Accounts, Confirmation Statements, and CT600 offer contextual help. An invitation-based Auditor Access System provides a read-only `auditor` role. Legal disclaimers are integrated at three levels to ensure compliance and user responsibility without impacting user experience. The platform also supports comparative year functionality for UK accounting standards, and a comprehensive CT600 validation system mapped to all 165 HMRC form boxes, including intelligent supplementary page detection and prior year comparison.
 
-**AI-Powered Report Generation** (Chargeable Revenue Features): Three AI services generate compliant UK statutory reports using OpenAI GPT-4o:
+**AI-Powered Report Generation** (Chargeable Revenue Features): Four AI services generate compliant UK statutory reports using OpenAI GPT-4o:
 - **Directors Report Generator** (150 credits): Creates compliant directors' reports including principal activities, business review, results/dividends, future developments, and statutory statements
 - **Strategic Report Generator** (200 credits): Produces comprehensive strategic reports for large companies with business model, KPIs, principal risks, Section 172(1) statement, and ESG disclosures
 - **Notes to Accounts Generator** (100 credits): Generates detailed accounting policy notes with FRS 102 compliance, basis of preparation, going concern, and all key accounting policies
+- **Cash Flow Statement Generator** (200 credits): Analyzes current and prior year Trial Balances to produce FRS 102 compliant Cash Flow Statements using the indirect method, with operating, investing, and financing activities sections
 
-API endpoints at `/api/ai/directors-report`, `/api/ai/strategic-report`, and `/api/ai/notes-to-accounts` validate credits, generate reports, deduct charges, and log transactions.
+API endpoints at `/api/ai/directors-report`, `/api/ai/strategic-report`, `/api/ai/notes-to-accounts`, and `/api/ai/cash-flow-statement` validate credits, generate reports, deduct charges, and log transactions. All AI output schemas are 100% aligned with the Annual Accounts Wizard form fields for seamless integration.
 
 ## External Dependencies
 - **OpenAI**: AI-driven document processing, financial data extraction, and smart filing recommendations.
