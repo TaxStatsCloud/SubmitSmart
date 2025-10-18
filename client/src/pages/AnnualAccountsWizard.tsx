@@ -1426,12 +1426,10 @@ export default function AnnualAccountsWizard() {
                     </Button>
                     <Button 
                       type="button" 
-                      onClick={onGenerateIXBRL}
-                      disabled={generateIXBRLMutation.isPending}
-                      data-testid="button-generate-ixbrl"
+                      onClick={() => setCurrentStep(4)}
+                      data-testid="button-next"
                     >
-                      {generateIXBRLMutation.isPending ? "Generating..." : "Generate iXBRL"}
-                      <ArrowRight className="ml-2 h-4 w-4" />
+                      Next: Documents <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </div>
                 </Card>
@@ -1532,7 +1530,8 @@ export default function AnnualAccountsWizard() {
               <div className="lg:col-span-1">
                 <HelpPanel 
                   title="Why Attach Documents?"
-                  sections={[
+                  currentStep={4}
+                  tips={[
                     {
                       icon: FileCheck,
                       title: "Audit Trail",
