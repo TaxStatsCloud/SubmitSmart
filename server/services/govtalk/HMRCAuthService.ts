@@ -1,3 +1,6 @@
+import { GovTalkEnvelopeBuilder, GovTalkHeader } from './GovTalkEnvelopeBuilder';
+import { IRmarkService } from './IRmarkService';
+
 export interface HMRCCredentials {
   vendorId: string;
   senderId: string;
@@ -8,49 +11,80 @@ export interface HMRCCredentials {
 export interface HMRCSubmissionRequest {
   messageClass: string;
   transactionId: string;
-  body: any;
-  utr?: string;
-  keys?: { [key: string]: string };
+  bodyXml: string;
+  utr: string;
+  periodEnd: string;
+  companyName?: string;
 }
 
 export class HMRCAuthService {
+  private envelopeBuilder: GovTalkEnvelopeBuilder;
   private credentials: HMRCCredentials;
+  private isTestEnvironment: boolean;
 
-  constructor(credentials: HMRCCredentials) {
+  constructor(credentials: HMRCCredentials, isTestEnvironment: boolean = false) {
+    this.envelopeBuilder = new GovTalkEnvelopeBuilder();
     this.credentials = credentials;
+    this.isTestEnvironment = isTestEnvironment;
   }
 
-  buildAuthenticatedRequest(request: HMRCSubmissionRequest): string {
-    const utr = request.utr || this.credentials.utr;
-    
-    if (!utr) {
-      throw new Error('UTR is required for HMRC submissions');
-    }
+  async buildAuthenticatedRequest(request: HMRCSubmissionRequest): Promise<string> {
+    const irheader = IRmarkService.buildIRheader(
+      request.utr,
+      request.periodEnd,
+      this.credentials.vendorId,
+      this.credentials.senderId,
+      this.credentials.password,
+      undefined
+    );
 
-    const xmlDoc = `<?xml version="1.0" encoding="UTF-8"?>
-<IRenvelope xmlns="http://www.govtalk.gov.uk/taxation/CT/2">
-  <IRheader>
-    <Keys>
-      <Key Type="UTR">${utr}</Key>
-    </Keys>
-    <PeriodEnd>${this.formatDate(new Date())}</PeriodEnd>
-    <DefaultCurrency>GBP</DefaultCurrency>
-    <IRmark Type="generic">
-      <Sender>
-        <SenderID>${this.credentials.senderId}</SenderID>
-        <Password>${this.credentials.password}</Password>
-        <URI>https://www.hmrc.gov.uk/vendor/${this.credentials.vendorId}</URI>
-      </Sender>
-    </IRmark>
-  </IRheader>
-  ${request.body}
+    const irenvelopeBody = `<IRenvelope xmlns="http://www.govtalk.gov.uk/taxation/CT/2">
+  ${irheader}
+  ${request.bodyXml}
 </IRenvelope>`;
 
-    return xmlDoc;
+    const header: GovTalkHeader = {
+      messageDetails: {
+        messageClass: request.messageClass,
+        qualifier: 'request',
+        transactionId: request.transactionId,
+      },
+      senderDetails: {
+        senderId: this.credentials.senderId,
+        authentication: {
+          method: 'clear',
+          value: this.credentials.password,
+        },
+      },
+    };
+
+    const keys = {
+      UTR: request.utr,
+    };
+
+    const govtalkXml = this.envelopeBuilder.buildEnvelope(header, irenvelopeBody, keys);
+
+    const irmark = await IRmarkService.calculateIRmark(govtalkXml);
+
+    const finalIRheader = IRmarkService.buildIRheader(
+      request.utr,
+      request.periodEnd,
+      this.credentials.vendorId,
+      this.credentials.senderId,
+      this.credentials.password,
+      irmark
+    );
+
+    const finalIRenvelopeBody = `<IRenvelope xmlns="http://www.govtalk.gov.uk/taxation/CT/2">
+  ${finalIRheader}
+  ${request.bodyXml}
+</IRenvelope>`;
+
+    return this.envelopeBuilder.buildEnvelope(header, finalIRenvelopeBody, keys);
   }
 
-  async submitToHMRC(xmlRequest: string, isTest: boolean = false): Promise<string> {
-    const endpoint = isTest 
+  async submitToHMRC(xmlRequest: string): Promise<string> {
+    const endpoint = this.isTestEnvironment
       ? 'https://secure.dev.gateway.gov.uk/submission'
       : 'https://secure.gateway.gov.uk/submission';
     
@@ -68,12 +102,5 @@ export class HMRCAuthService {
     }
 
     return await response.text();
-  }
-
-  private formatDate(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
   }
 }
