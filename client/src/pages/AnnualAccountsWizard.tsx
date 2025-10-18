@@ -282,10 +282,20 @@ export default function AnnualAccountsWizard() {
     if (priorYearData?.success && priorYearData.data && !priorYearDataLoaded) {
       const data = priorYearData.data;
       
-      // Set all prior year fields
-      Object.keys(data).forEach((key) => {
-        if (key !== 'yearEnding' && key !== 'sourceType') {
-          form.setValue(key as any, data[key]);
+      // Whitelist of allowed prior year fields to prevent injection
+      const allowedPriorFields = [
+        'intangibleAssetsPrior', 'tangibleAssetsPrior', 'investmentsPrior',
+        'stocksPrior', 'debtorsPrior', 'cashAtBankPrior',
+        'creditorsDueWithinYearPrior', 'creditorsDueAfterYearPrior',
+        'calledUpShareCapitalPrior', 'profitAndLossAccountPrior',
+        'turnoverPrior', 'costOfSalesPrior', 'grossProfitPrior',
+        'administrativeExpensesPrior', 'operatingProfitPrior'
+      ];
+      
+      // Only set whitelisted fields
+      allowedPriorFields.forEach((field) => {
+        if (data[field] !== undefined) {
+          form.setValue(field as any, data[field]);
         }
       });
 
@@ -481,19 +491,19 @@ export default function AnnualAccountsWizard() {
         </div>
         <Progress value={progressPercentage} className="h-2" />
         <div className="flex justify-between mt-2 text-xs">
-          <span className={currentStep >= 1 ? 'text-primary font-medium' : 'text-muted-foreground'}>Company</span>
-          <span className={currentStep >= 2 ? 'text-primary font-medium' : 'text-muted-foreground'}>Balance Sheet</span>
-          <span className={currentStep >= 3 ? 'text-primary font-medium' : 'text-muted-foreground'}>P&L</span>
+          <span className={currentStep >= getStepNumber('company') ? 'text-primary font-medium' : 'text-muted-foreground'}>Company</span>
+          <span className={currentStep >= getStepNumber('balanceSheet') ? 'text-primary font-medium' : 'text-muted-foreground'}>Balance</span>
+          <span className={currentStep >= getStepNumber('pl') ? 'text-primary font-medium' : 'text-muted-foreground'}>P&L</span>
           {(entitySize === 'medium' || entitySize === 'large') && (
-            <span className={currentStep >= 4 ? 'text-primary font-medium' : 'text-muted-foreground'}>Cash Flow</span>
+            <span className={currentStep >= getStepNumber('cashFlow') ? 'text-primary font-medium' : 'text-muted-foreground'}>Cash Flow</span>
           )}
-          <span className={currentStep >= (entitySize === 'medium' || entitySize === 'large' ? 5 : 4) ? 'text-primary font-medium' : 'text-muted-foreground'}>Reports</span>
+          <span className={currentStep >= getStepNumber('directorsReport') ? 'text-primary font-medium' : 'text-muted-foreground'}>Reports</span>
           {entitySize === 'large' && (
-            <span className={currentStep >= 6 ? 'text-primary font-medium' : 'text-muted-foreground'}>Strategic</span>
+            <span className={currentStep >= getStepNumber('strategicReport') ? 'text-primary font-medium' : 'text-muted-foreground'}>Strategic</span>
           )}
-          <span className={currentStep >= totalSteps - 2 ? 'text-primary font-medium' : 'text-muted-foreground'}>Exemptions</span>
-          <span className={currentStep >= totalSteps - 1 ? 'text-primary font-medium' : 'text-muted-foreground'}>Documents</span>
-          <span className={currentStep >= totalSteps ? 'text-primary font-medium' : 'text-muted-foreground'}>Review</span>
+          <span className={currentStep >= getStepNumber('exemptions') ? 'text-primary font-medium' : 'text-muted-foreground'}>Exemptions</span>
+          <span className={currentStep >= getStepNumber('documents') ? 'text-primary font-medium' : 'text-muted-foreground'}>Documents</span>
+          <span className={currentStep >= getStepNumber('review') ? 'text-primary font-medium' : 'text-muted-foreground'}>Review</span>
         </div>
       </div>
 
@@ -1704,6 +1714,7 @@ export default function AnnualAccountsWizard() {
                               <FormControl>
                                 <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} data-testid="input-cf-operating-profit" />
                               </FormControl>
+                              <FormDescription className="text-xs">From P&L; can be negative</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1717,6 +1728,7 @@ export default function AnnualAccountsWizard() {
                               <FormControl>
                                 <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} data-testid="input-cf-depreciation" />
                               </FormControl>
+                              <FormDescription className="text-xs">Non-cash expense (add back)</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1730,6 +1742,7 @@ export default function AnnualAccountsWizard() {
                               <FormControl>
                                 <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} data-testid="input-cf-inventory-change" />
                               </FormControl>
+                              <FormDescription className="text-xs">Positive = cash outflow; negative = cash inflow</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1743,6 +1756,7 @@ export default function AnnualAccountsWizard() {
                               <FormControl>
                                 <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} data-testid="input-cf-debtors-change" />
                               </FormControl>
+                              <FormDescription className="text-xs">Positive = cash outflow; negative = cash inflow</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1756,6 +1770,7 @@ export default function AnnualAccountsWizard() {
                               <FormControl>
                                 <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} data-testid="input-cf-creditors-change" />
                               </FormControl>
+                              <FormDescription className="text-xs">Positive = cash inflow; negative = cash outflow</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1769,6 +1784,7 @@ export default function AnnualAccountsWizard() {
                               <FormControl>
                                 <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} data-testid="input-cf-net-operating" />
                               </FormControl>
+                              <FormDescription className="text-xs">Sum of operating items above</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
