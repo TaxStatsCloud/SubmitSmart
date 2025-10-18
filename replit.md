@@ -1,7 +1,26 @@
 # PromptSubmissions - AI-Powered UK Corporate Compliance Platform
 
 ## Overview
-PromptSubmissions is an AI-powered platform for UK corporate compliance, automating the submission of Confirmation Statements, Annual Accounts, and Corporation Tax returns. It uses AI for tax preparation, agentic workflows for onboarding and deadline management, and provides administrative monitoring dashboards. The platform operates on a credit-based billing system, addressing the upcoming mandatory software filing requirement by Companies House by April 2027 and targeting the UK corporate compliance market.
+PromptSubmissions is an AI-powered platform for UK corporate compliance, automating the submission of Confirmation Statements, Annual Accounts, and Corporation Tax returns. It uses AI for tax preparation, agentic workflows for onboarding and deadline management, and provides administrative monitoring dashboards. The platform operates on a **tiered credit-based billing system** where filing costs vary by complexity, addressing the upcoming mandatory software filing requirement by Companies House by April 2027 and targeting the UK corporate compliance market.
+
+## Credit-Based Pricing Model
+
+### Tiered Pricing Philosophy
+More complex filings require more AI processing, validation, and compliance checks, justifying higher credit costs:
+
+**Annual Accounts (Entity Size-Based)**:
+- **Micro-entity**: 150 credits - Simplified accounts, no Cash Flow Statement, minimal disclosures
+- **Small company**: 200 credits - Standard accounts, full P&L, no Cash Flow required
+- **Medium company**: 300 credits - Full accounts + mandatory Cash Flow Statement
+- **Large company**: 400 credits - Full accounts + Cash Flow + Strategic Report
+
+**Corporation Tax CT600 (Complexity-Based)**:
+- **Simple**: 150 credits - Basic trading company, no supplementary pages
+- **Standard**: 200 credits - Standard company with some supplementary pages
+- **Complex**: 300 credits - Multiple supplementary pages (CT600A/B/C/D)
+- **Group**: 400 credits - Group companies with consolidated returns
+
+**Confirmation Statement (CS01)**: 100 credits (flat rate - minimal variation)
 
 ## User Preferences
 - **Silicon Valley-level UI/UX**: Premium design with glass morphism, gradients, and professional visual hierarchy

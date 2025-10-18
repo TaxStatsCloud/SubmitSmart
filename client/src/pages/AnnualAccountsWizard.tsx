@@ -23,6 +23,7 @@ import { HelpPanel } from "@/components/wizard/HelpPanel";
 import { ValidationGuidance } from "@/components/wizard/ValidationGuidance";
 import { FilingSubmissionWarning } from "@/components/filing/FilingSubmissionWarning";
 import { DocumentSelector } from "@/components/filings/DocumentSelector";
+import { getAnnualAccountsCost, getEntitySizeDescription, EntitySize } from "@shared/filingCosts";
 
 // Annual Accounts Form Schema with Comparative Year Support
 const annualAccountsSchema = z.object({
@@ -126,11 +127,6 @@ export default function AnnualAccountsWizard() {
   const [showSubmissionWarning, setShowSubmissionWarning] = useState(false);
   const [priorYearDataLoaded, setPriorYearDataLoaded] = useState(false);
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<number[]>([]);
-  
-  // Credit requirements
-  const FILING_COST = 25; // Annual Accounts filing cost in credits
-  const userCredits = user?.credits || 0;
-  const hasInsufficientCredits = userCredits < FILING_COST;
 
   const form = useForm<AnnualAccountsFormData>({
     resolver: zodResolver(annualAccountsSchema),
@@ -195,6 +191,12 @@ export default function AnnualAccountsWizard() {
       keyPerformanceIndicators: "",
     },
   });
+  
+  // Credit requirements - Tiered based on entity size
+  const entitySize = form.watch("entitySize") as EntitySize;
+  const FILING_COST = getAnnualAccountsCost(entitySize);
+  const userCredits = user?.credits || 0;
+  const hasInsufficientCredits = userCredits < FILING_COST;
 
   // Fetch prior year data for auto-population
   const { data: priorYearData } = useQuery({

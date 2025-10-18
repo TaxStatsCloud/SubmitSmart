@@ -72,9 +72,6 @@ export const insertCompanySchema = createInsertSchema(companies).pick({
   status: true,
 });
 
-export type Company = typeof companies.$inferSelect;
-export type InsertCompany = z.infer<typeof insertCompanySchema>;
-
 // User Companies Junction Table - for multi-company management (Professional/Enterprise tiers)
 export const userCompanies = pgTable("user_companies", {
   id: serial("id").primaryKey(),

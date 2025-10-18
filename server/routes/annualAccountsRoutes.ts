@@ -11,6 +11,7 @@ import { logger } from '../utils/logger';
 import { storage } from '../storage';
 import { auditService } from '../services/auditService';
 import { IXBRLPackagingService } from '../services/ixbrl/IXBRLPackagingService';
+import { getAnnualAccountsCost, EntitySize } from '../../shared/filingCosts';
 
 const router = Router();
 router.use(isAuthenticated);
@@ -132,9 +133,17 @@ router.post('/submit', async (req, res) => {
     }
 
     const { ixbrlData, documentIds, ...formData } = req.body;
-
-    // Define required credits for Annual Accounts
-    const REQUIRED_CREDITS = 25; // Annual Accounts filing cost
+    
+    // Determine entity size from ixbrlData or form data
+    const entitySize = (ixbrlData?.entitySize || formData.entitySize || 'small') as EntitySize;
+    
+    // Calculate tiered credit cost based on entity size
+    const REQUIRED_CREDITS = getAnnualAccountsCost(entitySize);
+    
+    annualAccountsLogger.info('Filing credit cost calculated', {
+      entitySize,
+      credits: REQUIRED_CREDITS
+    });
     
     // Get user to check company association
     const user = await storage.getUser(userId);
