@@ -66,6 +66,7 @@ A critical component is the iXBRL Generation Service, designed for Companies Hou
 - Removed OpenAI API key exposure from client environment variables
 - Implemented session-based conversation management with proper rate limiting
 - AI chatbot now properly secured against API key theft and unauthorized usage
+- **Smart Recommendations Security**: Eliminated multi-tenancy vulnerability - service always derives company from authenticated user, never accepts arbitrary companyId parameters to prevent cross-tenant data leakage
 
 ### Agent System Enhancements
 - **Companies House Discovery**: Expanded from 3 to 14 industry-targeted search terms
@@ -123,6 +124,16 @@ A critical component is the iXBRL Generation Service, designed for Companies Hou
   - Low balance warnings (amber for <100 credits, critical red for <50 credits)
   - Direct "Buy Credits" integration for seamless top-ups
   - Empty state handling for new users
+
+- **Smart Filing Recommendations (AI-Powered)**: Personalized filing suggestions using OpenAI GPT-4o-mini
+  - Analyzes company data, recent filings, and upcoming deadlines to generate 1-3 prioritized recommendations
+  - Each recommendation includes: filing type, priority (high/medium/low), detailed rationale, credit cost, estimated time, and benefits
+  - Color-coded priority badges (red=high, amber=medium, blue=low) for quick visual scanning
+  - Actionable "Start Filing" buttons linking directly to appropriate wizard pages
+  - Fallback recommendations when AI unavailable for maximum reliability
+  - **SECURITY**: Enforces strict tenant isolation - users only see their own company's data
+  - API endpoint: `GET /api/recommendations` (authenticated users only)
+  - Response time: 4-6 seconds (OpenAI processing) - acceptable for AI-powered feature
 
 **Analytics Accuracy (Phase 1):**
 - All metrics use consistent "attempted filings" population (submitted/approved/failed) - excludes drafts/pending
