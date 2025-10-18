@@ -271,11 +271,11 @@ export class BalanceSheetGenerator {
       html += '<td>7</td>\n';
       html += '<td>Creditors</td>\n';
       html += `<td class="number">${IXBRLGenerator.tagMonetary(
-        current.creditorsDueWithinOneYear,
+        -current.creditorsDueWithinOneYear,
         'CreditorsDueWithinOneYear',
         'balance-sheet',
-        0,
-        '-'
+        'GBP',
+        0
       )}</td>\n`;
       if (previous) {
         html += `<td class="number">(${previous.creditorsDueWithinOneYear?.toLocaleString('en-GB') || '-'})</td>\n`;
@@ -312,11 +312,11 @@ export class BalanceSheetGenerator {
       html += '<td>8</td>\n';
       html += '<td>Creditors</td>\n';
       html += `<td class="number">${IXBRLGenerator.tagMonetary(
-        current.creditorsDueAfterOneYear,
+        -current.creditorsDueAfterOneYear,
         'CreditorsDueAfterOneYear',
         'balance-sheet',
-        0,
-        '-'
+        'GBP',
+        0
       )}</td>\n`;
       if (previous) {
         html += `<td class="number">(${previous.creditorsDueAfterOneYear?.toLocaleString('en-GB') || '-'})</td>\n`;
