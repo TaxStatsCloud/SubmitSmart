@@ -23,16 +23,40 @@ import { HelpPanel } from "@/components/wizard/HelpPanel";
 import { ValidationGuidance } from "@/components/wizard/ValidationGuidance";
 import { FilingSubmissionWarning } from "@/components/filing/FilingSubmissionWarning";
 
+// Shareholder schema
+const shareholderSchema = z.object({
+  name: z.string().min(1, "Shareholder name is required"),
+  sharesHeld: z.coerce.number().min(1, "Shares held must be at least 1"),
+  shareClass: z.string().min(1, "Share class is required"),
+});
+
+// Share class schema
+const shareClassSchema = z.object({
+  className: z.string().min(1, "Class name is required"),
+  currency: z.string().default("GBP"),
+  totalShares: z.coerce.number().min(1, "Total shares must be at least 1"),
+  nominalValue: z.coerce.number().min(0, "Nominal value must be positive"),
+  votingRights: z.boolean().default(true),
+  dividendRights: z.boolean().default(true),
+  capitalRights: z.boolean().default(true),
+  restrictionOnTransfer: z.boolean().default(false),
+});
+
 // CS01 Form Schema
 const cs01Schema = z.object({
   // Company Details
   companyName: z.string().min(1, "Company name is required"),
   companyNumber: z.string().min(8, "Company number must be at least 8 characters"),
   registeredOffice: z.string().min(1, "Registered office is required"),
+  registeredEmailAddress: z.string().email("Valid email required").min(1, "Registered email is required"),
   
   // SIC Codes
   sicCodes: z.string().min(1, "At least one SIC code is required"),
   tradingStatus: z.enum(["trading", "dormant"]),
+  
+  // Stock Exchange
+  tradingOnStockExchange: z.boolean().default(false),
+  stockExchangeName: z.string().optional(),
   
   // Directors
   directors: z.string().min(1, "At least one director is required"),
@@ -44,6 +68,12 @@ const cs01Schema = z.object({
   pscServiceAddress: z.string().min(1, "PSC service address is required"),
   pscNatureOfControl: z.array(z.string()).min(1, "Select at least one nature of control"),
   
+  // Shareholders
+  shareholders: z.array(shareholderSchema).min(1, "At least one shareholder is required"),
+  
+  // Share Classes
+  shareClasses: z.array(shareClassSchema).min(1, "At least one share class is required"),
+  
   // Share Capital
   shareCapitalChanged: z.boolean(),
   numberOfShares: z.coerce.number().min(1).optional(),
@@ -54,6 +84,15 @@ const cs01Schema = z.object({
   aggregateNominalValue: z.coerce.number().min(0).optional(),
   amountPaidUp: z.coerce.number().min(0).optional(),
   amountUnpaid: z.coerce.number().min(0).optional(),
+  
+  // Statutory Registers
+  statutoryRegistersLocation: z.enum(["registered_office", "sail_address", "other"]).default("registered_office"),
+  statutoryRegistersOtherAddress: z.string().optional(),
+  
+  // Declarations
+  statementOfLawfulPurposes: z.boolean().refine((val) => val === true, {
+    message: "You must confirm the statement of lawful purposes",
+  }),
   
   // Confirmation
   statementDate: z.string().min(1, "Statement date is required"),
@@ -74,14 +113,30 @@ export default function ConfirmationStatementWizard() {
       companyName: "",
       companyNumber: "",
       registeredOffice: "",
+      registeredEmailAddress: "",
       sicCodes: "",
       tradingStatus: "trading",
+      tradingOnStockExchange: false,
+      stockExchangeName: "",
       directors: "",
       pscName: "",
       pscNationality: "British",
       pscDateOfBirth: "",
       pscServiceAddress: "",
       pscNatureOfControl: [],
+      shareholders: [{ name: "", sharesHeld: 0, shareClass: "Ordinary" }],
+      shareClasses: [
+        {
+          className: "Ordinary",
+          currency: "GBP",
+          totalShares: 0,
+          nominalValue: 1.00,
+          votingRights: true,
+          dividendRights: true,
+          capitalRights: true,
+          restrictionOnTransfer: false,
+        },
+      ],
       shareCapitalChanged: false,
       numberOfShares: 0,
       nominalValue: 1.00,
@@ -89,6 +144,9 @@ export default function ConfirmationStatementWizard() {
       aggregateNominalValue: 0,
       amountPaidUp: 0,
       amountUnpaid: 0,
+      statutoryRegistersLocation: "registered_office",
+      statutoryRegistersOtherAddress: "",
+      statementOfLawfulPurposes: false,
       statementDate: new Date().toISOString().split('T')[0],
       madeUpToDate: new Date().toISOString().split('T')[0],
     },
