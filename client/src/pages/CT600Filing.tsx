@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Calculator, FileText, CheckCircle, AlertTriangle, Send, ArrowLeft, ArrowRight, Building2, TrendingUp, BarChart3 } from "lucide-react";
+import { Calculator, FileText, CheckCircle, AlertTriangle, Send, ArrowLeft, ArrowRight, Building2, TrendingUp, BarChart3, Download } from "lucide-react";
 import { FieldHint, InlineHint } from "@/components/wizard/FieldHint";
 import { HelpPanel } from "@/components/wizard/HelpPanel";
 import { ValidationGuidance } from "@/components/wizard/ValidationGuidance";
@@ -61,6 +61,7 @@ export default function CT600Filing() {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [computation, setComputation] = useState<any>(null);
+  const [prefillApplied, setPrefillApplied] = useState(false);
 
   const form = useForm<CT600FormData>({
     resolver: zodResolver(ct600Schema),
@@ -95,6 +96,34 @@ export default function CT600Filing() {
     queryKey: ['/api/ct600/current'],
     enabled: !!user?.id,
   });
+
+  // Fetch prefill data from Annual Accounts
+  const { data: prefillData } = useQuery({
+    queryKey: ['/api/ct600/prefill', user?.companyId],
+    enabled: !!user?.companyId && !prefillApplied,
+  });
+
+  // Apply prefill data when it loads
+  useEffect(() => {
+    if (prefillData?.success && prefillData.data && !prefillApplied) {
+      const data = prefillData.data;
+      
+      // Pre-populate form fields
+      Object.keys(data).forEach((key) => {
+        if (key in form.getValues()) {
+          form.setValue(key as any, data[key]);
+        }
+      });
+
+      setPrefillApplied(true);
+
+      // Show notification
+      toast({
+        title: "Data Pre-filled",
+        description: "Form pre-populated from your most recent Annual Accounts. You can edit all fields.",
+      });
+    }
+  }, [prefillData, prefillApplied, form, toast]);
 
   // Compute tax mutation
   const computeTaxMutation = useMutation({
@@ -191,6 +220,16 @@ export default function CT600Filing() {
           <span className={`text-xs ${currentStep >= 4 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Submit</span>
         </div>
       </div>
+
+      {/* Pre-fill Notification */}
+      {prefillApplied && prefillData?.sourceFilingDate && (
+        <Alert className="mb-6 border-blue-200 bg-blue-50 dark:bg-blue-950">
+          <Download className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-900 dark:text-blue-100">
+            <strong>Data imported from Annual Accounts</strong> - Form pre-populated with data from your filing on {new Date(prefillData.sourceFilingDate).toLocaleDateString('en-GB')}. All fields are editable - please review and update as needed.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Form {...form}>
         <form className="space-y-6">

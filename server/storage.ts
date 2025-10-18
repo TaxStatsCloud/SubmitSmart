@@ -57,6 +57,7 @@ export interface IStorage {
   getAllFilings(): Promise<Filing[]>;
   getFilingsByCompany(companyId: number): Promise<Filing[]>;
   getFilingsByUser(userId: number): Promise<Filing[]>;
+  getMostRecentFilingByType(companyId: number, filingType: string): Promise<Filing | undefined>;
   getUpcomingFilings(daysAhead: number): Promise<Filing[]>;
   createFiling(filing: InsertFiling): Promise<Filing>;
   createFilingWithCreditDeduction(filing: InsertFiling, creditCost: number, description: string): Promise<{ filing: Filing; remainingCredits: number }>;
@@ -1471,6 +1472,21 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(filings)
       .where(eq(filings.userId, userId));
+  }
+
+  async getMostRecentFilingByType(companyId: number, filingType: string): Promise<Filing | undefined> {
+    const [filing] = await db
+      .select()
+      .from(filings)
+      .where(
+        and(
+          eq(filings.companyId, companyId),
+          eq(filings.type, filingType)
+        )
+      )
+      .orderBy(sql`${filings.createdAt} DESC`)
+      .limit(1);
+    return filing;
   }
 
   async getUpcomingFilings(daysAhead: number): Promise<Filing[]> {

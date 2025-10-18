@@ -2801,6 +2801,64 @@ Generate the note content:`;
   });
 
   /**
+   * CT600 - Get Pre-fill Data from Annual Accounts
+   * GET /api/ct600/prefill/:companyId
+   * 
+   * Automatically populates CT600 form with data from most recent Annual Accounts filing
+   */
+  app.get('/api/ct600/prefill/:companyId', async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const companyId = parseInt(req.params.companyId);
+      
+      // Get most recent Annual Accounts filing for this company
+      const annualAccounts = await storage.getMostRecentFilingByType(companyId, 'annual_accounts');
+
+      if (!annualAccounts || !annualAccounts.data) {
+        return res.json({ 
+          success: false, 
+          message: 'No recent Annual Accounts found for pre-population'
+        });
+      }
+
+      const aaData = annualAccounts.data as any;
+
+      // Map Annual Accounts data to CT600 fields
+      const prefillData = {
+        companyName: aaData.companyName || '',
+        companyNumber: aaData.companyNumber || '',
+        // Map financial year to accounting period
+        accountingPeriodStart: aaData.financialYearStart || '',
+        accountingPeriodEnd: aaData.financialYearEnd || '',
+        // Map P&L data
+        turnover: aaData.turnover || 0,
+        costOfSales: aaData.costOfSales || 0,
+        operatingExpenses: aaData.administrativeExpenses || 0,
+        // Note: Fields that don't map directly are left for user to complete
+        // (interestReceived, dividendsReceived, depreciationAddBack, etc.)
+      };
+
+      res.json({
+        success: true,
+        message: 'Pre-fill data loaded from Annual Accounts',
+        data: prefillData,
+        sourceFilingId: annualAccounts.id,
+        sourceFilingDate: annualAccounts.createdAt
+      });
+
+    } catch (error: any) {
+      console.error('[CT600] Pre-fill error:', error);
+      res.status(500).json({ 
+        error: 'Failed to fetch pre-fill data',
+        details: error.message 
+      });
+    }
+  });
+
+  /**
    * CT600 - Compute Corporation Tax
    * POST /api/ct600/compute
    */
