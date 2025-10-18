@@ -1,0 +1,40 @@
+Here’s a **breakdown of the minimum content for each type of accounts** that can be submitted to Companies House in the UK:
+
+**Micro-Entity Accounts (FRS 105):**
+- **Balance sheet** (micro-entity format)
+- **Income statement** (can be included, not mandatory for filing)
+- **Footnotes:** Limited—only main notes are required: directors' details, registered office, accounting policy for micro-entity regime, and statement that audit is not needed.
+- **No cash flow statement** required.
+- **No directors’ report** required.
+
+**Small Company Accounts (FRS 102 Section 1A):**
+- **Balance sheet** with required notes 
+- **Profit & loss account (income statement)**
+- **Optional abridged accounts:** With member consent, fewer lines/disclosures.
+- **Directors’ report**—unless exempt as micro-entity.
+- **No cash flow statement required** if eligible
+- **Notes**—simplified compared to large/medium companies.
+
+**Medium-Sized and Large Company Accounts (FRS 102 or IFRS):**
+- **Balance sheet**
+- **Profit & loss account (income statement)**
+- **Cash flow statement** (mandatory)
+- **Directors’ report**
+- **Strategic report** (for large companies)
+- **Full notes to the accounts** in compliance with UK GAAP or IFRS
+- **Audit report**—required unless exempt
+
+**Dormant Company Accounts:**
+- **Balance sheet** (showing zero activity except permitted transactions)
+- **Notes about status** (main liability = share capital or permitted transactions)
+- **No income statement or cash flow statement** required
+
+**Key Points for Choosing Your Accounts Format:**
+- The size/status of your company determines what you must include.
+- Micro-entity and small companies qualify for most simplifications.
+- Medium/large accounts require full disclosures and external audit.
+- Dormant companies file extremely minimal accounts.
+
+**If you tell me your company’s size/status or special circumstances (e.g. parent company, subsidiary, dormant, listed), I can give even more specific guidance!**
+
+[1](https://replit.com/t/taxstats-cloud/repls/SubmitSmart)
