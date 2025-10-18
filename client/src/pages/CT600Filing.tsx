@@ -535,6 +535,15 @@ export default function CT600Filing() {
                     type="info"
                   />
 
+                  {priorYearData?.success && (
+                    <Alert className="mt-4 bg-blue-50 border-blue-200">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>
+                        Prior period data loaded from {new Date(priorYearData.data.yearEnding).toLocaleDateString('en-GB')}. Prior period fields available for consistency validation.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   <Tabs defaultValue="trading" className="w-full mt-4">
                     <TabsList className="grid w-full grid-cols-4">
                       <TabsTrigger value="trading">Income</TabsTrigger>

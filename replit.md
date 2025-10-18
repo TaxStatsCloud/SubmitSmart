@@ -3,6 +3,37 @@
 ## Overview
 PromptSubmissions is an AI-powered platform designed for UK corporate compliance, automating the submission of Confirmation Statements, Annual Accounts, and Corporation Tax returns. It leverages AI for tax preparation, employs agentic workflows for company onboarding and deadline management, and provides administrative monitoring dashboards. The platform operates on a credit-based billing system and aims to address the upcoming mandatory software filing requirement by Companies House by April 2027, targeting the significant UK corporate compliance market.
 
+## Recent Enhancements (October 18, 2025)
+
+### **Comparative Year Support for UK Accounting Compliance**
+Implemented full comparative year (prior period) functionality to meet UK accounting standards requiring companies to show current year alongside prior year figures in financial statements:
+
+1. **Annual Accounts Wizard - Side-by-Side Comparative Tables:**
+   - All Balance Sheet sections (Fixed Assets, Current Assets, Liabilities, Capital) display current year and prior year columns
+   - P&L Account shows current year vs. prior year for all line items (Turnover, Cost of Sales, Administrative Expenses)
+   - Clean table format with "Current Year (£)" and "Prior Year (£)" headers
+   - Prior year fields have muted background (bg-muted/30) for visual distinction
+   - 15 comparative fields added: intangibleAssetsPrior, tangibleAssetsPrior, investmentsPrior, stocksPrior, debtorsPrior, cashAtBankPrior, creditorsDueWithinYearPrior, creditorsDueAfterYearPrior, calledUpShareCapitalPrior, profitAndLossAccountPrior, turnoverPrior, costOfSalesPrior, grossProfitPrior, administrativeExpensesPrior, operatingProfitPrior
+
+2. **Auto-Population from Database:**
+   - Backend endpoint GET /api/annual-accounts/prior-year/:companyId fetches comparative figures from priorYearData table
+   - Frontend useQuery hook and useEffect automatically load and pre-fill prior year data
+   - Visual notification shows user when prior year data is loaded (year ending date and source type)
+   - Data fetched once per session (staleTime: Infinity) for performance
+
+3. **CT600 Enhanced Schema Foundation:**
+   - Activity detection questions added: hasPropertyIncome, isCloseCompany, hasOverseasIncome, hasControlledForeignCompanies, hasGroupRelief, paidDividends, hasTransferPricing
+   - 11 prior period comparison fields: turnoverPrior, costOfSalesPrior, operatingExpensesPrior, interestReceivedPrior, dividendsReceivedPrior, propertyIncomePrior, depreciationAddBackPrior, capitalAllowancesPrior, lossesBroughtForwardPrior, rdReliefClaimPrior, charitableDonationsPrior
+   - New propertyIncome field to support CT600C supplementary page requirements
+   - Schema foundation ready for conditional sections (CT600A-J) and comprehensive HMRC box-by-box validation
+
+**Next Steps for Full CT600 Compliance:**
+- Build CT600 wizard steps/tables that surface the new schema fields
+- Implement conditional logic to show/hide supplementary sections based on activity flags
+- Add CT600 comparative tables in wizard UI (similar to Annual Accounts)
+- Wire comparative inputs into tax computation and submission payloads
+- Implement box-by-box validation mapped to actual HMRC form boxes (1-165)
+
 ## User Preferences
 - **Silicon Valley-level UI/UX**: Premium design with glass morphism, gradients, and professional visual hierarchy
 - **Competitive Pricing**: Enterprise-level pricing that reflects the platform's professional capabilities
