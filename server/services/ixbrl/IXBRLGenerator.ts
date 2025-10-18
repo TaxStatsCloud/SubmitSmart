@@ -259,6 +259,25 @@ export class IXBRLGenerator {
   }
 
   /**
+   * Tag a non-fraction value (shares, employees, etc.) with iXBRL
+   */
+  static tagNonFraction(
+    value: number,
+    concept: string,
+    contextRef: string = 'current',
+    unitRef: string = 'pure',
+    decimals: number = 0
+  ): string {
+    const isNegative = value < 0;
+    const absValue = Math.abs(value);
+    const formattedValue = absValue.toLocaleString('en-GB');
+
+    const signAttr = isNegative ? ' sign="-"' : '';
+
+    return `<ix:nonFraction contextRef="${contextRef}" name="uk-gaap:${concept}" unitRef="${unitRef}" decimals="${decimals}" format="ixt-sec-num-format:numdotdecimal"${signAttr}>${formattedValue}</ix:nonFraction>`;
+  }
+
+  /**
    * Tag a text value with iXBRL
    */
   static tagText(value: string, concept: string, contextRef: string = 'current'): string {

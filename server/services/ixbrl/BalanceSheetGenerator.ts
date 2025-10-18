@@ -119,10 +119,20 @@ export class BalanceSheetGenerator {
         html += `<td class="number">${IXBRLGenerator.tagMonetary(
           current.intangibleAssets,
           'IntangibleAssets',
-          'balance-sheet'
+          'balance-sheet',
+          'GBP',
+          0
         )}</td>\n`;
-        if (previous) {
-          html += `<td class="number">${previous.intangibleAssets?.toLocaleString('en-GB') || '-'}</td>\n`;
+        if (previous && previous.intangibleAssets) {
+          html += `<td class="number">${IXBRLGenerator.tagMonetary(
+            previous.intangibleAssets,
+            'IntangibleAssets',
+            'balance-sheet-previous',
+            'GBP',
+            0
+          )}</td>\n`;
+        } else if (previous) {
+          html += `<td class="number">-</td>\n`;
         }
         html += '</tr>\n';
       }
@@ -134,10 +144,20 @@ export class BalanceSheetGenerator {
         html += `<td class="number">${IXBRLGenerator.tagMonetary(
           current.tangibleAssets,
           'PropertyPlantEquipment',
-          'balance-sheet'
+          'balance-sheet',
+          'GBP',
+          0
         )}</td>\n`;
-        if (previous) {
-          html += `<td class="number">${previous.tangibleAssets?.toLocaleString('en-GB') || '-'}</td>\n`;
+        if (previous && previous.tangibleAssets) {
+          html += `<td class="number">${IXBRLGenerator.tagMonetary(
+            previous.tangibleAssets,
+            'PropertyPlantEquipment',
+            'balance-sheet-previous',
+            'GBP',
+            0
+          )}</td>\n`;
+        } else if (previous) {
+          html += `<td class="number">-</td>\n`;
         }
         html += '</tr>\n';
       }
@@ -149,10 +169,20 @@ export class BalanceSheetGenerator {
         html += `<td class="number">${IXBRLGenerator.tagMonetary(
           current.investments,
           'FixedAssetInvestments',
-          'balance-sheet'
+          'balance-sheet',
+          'GBP',
+          0
         )}</td>\n`;
-        if (previous) {
-          html += `<td class="number">${previous.investments?.toLocaleString('en-GB') || '-'}</td>\n`;
+        if (previous && previous.investments) {
+          html += `<td class="number">${IXBRLGenerator.tagMonetary(
+            previous.investments,
+            'FixedAssetInvestments',
+            'balance-sheet-previous',
+            'GBP',
+            0
+          )}</td>\n`;
+        } else if (previous) {
+          html += `<td class="number">-</td>\n`;
         }
         html += '</tr>\n';
       }
@@ -167,10 +197,18 @@ export class BalanceSheetGenerator {
       html += `<td class="number"><strong>${IXBRLGenerator.tagMonetary(
         totalFixedAssets,
         'FixedAssets',
-        'balance-sheet'
+        'balance-sheet',
+        'GBP',
+        0
       )}</strong></td>\n`;
       if (previous) {
-        html += `<td class="number"><strong>${prevTotalFixed.toLocaleString('en-GB')}</strong></td>\n`;
+        html += `<td class="number"><strong>${IXBRLGenerator.tagMonetary(
+          prevTotalFixed,
+          'FixedAssets',
+          'balance-sheet-previous',
+          'GBP',
+          0
+        )}</strong></td>\n`;
       }
       html += '</tr>\n';
       html += '<tr><td colspan="4">&nbsp;</td></tr>\n';
@@ -196,10 +234,20 @@ export class BalanceSheetGenerator {
       html += `<td class="number">${IXBRLGenerator.tagMonetary(
         current.stocks,
         'Stocks',
-        'balance-sheet'
+        'balance-sheet',
+        'GBP',
+        0
       )}</td>\n`;
-      if (previous) {
-        html += `<td class="number">${previous.stocks?.toLocaleString('en-GB') || '-'}</td>\n`;
+      if (previous && previous.stocks) {
+        html += `<td class="number">${IXBRLGenerator.tagMonetary(
+          previous.stocks,
+          'Stocks',
+          'balance-sheet-previous',
+          'GBP',
+          0
+        )}</td>\n`;
+      } else if (previous) {
+        html += `<td class="number">-</td>\n`;
       }
       html += '</tr>\n';
     }
@@ -211,10 +259,20 @@ export class BalanceSheetGenerator {
       html += `<td class="number">${IXBRLGenerator.tagMonetary(
         current.debtors,
         'Debtors',
-        'balance-sheet'
+        'balance-sheet',
+        'GBP',
+        0
       )}</td>\n`;
-      if (previous) {
-        html += `<td class="number">${previous.debtors?.toLocaleString('en-GB') || '-'}</td>\n`;
+      if (previous && previous.debtors) {
+        html += `<td class="number">${IXBRLGenerator.tagMonetary(
+          previous.debtors,
+          'Debtors',
+          'balance-sheet-previous',
+          'GBP',
+          0
+        )}</td>\n`;
+      } else if (previous) {
+        html += `<td class="number">-</td>\n`;
       }
       html += '</tr>\n';
     }
@@ -226,10 +284,20 @@ export class BalanceSheetGenerator {
       html += `<td class="number">${IXBRLGenerator.tagMonetary(
         current.cash,
         'CashBankInHand',
-        'balance-sheet'
+        'balance-sheet',
+        'GBP',
+        0
       )}</td>\n`;
-      if (previous) {
-        html += `<td class="number">${previous.cash?.toLocaleString('en-GB') || '-'}</td>\n`;
+      if (previous && previous.cash) {
+        html += `<td class="number">${IXBRLGenerator.tagMonetary(
+          previous.cash,
+          'CashBankInHand',
+          'balance-sheet-previous',
+          'GBP',
+          0
+        )}</td>\n`;
+      } else if (previous) {
+        html += `<td class="number">-</td>\n`;
       }
       html += '</tr>\n';
     }
@@ -244,10 +312,18 @@ export class BalanceSheetGenerator {
     html += `<td class="number"><strong>${IXBRLGenerator.tagMonetary(
       totalCurrentAssets,
       'CurrentAssets',
-      'balance-sheet'
+      'balance-sheet',
+      'GBP',
+      0
     )}</strong></td>\n`;
     if (previous) {
-      html += `<td class="number"><strong>${prevTotalCurrent.toLocaleString('en-GB')}</strong></td>\n`;
+      html += `<td class="number"><strong>${IXBRLGenerator.tagMonetary(
+        prevTotalCurrent,
+        'CurrentAssets',
+        'balance-sheet-previous',
+        'GBP',
+        0
+      )}</strong></td>\n`;
     }
     html += '</tr>\n';
     html += '<tr><td colspan="4">&nbsp;</td></tr>\n';
@@ -277,8 +353,16 @@ export class BalanceSheetGenerator {
         'GBP',
         0
       )}</td>\n`;
-      if (previous) {
-        html += `<td class="number">(${previous.creditorsDueWithinOneYear?.toLocaleString('en-GB') || '-'})</td>\n`;
+      if (previous && previous.creditorsDueWithinOneYear) {
+        html += `<td class="number">${IXBRLGenerator.tagMonetary(
+          -previous.creditorsDueWithinOneYear,
+          'CreditorsDueWithinOneYear',
+          'balance-sheet-previous',
+          'GBP',
+          0
+        )}</td>\n`;
+      } else if (previous) {
+        html += `<td class="number">-</td>\n`;
       }
       html += '</tr>\n';
 
@@ -297,10 +381,18 @@ export class BalanceSheetGenerator {
       html += `<td class="number"><strong>${IXBRLGenerator.tagMonetary(
         netCurrentAssets,
         'NetCurrentAssetsLiabilities',
-        'balance-sheet'
+        'balance-sheet',
+        'GBP',
+        0
       )}</strong></td>\n`;
       if (previous) {
-        html += `<td class="number"><strong>${prevNetCurrent.toLocaleString('en-GB')}</strong></td>\n`;
+        html += `<td class="number"><strong>${IXBRLGenerator.tagMonetary(
+          prevNetCurrent,
+          'NetCurrentAssetsLiabilities',
+          'balance-sheet-previous',
+          'GBP',
+          0
+        )}</strong></td>\n`;
       }
       html += '</tr>\n';
       html += '<tr><td colspan="4">&nbsp;</td></tr>\n';
@@ -318,8 +410,16 @@ export class BalanceSheetGenerator {
         'GBP',
         0
       )}</td>\n`;
-      if (previous) {
-        html += `<td class="number">(${previous.creditorsDueAfterOneYear?.toLocaleString('en-GB') || '-'})</td>\n`;
+      if (previous && previous.creditorsDueAfterOneYear) {
+        html += `<td class="number">${IXBRLGenerator.tagMonetary(
+          -previous.creditorsDueAfterOneYear,
+          'CreditorsDueAfterOneYear',
+          'balance-sheet-previous',
+          'GBP',
+          0
+        )}</td>\n`;
+      } else if (previous) {
+        html += `<td class="number">-</td>\n`;
       }
       html += '</tr>\n';
       html += '<tr><td colspan="4">&nbsp;</td></tr>\n';
@@ -363,10 +463,18 @@ export class BalanceSheetGenerator {
     html += `<td class="number"><strong>${IXBRLGenerator.tagMonetary(
       netAssets,
       'NetAssetsLiabilitiesIncludingPensionAssetLiability',
-      'balance-sheet'
+      'balance-sheet',
+      'GBP',
+      0
     )}</strong></td>\n`;
     if (previous) {
-      html += `<td class="number"><strong>${prevNetAssets.toLocaleString('en-GB')}</strong></td>\n`;
+      html += `<td class="number"><strong>${IXBRLGenerator.tagMonetary(
+        prevNetAssets,
+        'NetAssetsLiabilitiesIncludingPensionAssetLiability',
+        'balance-sheet-previous',
+        'GBP',
+        0
+      )}</strong></td>\n`;
     }
     html += '</tr>\n';
     html += '<tr><td colspan="4">&nbsp;</td></tr>\n';
@@ -389,10 +497,20 @@ export class BalanceSheetGenerator {
     html += `<td class="number">${IXBRLGenerator.tagMonetary(
       current.calledUpShareCapital,
       'CalledUpShareCapital',
-      'balance-sheet'
+      'balance-sheet',
+      'GBP',
+      0
     )}</td>\n`;
-    if (previous) {
-      html += `<td class="number">${previous.calledUpShareCapital?.toLocaleString('en-GB') || '-'}</td>\n`;
+    if (previous && previous.calledUpShareCapital) {
+      html += `<td class="number">${IXBRLGenerator.tagMonetary(
+        previous.calledUpShareCapital,
+        'CalledUpShareCapital',
+        'balance-sheet-previous',
+        'GBP',
+        0
+      )}</td>\n`;
+    } else if (previous) {
+      html += `<td class="number">-</td>\n`;
     }
     html += '</tr>\n';
 
@@ -403,10 +521,20 @@ export class BalanceSheetGenerator {
       html += `<td class="number">${IXBRLGenerator.tagMonetary(
         current.sharePremium,
         'SharePremiumAccount',
-        'balance-sheet'
+        'balance-sheet',
+        'GBP',
+        0
       )}</td>\n`;
-      if (previous) {
-        html += `<td class="number">${previous.sharePremium?.toLocaleString('en-GB') || '-'}</td>\n`;
+      if (previous && previous.sharePremium) {
+        html += `<td class="number">${IXBRLGenerator.tagMonetary(
+          previous.sharePremium,
+          'SharePremiumAccount',
+          'balance-sheet-previous',
+          'GBP',
+          0
+        )}</td>\n`;
+      } else if (previous) {
+        html += `<td class="number">-</td>\n`;
       }
       html += '</tr>\n';
     }
@@ -418,10 +546,20 @@ export class BalanceSheetGenerator {
       html += `<td class="number">${IXBRLGenerator.tagMonetary(
         current.otherReserves,
         'OtherReserves',
-        'balance-sheet'
+        'balance-sheet',
+        'GBP',
+        0
       )}</td>\n`;
-      if (previous) {
-        html += `<td class="number">${previous.otherReserves?.toLocaleString('en-GB') || '-'}</td>\n`;
+      if (previous && previous.otherReserves) {
+        html += `<td class="number">${IXBRLGenerator.tagMonetary(
+          previous.otherReserves,
+          'OtherReserves',
+          'balance-sheet-previous',
+          'GBP',
+          0
+        )}</td>\n`;
+      } else if (previous) {
+        html += `<td class="number">-</td>\n`;
       }
       html += '</tr>\n';
     }
@@ -432,10 +570,20 @@ export class BalanceSheetGenerator {
     html += `<td class="number">${IXBRLGenerator.tagMonetary(
       current.profitAndLossAccount,
       'RetainedEarningsAccumulatedLosses',
-      'balance-sheet'
+      'balance-sheet',
+      'GBP',
+      0
     )}</td>\n`;
-    if (previous) {
-      html += `<td class="number">${previous.profitAndLossAccount?.toLocaleString('en-GB') || '-'}</td>\n`;
+    if (previous && previous.profitAndLossAccount !== undefined) {
+      html += `<td class="number">${IXBRLGenerator.tagMonetary(
+        previous.profitAndLossAccount,
+        'RetainedEarningsAccumulatedLosses',
+        'balance-sheet-previous',
+        'GBP',
+        0
+      )}</td>\n`;
+    } else if (previous) {
+      html += `<td class="number">-</td>\n`;
     }
     html += '</tr>\n';
 
@@ -456,10 +604,18 @@ export class BalanceSheetGenerator {
     html += `<td class="number"><strong>${IXBRLGenerator.tagMonetary(
       totalEquity,
       'TotalEquity',
-      'balance-sheet'
+      'balance-sheet',
+      'GBP',
+      0
     )}</strong></td>\n`;
     if (previous) {
-      html += `<td class="number"><strong>${prevTotalEquity.toLocaleString('en-GB')}</strong></td>\n`;
+      html += `<td class="number"><strong>${IXBRLGenerator.tagMonetary(
+        prevTotalEquity,
+        'TotalEquity',
+        'balance-sheet-previous',
+        'GBP',
+        0
+      )}</strong></td>\n`;
     }
     html += '</tr>\n';
 

@@ -99,10 +99,18 @@ export class ProfitLossGenerator {
     html += `<td class="number"><strong>${IXBRLGenerator.tagMonetary(
       current.turnover,
       'Turnover',
-      'current'
+      'current',
+      'GBP',
+      0
     )}</strong></td>\n`;
     if (previous) {
-      html += `<td class="number"><strong>${previous.turnover.toLocaleString('en-GB')}</strong></td>\n`;
+      html += `<td class="number"><strong>${IXBRLGenerator.tagMonetary(
+        previous.turnover,
+        'Turnover',
+        'previous',
+        'GBP',
+        0
+      )}</strong></td>\n`;
     }
     html += '</tr>\n';
 
@@ -112,14 +120,22 @@ export class ProfitLossGenerator {
       html += '<td>2</td>\n';
       html += '<td>Cost of sales</td>\n';
       html += `<td class="number">${IXBRLGenerator.tagMonetary(
-        current.costOfSales,
+        -current.costOfSales,
         'CostSales',
         'current',
-        0,
-        '-'
+        'GBP',
+        0
       )}</td>\n`;
-      if (previous) {
-        html += `<td class="number">(${previous.costOfSales?.toLocaleString('en-GB') || '-'})</td>\n`;
+      if (previous && previous.costOfSales) {
+        html += `<td class="number">${IXBRLGenerator.tagMonetary(
+          -previous.costOfSales,
+          'CostSales',
+          'previous',
+          'GBP',
+          0
+        )}</td>\n`;
+      } else if (previous) {
+        html += `<td class="number">-</td>\n`;
       }
       html += '</tr>\n';
 
@@ -133,10 +149,18 @@ export class ProfitLossGenerator {
       html += `<td class="number"><strong>${IXBRLGenerator.tagMonetary(
         grossProfit,
         'GrossProfit',
-        'current'
+        'current',
+        'GBP',
+        0
       )}</strong></td>\n`;
       if (previous) {
-        html += `<td class="number"><strong>${prevGrossProfit.toLocaleString('en-GB')}</strong></td>\n`;
+        html += `<td class="number"><strong>${IXBRLGenerator.tagMonetary(
+          prevGrossProfit,
+          'GrossProfit',
+          'previous',
+          'GBP',
+          0
+        )}</strong></td>\n`;
       }
       html += '</tr>\n';
       html += '<tr><td colspan="4">&nbsp;</td></tr>\n';
@@ -167,10 +191,18 @@ export class ProfitLossGenerator {
     html += `<td class="number"><strong>${IXBRLGenerator.tagMonetary(
       current.turnover,
       'Turnover',
-      'current'
+      'current',
+      'GBP',
+      0
     )}</strong></td>\n`;
     if (previous) {
-      html += `<td class="number"><strong>${previous.turnover.toLocaleString('en-GB')}</strong></td>\n`;
+      html += `<td class="number"><strong>${IXBRLGenerator.tagMonetary(
+        previous.turnover,
+        'Turnover',
+        'previous',
+        'GBP',
+        0
+      )}</strong></td>\n`;
     }
     html += '</tr>\n';
     html += '<tr><td colspan="4">&nbsp;</td></tr>\n';
@@ -199,10 +231,18 @@ export class ProfitLossGenerator {
     html += `<td class="number"><strong>${IXBRLGenerator.tagMonetary(
       current.profitLossForFinancialYear,
       'ProfitLossForPeriod',
-      'current'
+      'current',
+      'GBP',
+      0
     )}</strong></td>\n`;
     if (previous) {
-      html += `<td class="number"><strong>${previous.profitLossForFinancialYear.toLocaleString('en-GB')}</strong></td>\n`;
+      html += `<td class="number"><strong>${IXBRLGenerator.tagMonetary(
+        previous.profitLossForFinancialYear,
+        'ProfitLossForPeriod',
+        'previous',
+        'GBP',
+        0
+      )}</strong></td>\n`;
     }
     html += '</tr>\n';
 
@@ -223,14 +263,22 @@ export class ProfitLossGenerator {
       html += '<td>3</td>\n';
       html += '<td>Administrative expenses</td>\n';
       html += `<td class="number">${IXBRLGenerator.tagMonetary(
-        current.administrativeExpenses,
+        -current.administrativeExpenses,
         'AdministrativeExpenses',
         'current',
-        0,
-        '-'
+        'GBP',
+        0
       )}</td>\n`;
-      if (previous) {
-        html += `<td class="number">(${previous.administrativeExpenses?.toLocaleString('en-GB') || '-'})</td>\n`;
+      if (previous && previous.administrativeExpenses) {
+        html += `<td class="number">${IXBRLGenerator.tagMonetary(
+          -previous.administrativeExpenses,
+          'AdministrativeExpenses',
+          'previous',
+          'GBP',
+          0
+        )}</td>\n`;
+      } else if (previous) {
+        html += `<td class="number">-</td>\n`;
       }
       html += '</tr>\n';
     }
@@ -240,14 +288,22 @@ export class ProfitLossGenerator {
       html += '<td>4</td>\n';
       html += '<td>Distribution costs</td>\n';
       html += `<td class="number">${IXBRLGenerator.tagMonetary(
-        current.distributionCosts,
+        -current.distributionCosts,
         'DistributionCosts',
         'current',
-        0,
-        '-'
+        'GBP',
+        0
       )}</td>\n`;
-      if (previous) {
-        html += `<td class="number">(${previous.distributionCosts?.toLocaleString('en-GB') || '-'})</td>\n`;
+      if (previous && previous.distributionCosts) {
+        html += `<td class="number">${IXBRLGenerator.tagMonetary(
+          -previous.distributionCosts,
+          'DistributionCosts',
+          'previous',
+          'GBP',
+          0
+        )}</td>\n`;
+      } else if (previous) {
+        html += `<td class="number">-</td>\n`;
       }
       html += '</tr>\n';
     }
@@ -257,14 +313,22 @@ export class ProfitLossGenerator {
       html += '<td>5</td>\n';
       html += '<td>Other operating charges</td>\n';
       html += `<td class="number">${IXBRLGenerator.tagMonetary(
-        current.otherOperatingCharges,
+        -current.otherOperatingCharges,
         'OtherOperatingExpensesFormat1',
         'current',
-        0,
-        '-'
+        'GBP',
+        0
       )}</td>\n`;
-      if (previous) {
-        html += `<td class="number">(${previous.otherOperatingCharges?.toLocaleString('en-GB') || '-'})</td>\n`;
+      if (previous && previous.otherOperatingCharges) {
+        html += `<td class="number">${IXBRLGenerator.tagMonetary(
+          -previous.otherOperatingCharges,
+          'OtherOperatingExpensesFormat1',
+          'previous',
+          'GBP',
+          0
+        )}</td>\n`;
+      } else if (previous) {
+        html += `<td class="number">-</td>\n`;
       }
       html += '</tr>\n';
     }
@@ -300,10 +364,18 @@ export class ProfitLossGenerator {
     html += `<td class="number"><strong>${IXBRLGenerator.tagMonetary(
       operatingProfit,
       'OperatingProfit',
-      'current'
+      'current',
+      'GBP',
+      0
     )}</strong></td>\n`;
     if (previous) {
-      html += `<td class="number"><strong>${prevOperatingProfit.toLocaleString('en-GB')}</strong></td>\n`;
+      html += `<td class="number"><strong>${IXBRLGenerator.tagMonetary(
+        prevOperatingProfit,
+        'OperatingProfit',
+        'previous',
+        'GBP',
+        0
+      )}</strong></td>\n`;
     }
     html += '</tr>\n';
     html += '<tr><td colspan="4">&nbsp;</td></tr>\n';
@@ -327,10 +399,20 @@ export class ProfitLossGenerator {
       html += `<td class="number">${IXBRLGenerator.tagMonetary(
         current.interestReceivable,
         'InterestReceivableSimilarIncome',
-        'current'
+        'current',
+        'GBP',
+        0
       )}</td>\n`;
-      if (previous) {
-        html += `<td class="number">${previous.interestReceivable?.toLocaleString('en-GB') || '-'}</td>\n`;
+      if (previous && previous.interestReceivable) {
+        html += `<td class="number">${IXBRLGenerator.tagMonetary(
+          previous.interestReceivable,
+          'InterestReceivableSimilarIncome',
+          'previous',
+          'GBP',
+          0
+        )}</td>\n`;
+      } else if (previous) {
+        html += `<td class="number">-</td>\n`;
       }
       html += '</tr>\n';
     }
@@ -340,14 +422,22 @@ export class ProfitLossGenerator {
       html += '<td>7</td>\n';
       html += '<td>Interest payable and similar charges</td>\n';
       html += `<td class="number">${IXBRLGenerator.tagMonetary(
-        current.interestPayable,
+        -current.interestPayable,
         'InterestPayableSimilarCharges',
         'current',
-        0,
-        '-'
+        'GBP',
+        0
       )}</td>\n`;
-      if (previous) {
-        html += `<td class="number">(${previous.interestPayable?.toLocaleString('en-GB') || '-'})</td>\n`;
+      if (previous && previous.interestPayable) {
+        html += `<td class="number">${IXBRLGenerator.tagMonetary(
+          -previous.interestPayable,
+          'InterestPayableSimilarCharges',
+          'previous',
+          'GBP',
+          0
+        )}</td>\n`;
+      } else if (previous) {
+        html += `<td class="number">-</td>\n`;
       }
       html += '</tr>\n';
     }
@@ -383,10 +473,18 @@ export class ProfitLossGenerator {
       html += `<td class="number"><strong>${IXBRLGenerator.tagMonetary(
         profitBeforeTax,
         'ProfitLossOnOrdinaryActivitiesBeforeTax',
-        'current'
+        'current',
+        'GBP',
+        0
       )}</strong></td>\n`;
       if (previous) {
-        html += `<td class="number"><strong>${prevProfitBeforeTax.toLocaleString('en-GB')}</strong></td>\n`;
+        html += `<td class="number"><strong>${IXBRLGenerator.tagMonetary(
+          prevProfitBeforeTax,
+          'ProfitLossOnOrdinaryActivitiesBeforeTax',
+          'previous',
+          'GBP',
+          0
+        )}</strong></td>\n`;
       }
       html += '</tr>\n';
       html += '<tr><td colspan="4">&nbsp;</td></tr>\n';
@@ -410,14 +508,22 @@ export class ProfitLossGenerator {
     html += '<td>8</td>\n';
     html += '<td>Tax on profit on ordinary activities</td>\n';
     html += `<td class="number">${IXBRLGenerator.tagMonetary(
-      current.taxOnProfitOrLoss,
+      -current.taxOnProfitOrLoss,
       'TaxTaxCreditOnProfitOrLossOnOrdinaryActivities',
       'current',
-      0,
-      '-'
+      'GBP',
+      0
     )}</td>\n`;
-    if (previous) {
-      html += `<td class="number">(${previous.taxOnProfitOrLoss?.toLocaleString('en-GB') || '-'})</td>\n`;
+    if (previous && previous.taxOnProfitOrLoss) {
+      html += `<td class="number">${IXBRLGenerator.tagMonetary(
+        -previous.taxOnProfitOrLoss,
+        'TaxTaxCreditOnProfitOrLossOnOrdinaryActivities',
+        'previous',
+        'GBP',
+        0
+      )}</td>\n`;
+    } else if (previous) {
+      html += `<td class="number">-</td>\n`;
     }
     html += '</tr>\n';
     html += '<tr><td colspan="4">&nbsp;</td></tr>\n';
@@ -438,10 +544,18 @@ export class ProfitLossGenerator {
     html += `<td class="number"><strong>${IXBRLGenerator.tagMonetary(
       current.profitLossForFinancialYear,
       'ProfitLoss',
-      'current'
+      'current',
+      'GBP',
+      0
     )}</strong></td>\n`;
     if (previous) {
-      html += `<td class="number"><strong>${previous.profitLossForFinancialYear.toLocaleString('en-GB')}</strong></td>\n`;
+      html += `<td class="number"><strong>${IXBRLGenerator.tagMonetary(
+        previous.profitLossForFinancialYear,
+        'ProfitLoss',
+        'previous',
+        'GBP',
+        0
+      )}</strong></td>\n`;
     }
     html += '</tr>\n';
 
