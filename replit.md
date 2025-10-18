@@ -63,12 +63,48 @@ Implemented full comparative year (prior period) functionality to meet UK accoun
    - New propertyIncome field to support CT600C supplementary page requirements
    - Schema foundation ready for conditional sections (CT600A-J) and comprehensive HMRC box-by-box validation
 
-**Next Steps for Full CT600 Compliance:**
-- Build CT600 wizard steps/tables that surface the new schema fields
-- Implement conditional logic to show/hide supplementary sections based on activity flags
-- Add CT600 comparative tables in wizard UI (similar to Annual Accounts)
-- Wire comparative inputs into tax computation and submission payloads
-- Implement box-by-box validation mapped to actual HMRC form boxes (1-165)
+### **CT600 HMRC Box-by-Box Validation & Enhanced Compliance** ✅ COMPLETED
+Implemented comprehensive CT600 validation system mapped to all 165 HMRC form boxes with prior year comparison and intelligent supplementary page detection:
+
+1. **CT600 Box Mapping System (`shared/ct600BoxMapping.ts`):**
+   - Comprehensive reference mapping for all 165 HMRC CT600 form boxes
+   - Each box includes: number, description, validation rules, dependencies, and conditional logic
+   - Supplementary pages (CT600A-J) defined with trigger conditions based on company activities
+   - Activity-based page detection: CT600C (Close Companies), CT600D (Loans to Participators), CT600H (Controlled Foreign Companies), CT600I (Cross-border), CT600J (Group Companies)
+
+2. **Enhanced Validation Engine (`shared/ct600Validation.ts`):**
+   - Three-tier validation system: errors (blocking), warnings (non-blocking), info (guidance)
+   - Box-by-box HMRC compliance checks with field-specific validation rules
+   - Automatic computation of all tax calculation boxes (40-165)
+   - Prior year variance analysis with alert thresholds for significant changes
+   - Intelligent supplementary page detection based on activity flags
+   - Marginal relief calculation for profits between £50k-£250k
+
+3. **Helper Components:**
+   - `PriorYearComparisonTable`: Side-by-side current vs prior year display with variance analysis and color-coded alerts (>30% change)
+   - `CT600BoxGuidance`: Box-level contextual help showing HMRC box number, description, validation rules, and examples
+   - `CT600BoxSummary`: Complete box breakdown component for review display
+
+4. **Enhanced Backend (`/api/ct600/compute`):**
+   - Integrated comprehensive validation and computation logic
+   - Returns categorized validation results (errors, warnings, info)
+   - Identifies required supplementary pages based on company activities
+   - Generates complete box-by-box breakdown for HMRC form mapping
+   - Prior year data integration for comparative analysis
+
+5. **Enhanced CT600 Wizard:**
+   - **Step 2 Prior Year Comparison:** Side-by-side display of 5 key metrics (Turnover, Cost of Sales, Operating Expenses, Depreciation, Capital Allowances) with variance alerts
+   - **Step 4 Review Enhancements:**
+     - Validation warnings display with suggested actions
+     - Required supplementary pages alert (CT600A-J) based on activity detection
+     - Complete box-by-box breakdown table showing all 165 HMRC boxes with values
+     - Enhanced tax computation summary with marginal relief details
+
+**Technical Implementation:**
+- Box mapping supports conditional logic for complex dependencies (e.g., Box 155 only shown if Box 150 > 0)
+- Validation engine performs real-time checks against HMRC rules (e.g., negative profits validation, associated companies limits)
+- Prior year variance analysis automatically flags material changes requiring explanation
+- Supplementary page triggers align with HMRC CT600 guidance and Companies Act requirements
 
 ## User Preferences
 - **Silicon Valley-level UI/UX**: Premium design with glass morphism, gradients, and professional visual hierarchy
