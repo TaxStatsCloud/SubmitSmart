@@ -4,6 +4,8 @@ import { BalanceSheetGenerator, BalanceSheetData } from './BalanceSheetGenerator
 import { ProfitLossGenerator, ProfitLossData } from './ProfitLossGenerator';
 import { DirectorsReportGenerator, DirectorsReportData } from './DirectorsReportGenerator';
 import { NotesToAccountsGenerator, NotesToAccountsData } from './AccountingPoliciesGenerator';
+import { CashFlowStatementGenerator, CashFlowData } from './CashFlowStatementGenerator';
+import { StrategicReportGenerator, StrategicReportData } from './StrategicReportGenerator';
 import { EntitySize } from './EntitySizeDetector';
 
 export interface AnnualAccountsPackageData {
@@ -19,6 +21,11 @@ export interface AnnualAccountsPackageData {
   directorsReport: DirectorsReportData;
   notes: NotesToAccountsData;
   entitySize: EntitySize;
+  cashFlow?: {
+    currentYear: CashFlowData;
+    previousYear?: CashFlowData;
+  };
+  strategicReport?: StrategicReportData;
 }
 
 export class IXBRLPackagingService {
@@ -26,7 +33,7 @@ export class IXBRLPackagingService {
    * Generate complete iXBRL HTML document for Annual Accounts
    */
   static generateIXBRLDocument(data: AnnualAccountsPackageData): string {
-    const { context, balanceSheet, profitLoss, directorsReport, notes, entitySize } = data;
+    const { context, balanceSheet, profitLoss, directorsReport, notes, entitySize, cashFlow, strategicReport } = data;
 
     // Start document
     let html = IXBRLGenerator.generateDocumentHeader(context);
@@ -39,6 +46,18 @@ export class IXBRLPackagingService {
     html += '<h2>Annual Accounts</h2>\n';
     html += `<h3>For the year ended ${context.periodEnd}</h3>\n`;
     html += '<br/>\n';
+
+    // Generate Strategic Report (Large companies only)
+    if (entitySize === 'large' && strategicReport) {
+      html += '<div class="strategic-report">\n';
+      html += StrategicReportGenerator.generate(context, strategicReport);
+      html += '</div>\n';
+      html += '<br/><div class="page-break"></div><br/>\n';
+    }
+
+    // Generate Directors' Report
+    html += DirectorsReportGenerator.generate(directorsReport, entitySize);
+    html += '<br/><div class="page-break"></div><br/>\n';
 
     // Generate Balance Sheet
     html += '<div class="balance-sheet">\n';
@@ -61,9 +80,13 @@ export class IXBRLPackagingService {
     html += '</div>\n';
     html += '<br/><div class="page-break"></div><br/>\n';
 
-    // Generate Directors' Report
-    html += DirectorsReportGenerator.generate(directorsReport, entitySize);
-    html += '<br/><div class="page-break"></div><br/>\n';
+    // Generate Cash Flow Statement (Medium and Large companies only)
+    if ((entitySize === 'medium' || entitySize === 'large') && cashFlow) {
+      html += '<div class="cash-flow-statement">\n';
+      html += CashFlowStatementGenerator.generate(context, cashFlow);
+      html += '</div>\n';
+      html += '<br/><div class="page-break"></div><br/>\n';
+    }
 
     // Generate Notes to the Accounts
     html += NotesToAccountsGenerator.generate(notes, entitySize);

@@ -96,6 +96,24 @@ const annualAccountsSchema = z.object({
   directorNames: z.string().min(1, "At least one director required"),
   auditExempt: z.boolean().default(true),
   accountingPolicies: z.string().optional(),
+  
+  // Cash Flow Statement (Medium/Large companies only)
+  profitBeforeTax: z.coerce.number().default(0).optional(),
+  depreciation: z.coerce.number().min(0).default(0).optional(),
+  increaseDecreaseInStocks: z.coerce.number().default(0).optional(),
+  increaseDecreaseInDebtors: z.coerce.number().default(0).optional(),
+  increaseDecreaseInCreditors: z.coerce.number().default(0).optional(),
+  taxPaid: z.coerce.number().min(0).default(0).optional(),
+  purchaseOfTangibleAssets: z.coerce.number().min(0).default(0).optional(),
+  newLoansReceived: z.coerce.number().min(0).default(0).optional(),
+  repaymentOfBorrowings: z.coerce.number().min(0).default(0).optional(),
+  openingCash: z.coerce.number().default(0).optional(),
+  closingCash: z.coerce.number().default(0).optional(),
+  
+  // Strategic Report (Large companies only)
+  businessModel: z.string().optional(),
+  principalRisks: z.string().optional(),
+  keyPerformanceIndicators: z.string().optional(),
 });
 
 type AnnualAccountsFormData = z.infer<typeof annualAccountsSchema>;
@@ -159,6 +177,22 @@ export default function AnnualAccountsWizard() {
       directorNames: "",
       auditExempt: true,
       accountingPolicies: "",
+      // Cash Flow Statement
+      profitBeforeTax: 0,
+      depreciation: 0,
+      increaseDecreaseInStocks: 0,
+      increaseDecreaseInDebtors: 0,
+      increaseDecreaseInCreditors: 0,
+      taxPaid: 0,
+      purchaseOfTangibleAssets: 0,
+      newLoansReceived: 0,
+      repaymentOfBorrowings: 0,
+      openingCash: 0,
+      closingCash: 0,
+      // Strategic Report
+      businessModel: "",
+      principalRisks: "",
+      keyPerformanceIndicators: "",
     },
   });
 
