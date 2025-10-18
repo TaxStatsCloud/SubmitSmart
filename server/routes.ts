@@ -703,8 +703,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post('/api/tax-filings/:companyId/:period/calculate', async (req, res) => {
+  app.post('/api/tax-filings/:companyId/:period/calculate', isAuthenticated, async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
       const { companyId, period } = req.params;
       
       // Get existing filing
@@ -754,9 +758,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post('/api/tax-filings/:companyId/:period/submit', async (req, res) => {
+  app.post('/api/tax-filings/:companyId/:period/submit', isAuthenticated, async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
       const { companyId, period } = req.params;
+      const userId = (req.user as any).id;
       
       // Get existing filing
       const existingFilings = await storage.getFilingsByCompany(Number(companyId));
@@ -773,7 +782,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.createActivity({
           type: 'tax_filing_submitted',
           description: `Corporation Tax return submitted for ${period}`,
-          userId: (req as any).user?.uid || 1,
+          userId,
           companyId: Number(companyId),
           metadata: {
             filingId: taxFiling.id,
@@ -1911,13 +1920,15 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
   });
 
   // Filing routes
-  app.post('/api/filings', async (req, res) => {
+  app.post('/api/filings', isAuthenticated, async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+      
+      const userId = (req.user as any).id;
       const validatedData = insertFilingSchema.parse(req.body);
       const filing = await storage.createFiling(validatedData);
-      
-      // In a real app, would get user ID from session
-      const userId = validatedData.userId || 1;
       
       // Create activity for filing creation
       await storage.createActivity({
@@ -1980,8 +1991,13 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
     }
   });
 
-  app.patch('/api/filings/:id', async (req, res) => {
+  app.patch('/api/filings/:id', isAuthenticated, async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+      
+      const userId = (req.user as any).id;
       const filingId = parseInt(req.params.id);
       const filing = await storage.getFiling(filingId);
       
@@ -1990,9 +2006,6 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
       }
       
       const updatedFiling = await storage.updateFiling(filingId, req.body);
-      
-      // In a real app, would get user ID from session
-      const userId = filing.userId || 1;
       
       // Create activity for filing update
       await storage.createActivity({
@@ -2026,8 +2039,13 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
     }
   });
 
-  app.post('/api/filings/:id/submit', async (req, res) => {
+  app.post('/api/filings/:id/submit', isAuthenticated, async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+      
+      const userId = (req.user as any).id;
       const filingId = parseInt(req.params.id);
       const filing = await storage.getFiling(filingId);
       
@@ -2040,9 +2058,6 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
         status: 'submitted',
         submitDate: new Date()
       });
-      
-      // In a real app, would get user ID from session
-      const userId = filing.userId || 1;
       
       // Create activity for filing submission
       await storage.createActivity({
@@ -2076,8 +2091,13 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
     }
   });
 
-  app.post('/api/filings/:id/approve', async (req, res) => {
+  app.post('/api/filings/:id/approve', isAuthenticated, async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+      
+      const userId = (req.user as any).id;
       const filingId = parseInt(req.params.id);
       const filing = await storage.getFiling(filingId);
       
@@ -2118,9 +2138,6 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
         status: 'approved'
       });
       
-      // In a real app, would get user ID from session
-      const userId = filing.userId || 1;
-      
       // Create activity for filing approval
       await storage.createActivity({
         userId,
@@ -2136,8 +2153,13 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
     }
   });
 
-  app.post('/api/filings/:id/reject', async (req, res) => {
+  app.post('/api/filings/:id/reject', isAuthenticated, async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+      
+      const userId = (req.user as any).id;
       const filingId = parseInt(req.params.id);
       const { reason } = req.body;
       
@@ -2162,9 +2184,6 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
           rejectionReason: reason.trim()
         }
       });
-      
-      // In a real app, would get user ID from session
-      const userId = filing.userId || 1;
       
       // Create activity for filing rejection
       await storage.createActivity({
