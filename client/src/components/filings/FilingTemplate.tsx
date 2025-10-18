@@ -78,11 +78,11 @@ const FilingTemplate = ({
     <div className="container py-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold flex items-center">
+          <h1 className="text-3xl font-bold flex items-center text-gray-900 dark:text-white">
             {icon}
             <span className="ml-2">{title}</span>
           </h1>
-          <p className="text-muted-foreground mt-1">{description}</p>
+          <p className="text-gray-700 dark:text-gray-300 mt-1 font-medium">{description}</p>
         </div>
         
         <div className="flex items-center gap-3">

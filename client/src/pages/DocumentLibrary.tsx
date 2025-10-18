@@ -45,6 +45,38 @@ const DocumentLibrary = () => {
     },
   });
 
+  // Handle document download
+  const handleDownload = async (docId: number, docName: string) => {
+    try {
+      const response = await fetch(`/api/documents/${docId}/download`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to download document');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = docName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Download Started",
+        description: `Downloading ${docName}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Download Failed",
+        description: "Could not download the document",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Filter documents based on search term and selected type
   const filteredDocuments = Array.isArray(documents) ? documents.filter(doc => {
     const matchesSearch = doc.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -140,7 +172,12 @@ const DocumentLibrary = () => {
                         ) : doc.processingStatus}
                       </Badge>
                       
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleDownload(doc.id, doc.name)}
+                        data-testid={`button-download-${doc.id}`}
+                      >
                         <Download className="h-4 w-4 mr-1" />
                         Download
                       </Button>

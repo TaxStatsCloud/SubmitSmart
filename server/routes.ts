@@ -1260,6 +1260,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Download document endpoint
+  app.get('/api/documents/:id/download', async (req, res) => {
+    try {
+      const documentId = parseInt(req.params.id);
+      const document = await storage.getDocument(documentId);
+      
+      if (!document) {
+        return res.status(404).json({ message: 'Document not found' });
+      }
+      
+      // Import fs for file operations
+      const fs = await import('fs');
+      const path = await import('path');
+      
+      // Resolve the full file path
+      const filePath = path.resolve(document.path);
+      
+      // Check if file exists
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ message: 'File not found on server' });
+      }
+      
+      // Set appropriate headers
+      res.setHeader('Content-Type', document.contentType);
+      res.setHeader('Content-Disposition', `attachment; filename="${document.name}"`);
+      res.setHeader('Content-Length', document.size.toString());
+      
+      // Stream the file
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.pipe(res);
+    } catch (error: any) {
+      console.error('Document download error:', error);
+      res.status(500).json({ message: 'Failed to download document' });
+    }
+  });
+
   // AI-processed financial data aggregation endpoint
   app.get('/api/tax-filings/:companyId/:period/processed-data', async (req, res) => {
     try {
