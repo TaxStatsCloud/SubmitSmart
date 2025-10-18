@@ -22,6 +22,8 @@ import { HelpPanel } from "@/components/wizard/HelpPanel";
 import { ValidationGuidance } from "@/components/wizard/ValidationGuidance";
 import { FilingSubmissionWarning } from "@/components/filing/FilingSubmissionWarning";
 import { DocumentSelector } from "@/components/filings/DocumentSelector";
+import { PriorYearComparisonTable } from "@/components/ct600/PriorYearComparisonTable";
+import { CT600BoxSummary } from "@/components/ct600/CT600BoxGuidance";
 
 // CT600 Form Schema with Comparative Period Support and Activity Detection
 const ct600Schema = z.object({
@@ -830,6 +832,50 @@ export default function CT600Filing() {
                       />
                     </TabsContent>
                   </Tabs>
+
+                  {/* Prior Year Comparison (if prior year data available) */}
+                  {priorYearData?.success && form.getValues().turnoverPrior && (
+                    <div className="mt-8">
+                      <Separator className="mb-6" />
+                      <PriorYearComparisonTable
+                        title="Prior Year Comparison"
+                        rows={[
+                          {
+                            label: "Turnover",
+                            current: form.watch("turnover") || 0,
+                            prior: form.watch("turnoverPrior") || 0,
+                            boxNumber: "40"
+                          },
+                          {
+                            label: "Cost of Sales",
+                            current: form.watch("costOfSales") || 0,
+                            prior: form.watch("costOfSalesPrior") || 0,
+                            boxNumber: "41"
+                          },
+                          {
+                            label: "Operating Expenses",
+                            current: form.watch("operatingExpenses") || 0,
+                            prior: form.watch("operatingExpensesPrior") || 0,
+                            boxNumber: "43"
+                          },
+                          {
+                            label: "Depreciation Add-back",
+                            current: form.watch("depreciationAddBack") || 0,
+                            prior: form.watch("depreciationAddBackPrior") || 0,
+                            boxNumber: "70"
+                          },
+                          {
+                            label: "Capital Allowances",
+                            current: form.watch("capitalAllowances") || 0,
+                            prior: form.watch("capitalAllowancesPrior") || 0,
+                            boxNumber: "71"
+                          },
+                        ]}
+                        showAlerts={true}
+                        alertThreshold={30}
+                      />
+                    </div>
+                  )}
 
                   <div className="flex justify-between mt-6">
                     <Button 

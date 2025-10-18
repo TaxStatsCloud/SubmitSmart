@@ -2926,6 +2926,7 @@ Generate the note content:`;
   /**
    * CT600 - Compute Corporation Tax
    * POST /api/ct600/compute
+   * Enhanced with HMRC box-by-box validation and prior year comparison
    */
   app.post('/api/ct600/compute', express.json(), async (req, res) => {
     try {
@@ -2933,28 +2934,82 @@ Generate the note content:`;
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      const { TaxComputationService } = await import('./services/taxComputationService');
-      const taxService = new TaxComputationService();
+      const { validateCT600, computeCT600Tax, generateBoxBreakdown } = await import('../shared/ct600Validation');
 
-      const financialData = {
+      // Prepare CT600 form data
+      const formData = {
+        companyName: req.body.companyName || '',
+        companyNumber: req.body.companyNumber || '',
+        utr: req.body.utr || '',
+        accountingPeriodStart: req.body.accountingPeriodStart,
+        accountingPeriodEnd: req.body.accountingPeriodEnd,
+        
+        // Activity Detection
+        hasPropertyIncome: req.body.hasPropertyIncome || false,
+        isCloseCompany: req.body.isCloseCompany || false,
+        hasOverseasIncome: req.body.hasOverseasIncome || false,
+        hasControlledForeignCompanies: req.body.hasControlledForeignCompanies || false,
+        hasGroupRelief: req.body.hasGroupRelief || false,
+        paidDividends: req.body.paidDividends || false,
+        hasTransferPricing: req.body.hasTransferPricing || false,
+        
+        // Trading Income
         turnover: req.body.turnover || 0,
         costOfSales: req.body.costOfSales || 0,
         operatingExpenses: req.body.operatingExpenses || 0,
+        
+        // Non-Trading Income
         interestReceived: req.body.interestReceived || 0,
         dividendsReceived: req.body.dividendsReceived || 0,
+        propertyIncome: req.body.propertyIncome || 0,
+        
+        // Adjustments
         depreciationAddBack: req.body.depreciationAddBack || 0,
         capitalAllowances: req.body.capitalAllowances || 0,
+        entertainmentExpenses: req.body.entertainmentExpenses || 0,
+        
+        // Reliefs
         lossesBroughtForward: req.body.lossesBroughtForward || 0,
         rdReliefClaim: req.body.rdReliefClaim || 0,
         charitableDonations: req.body.charitableDonations || 0,
+        
+        // Associated Companies
         numberOfAssociatedCompanies: req.body.numberOfAssociatedCompanies || 0,
-        accountingPeriodStart: req.body.accountingPeriodStart,
-        accountingPeriodEnd: req.body.accountingPeriodEnd,
+        
+        // Prior Year Data (for comparison)
+        turnoverPrior: req.body.turnoverPrior || 0,
+        costOfSalesPrior: req.body.costOfSalesPrior || 0,
+        operatingExpensesPrior: req.body.operatingExpensesPrior || 0,
+        interestReceivedPrior: req.body.interestReceivedPrior || 0,
+        dividendsReceivedPrior: req.body.dividendsReceivedPrior || 0,
+        propertyIncomePrior: req.body.propertyIncomePrior || 0,
+        depreciationAddBackPrior: req.body.depreciationAddBackPrior || 0,
+        capitalAllowancesPrior: req.body.capitalAllowancesPrior || 0,
+        lossesBroughtForwardPrior: req.body.lossesBroughtForwardPrior || 0,
+        rdReliefClaimPrior: req.body.rdReliefClaimPrior || 0,
+        charitableDonationsPrior: req.body.charitableDonationsPrior || 0,
       };
 
-      const computation = taxService.computeTax(financialData);
-      
-      res.json(computation);
+      // Validate form data
+      const validation = validateCT600(formData);
+
+      // Compute tax
+      const computation = computeCT600Tax(formData);
+
+      // Generate box-by-box breakdown
+      const boxBreakdown = generateBoxBreakdown(formData, computation);
+
+      res.json({
+        ...computation,
+        validation: {
+          isValid: validation.isValid,
+          errors: validation.errors,
+          warnings: validation.warnings,
+          requiredSupplementaryPages: validation.requiredSupplementaryPages,
+        },
+        boxBreakdown,
+        corporationTaxDue: computation.corporationTaxDue, // Maintain backward compatibility
+      });
     } catch (error: any) {
       console.error('[CT600] Computation error:', error);
       res.status(500).json({ 
