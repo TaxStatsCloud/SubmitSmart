@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import Upload from "@/pages/Upload";
+import DocumentAuditTrail from "@/pages/DocumentAuditTrail";
 import NewFiling from "@/pages/NewFiling";
 import UserProfile from "@/pages/UserProfile";
 import Billing from "@/pages/Billing";
@@ -134,6 +135,7 @@ function Router() {
         {/* Document routes */}
         <Route path="/upload" component={Upload} />
         <Route path="/documents" component={DocumentLibrary} />
+        <Route path="/documents/audit-trail" component={DocumentAuditTrail} />
         
         {/* Account routes */}
         <Route path="/profile" component={UserProfile} />
