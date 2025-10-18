@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { FileText, ChevronDown } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { FILING_COSTS } from '@shared/filingCosts';
 
 export default function FAQ() {
   const faqs = [
@@ -15,7 +16,7 @@ export default function FAQ() {
         },
         {
           q: "How does the credit system work?",
-          a: "Our platform uses a credit-based billing system. Different filings require different credit amounts: Confirmation Statement (50 credits), Annual Accounts (25 credits), and Corporation Tax CT600 (30 credits). Purchase credit packages based on your filing needs."
+          a: `Our platform uses a credit-based billing system. Different filings require different credit amounts: Confirmation Statement (${FILING_COSTS.CONFIRMATION_STATEMENT} credits), Annual Accounts (${FILING_COSTS.ANNUAL_ACCOUNTS} credits), and Corporation Tax CT600 (${FILING_COSTS.CORPORATION_TAX} credits). Purchase credit packages based on your filing needs.`
         },
         {
           q: "Is PromptSubmissions compliant with Companies House requirements?",

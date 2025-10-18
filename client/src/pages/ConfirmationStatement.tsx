@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/use-auth";
+import { FILING_COSTS } from "@shared/filingCosts";
 
 const ConfirmationStatement = () => {
   const { toast } = useToast();
@@ -56,7 +57,7 @@ const ConfirmationStatement = () => {
           </div>
           <div className="flex items-center justify-between mt-1">
             <span>PromptSubmissions Service:</span>
-            <span className="font-medium">50 credits</span>
+            <span className="font-medium">{FILING_COSTS.CONFIRMATION_STATEMENT} credits</span>
           </div>
         </div>
         

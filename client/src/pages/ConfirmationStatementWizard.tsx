@@ -23,6 +23,7 @@ import { HelpPanel } from "@/components/wizard/HelpPanel";
 import { ValidationGuidance } from "@/components/wizard/ValidationGuidance";
 import { FilingSubmissionWarning } from "@/components/filing/FilingSubmissionWarning";
 import { DocumentSelector } from "@/components/filings/DocumentSelector";
+import { FILING_COSTS } from "@shared/filingCosts";
 
 // Shareholder schema
 const shareholderSchema = z.object({
@@ -1320,7 +1321,7 @@ export default function ConfirmationStatementWizard() {
                   {/* Filing Cost */}
                   <Alert>
                     <AlertDescription className="flex items-center justify-between">
-                      <span>Filing cost: <strong>50 credits</strong></span>
+                      <span>Filing cost: <strong>{FILING_COSTS.CONFIRMATION_STATEMENT} credits</strong></span>
                       <span className="text-sm text-muted-foreground">Companies House fee: £34.00</span>
                     </AlertDescription>
                   </Alert>

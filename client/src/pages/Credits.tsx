@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { Check, CreditCard, Zap } from 'lucide-react';
 import { Link } from 'wouter';
+import { FILING_COSTS } from '@shared/filingCosts';
 
 // Initialize Stripe 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
@@ -321,7 +322,7 @@ const Credits = () => {
               <CardTitle>Confirmation Statement</CardTitle>
             </CardHeader>
             <CardContent className="text-center">
-              <div className="text-5xl font-bold mb-2">50</div>
+              <div className="text-5xl font-bold mb-2">{FILING_COSTS.CONFIRMATION_STATEMENT}</div>
               <div className="text-lg">credits per filing</div>
             </CardContent>
             <CardFooter className="text-sm text-muted-foreground">
@@ -333,7 +334,7 @@ const Credits = () => {
               <CardTitle>Annual Accounts</CardTitle>
             </CardHeader>
             <CardContent className="text-center">
-              <div className="text-5xl font-bold mb-2">25</div>
+              <div className="text-5xl font-bold mb-2">{FILING_COSTS.ANNUAL_ACCOUNTS}</div>
               <div className="text-lg">credits per filing</div>
             </CardContent>
             <CardFooter className="text-sm text-muted-foreground">
@@ -345,7 +346,7 @@ const Credits = () => {
               <CardTitle>Corporation Tax</CardTitle>
             </CardHeader>
             <CardContent className="text-center">
-              <div className="text-5xl font-bold mb-2">30</div>
+              <div className="text-5xl font-bold mb-2">{FILING_COSTS.CORPORATION_TAX}</div>
               <div className="text-lg">credits per filing</div>
             </CardContent>
             <CardFooter className="text-sm text-muted-foreground">

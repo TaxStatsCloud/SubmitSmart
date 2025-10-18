@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/use-auth";
+import { FILING_COSTS } from "@shared/filingCosts";
 
 const CorporationTax = () => {
   const { toast } = useToast();
@@ -61,7 +62,7 @@ const CorporationTax = () => {
           </div>
           <div className="flex items-center justify-between mt-1">
             <span>PromptSubmissions Service:</span>
-            <span className="font-medium">30 credits</span>
+            <span className="font-medium">{FILING_COSTS.CORPORATION_TAX} credits</span>
           </div>
         </div>
         

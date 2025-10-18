@@ -6,6 +6,7 @@ import { useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+import { FILING_COSTS } from "@shared/filingCosts";
 
 interface CreditPackage {
   id: string;
@@ -116,15 +117,15 @@ const Billing = () => {
                   <div>
                     <div className="flex justify-between text-sm mb-1">
                       <span className="text-neutral-700 dark:text-neutral-300">Confirmation Statements</span>
-                      <span className="font-semibold text-neutral-900 dark:text-neutral-100">10 credits each</span>
+                      <span className="font-semibold text-neutral-900 dark:text-neutral-100">{FILING_COSTS.CONFIRMATION_STATEMENT} credits each</span>
                     </div>
                     <div className="flex justify-between text-sm mb-1">
                       <span className="text-neutral-700 dark:text-neutral-300">Annual Accounts</span>
-                      <span className="font-semibold text-neutral-900 dark:text-neutral-100">25 credits each</span>
+                      <span className="font-semibold text-neutral-900 dark:text-neutral-100">{FILING_COSTS.ANNUAL_ACCOUNTS} credits each</span>
                     </div>
                     <div className="flex justify-between text-sm mb-1">
                       <span className="text-neutral-700 dark:text-neutral-300">Corporation Tax Returns</span>
-                      <span className="font-semibold text-neutral-900 dark:text-neutral-100">30 credits each</span>
+                      <span className="font-semibold text-neutral-900 dark:text-neutral-100">{FILING_COSTS.CORPORATION_TAX} credits each</span>
                     </div>
                   </div>
                 </div>

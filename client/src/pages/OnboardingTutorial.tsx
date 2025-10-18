@@ -17,6 +17,7 @@ import {
   Zap
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { FILING_COSTS } from "@shared/filingCosts";
 
 interface OnboardingStep {
   title: string;
@@ -85,15 +86,15 @@ export default function OnboardingTutorial() {
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-neutral-700">Annual Accounts (iXBRL)</span>
-                <Badge variant="secondary" className="bg-white">120 credits (~£12)</Badge>
+                <Badge variant="secondary" className="bg-white">{FILING_COSTS.ANNUAL_ACCOUNTS} credits (£{FILING_COSTS.ANNUAL_ACCOUNTS})</Badge>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-neutral-700">Corporation Tax (CT600)</span>
-                <Badge variant="secondary" className="bg-white">100 credits (~£10)</Badge>
+                <Badge variant="secondary" className="bg-white">{FILING_COSTS.CORPORATION_TAX} credits (£{FILING_COSTS.CORPORATION_TAX})</Badge>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-neutral-700">Confirmation Statement</span>
-                <Badge variant="secondary" className="bg-white">50 credits (~£5)</Badge>
+                <Badge variant="secondary" className="bg-white">{FILING_COSTS.CONFIRMATION_STATEMENT} credits (£{FILING_COSTS.CONFIRMATION_STATEMENT})</Badge>
               </div>
             </div>
           </div>

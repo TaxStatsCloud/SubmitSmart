@@ -1005,8 +1005,8 @@ export class MemStorage implements IStorage {
       {
         id: this.costId++,
         filingType: 'confirmation_statement',
-        creditCost: 70, // £70 per filing (includes £13 Companies House fee)
-        actualCost: 1300, // £13.00 in pence (Companies House fee)
+        creditCost: 100, // £100 per filing (standardized pricing)
+        actualCost: 3400, // £34.00 in pence (Companies House fee)
         description: 'Annual confirmation statement submission to Companies House',
         isActive: true,
         createdAt: new Date(),
@@ -1027,7 +1027,7 @@ export class MemStorage implements IStorage {
       {
         id: this.costId++,
         filingType: 'annual_accounts',
-        creditCost: 250, // £250 per filing - comprehensive annual accounts
+        creditCost: 200, // £200 per filing (standardized pricing)
         actualCost: 0,
         description: 'Annual accounts with P&L requirements (post-April 2027 compliant)',
         isActive: true,
@@ -1037,7 +1037,7 @@ export class MemStorage implements IStorage {
       {
         id: this.costId++,
         filingType: 'corporation_tax',
-        creditCost: 70, // £70 per filing - as requested by user
+        creditCost: 150, // £150 per filing (standardized pricing)
         actualCost: 0,
         description: 'Corporation tax return (CT600) preparation and submission',
         isActive: true,
