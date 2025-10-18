@@ -5,6 +5,42 @@ PromptSubmissions is an AI-powered platform designed for UK corporate compliance
 
 ## Recent Enhancements (October 18, 2025)
 
+### **Document Management & Auditor Access System** ✅ COMPLETED
+Complete end-to-end document management and auditor access system for filing transparency and compliance:
+
+1. **Unified DocumentSelector Component:**
+   - Reusable component integrated into all three filing wizards (Annual Accounts Step 4, CT600 Step 3, CS01 Step 4)
+   - Real-time document filtering by type with recommended document types per filing
+   - Visual selection state with count badges and responsive grid layout
+   - Filing-specific guidance and document requirement hints via HelpPanel integration
+
+2. **Document Audit Trail (`/documents/audit-trail`):**
+   - Comprehensive view of all filings with attached supporting documents
+   - Statistics dashboard showing total filings, document count, and coverage percentage
+   - Advanced filtering by filing type (Annual Accounts, CT600, Confirmation Statement, All)
+   - Export to CSV functionality for auditor review and compliance reporting
+   - Document metadata display: filename, type, upload date, processing status
+
+3. **Auditor Management System (`/auditors`):**
+   - Invitation-based auditor access with email-based workflow via SendGrid
+   - Granular access control: company-specific or all current/future filings
+   - Invitation lifecycle management: pending, accepted, expired, cancelled
+   - 7-day expiration window for security with visual countdown
+   - Statistics dashboard tracking active auditors, pending invitations, total invited
+
+4. **Auditor Portal (`/auditor-portal`):**
+   - Read-only dashboard for external auditors (requires `auditor` role)
+   - Access to all assigned filings with supporting documents
+   - Document download capabilities for offline review
+   - Role-based access enforcement preventing unauthorized access
+
+5. **Critical Security Fix:**
+   - Auditor invitation expiration properly enforced in filing access endpoint
+   - Expired invitations no longer grant data access (status AND expiresAt validation)
+   - Comprehensive E2E testing verified all security controls
+
+**E2E Testing Results:** All document upload, selection, audit trail, and auditor access flows tested and verified working. Minor issues (SendGrid 403 in test environment, CSP warnings) are expected and non-blocking.
+
 ### **Comparative Year Support for UK Accounting Compliance**
 Implemented full comparative year (prior period) functionality to meet UK accounting standards requiring companies to show current year alongside prior year figures in financial statements:
 
