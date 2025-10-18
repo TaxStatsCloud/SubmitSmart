@@ -90,12 +90,20 @@ Fixed 13+ endpoints with hardcoded `userId = 1` or `companyId = 1` that would ha
    - `POST /api/assistant/messages` - Added auth, uses `req.user.id`
    - `DELETE /api/assistant/messages` - Added auth, uses `req.user.id`
 
-5. **Filing Management Endpoints** (6 endpoints):
+5. **Filing Management Endpoints** (7 endpoints):
    - `POST /api/filings` - Added auth, uses `req.user.id`
    - `PATCH /api/filings/:id` - Added auth, uses `req.user.id`
+   - `DELETE /api/filings/:id` - Added auth, uses `req.user.id` (prevents anonymous deletion)
    - `POST /api/filings/:id/submit` - Added auth, uses `req.user.id`
    - `POST /api/filings/:id/approve` - Added auth, uses `req.user.id`
    - `POST /api/filings/:id/reject` - Added auth, uses `req.user.id`
+
+6. **Admin Monitoring Endpoints** (5 endpoints):
+   - `GET /api/admin/agent-stats` - Added auth (prevents public access to prospect data)
+   - `GET /api/admin/prospects` - Added auth (prevents public access to lead database)
+   - `GET /api/admin/outreach` - Added auth (prevents public access to email campaigns)
+   - `GET /api/admin/user-usage` - Added auth (prevents public access to user analytics)
+   - `GET /api/admin/filings` - Added auth (prevents public access to all filing data)
 
 ### Security Improvements
 - **Authentication Enforcement**: All sensitive endpoints now require `isAuthenticated` middleware

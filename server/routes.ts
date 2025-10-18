@@ -491,8 +491,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Admin routes for Companies House agent monitoring
-  app.get('/api/admin/agent-stats', async (req, res) => {
+  app.get('/api/admin/agent-stats', isAuthenticated, async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
       const { dateRange } = req.query;
       const { companiesHouseAgent } = await import('./services/companiesHouseAgent');
       const stats = await companiesHouseAgent.getAgentStats(dateRange as string);
@@ -502,8 +506,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get('/api/admin/prospects', async (req, res) => {
+  app.get('/api/admin/prospects', isAuthenticated, async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
       const { companiesHouseAgent } = await import('./services/companiesHouseAgent');
       const prospects = await companiesHouseAgent.getProspects(req.query);
       res.json(prospects);
@@ -512,8 +520,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get('/api/admin/outreach', async (req, res) => {
+  app.get('/api/admin/outreach', isAuthenticated, async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
       const { companiesHouseAgent } = await import('./services/companiesHouseAgent');
       const outreach = await companiesHouseAgent.getOutreachActivity(req.query);
       res.json(outreach);
@@ -522,8 +534,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get('/api/admin/user-usage', async (req, res) => {
+  app.get('/api/admin/user-usage', isAuthenticated, async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
       // Get user activity from storage
       const activities = await storage.getAllActivities();
       const users = await storage.getAllUsers ? await storage.getAllUsers() : [];
@@ -547,8 +563,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get('/api/admin/filings', async (req, res) => {
+  app.get('/api/admin/filings', isAuthenticated, async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
       const { dateRange } = req.query;
       
       // Calculate date filter based on date range
@@ -2022,8 +2042,13 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
     }
   });
 
-  app.delete('/api/filings/:id', async (req, res) => {
+  app.delete('/api/filings/:id', isAuthenticated, async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+      
+      const userId = (req.user as any).id;
       const filingId = parseInt(req.params.id);
       const filing = await storage.getFiling(filingId);
       
@@ -2032,6 +2057,15 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
       }
       
       await storage.deleteFiling(filingId);
+      
+      // Create activity for filing deletion
+      await storage.createActivity({
+        userId,
+        companyId: filing.companyId,
+        type: 'filing_delete',
+        description: `Deleted ${filing.type} filing`,
+        metadata: { filingId: filing.id }
+      });
       
       res.json({ message: 'Filing deleted successfully' });
     } catch (error: any) {
