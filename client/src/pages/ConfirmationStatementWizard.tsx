@@ -21,6 +21,7 @@ import { FileCheck, Building2, Users, CheckCircle, AlertTriangle, Send, ArrowLef
 import { FieldHint, InlineHint } from "@/components/wizard/FieldHint";
 import { HelpPanel } from "@/components/wizard/HelpPanel";
 import { ValidationGuidance } from "@/components/wizard/ValidationGuidance";
+import { FilingSubmissionWarning } from "@/components/filing/FilingSubmissionWarning";
 
 // CS01 Form Schema
 const cs01Schema = z.object({
@@ -65,6 +66,7 @@ export default function ConfirmationStatementWizard() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
+  const [showSubmissionWarning, setShowSubmissionWarning] = useState(false);
 
   const form = useForm<CS01FormData>({
     resolver: zodResolver(cs01Schema),
@@ -115,7 +117,14 @@ export default function ConfirmationStatementWizard() {
     },
   });
 
+  const FILING_COST = 50; // CS01 filing cost in credits
+
   const onSubmit = async () => {
+    setShowSubmissionWarning(true);
+  };
+
+  const handleConfirmSubmit = async () => {
+    setShowSubmissionWarning(false);
     const isValid = await form.trigger();
     if (isValid) {
       submitToCompaniesHouseMutation.mutate(form.getValues());
@@ -129,7 +138,17 @@ export default function ConfirmationStatementWizard() {
   const remainingTime = currentStep >= 4 ? 0 : stepTimes.slice(currentStep - 1).reduce((a, b) => a + b, 0);
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
+    <>
+      {/* Filing Submission Warning Dialog */}
+      <FilingSubmissionWarning
+        isOpen={showSubmissionWarning}
+        onCancel={() => setShowSubmissionWarning(false)}
+        onConfirm={handleConfirmSubmit}
+        filingType="confirmation_statement"
+        creditCost={FILING_COST}
+      />
+
+      <div className="container mx-auto p-6 max-w-7xl">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
@@ -956,6 +975,7 @@ export default function ConfirmationStatementWizard() {
           )}
         </form>
       </Form>
-    </div>
+      </div>
+    </>
   );
 }

@@ -20,6 +20,7 @@ import { Calculator, FileText, CheckCircle, AlertTriangle, Send, ArrowLeft, Arro
 import { FieldHint, InlineHint } from "@/components/wizard/FieldHint";
 import { HelpPanel } from "@/components/wizard/HelpPanel";
 import { ValidationGuidance } from "@/components/wizard/ValidationGuidance";
+import { FilingSubmissionWarning } from "@/components/filing/FilingSubmissionWarning";
 
 // CT600 Form Schema with number coercion
 const ct600Schema = z.object({
@@ -62,6 +63,7 @@ export default function CT600Filing() {
   const [currentStep, setCurrentStep] = useState(1);
   const [computation, setComputation] = useState<any>(null);
   const [prefillApplied, setPrefillApplied] = useState(false);
+  const [showSubmissionWarning, setShowSubmissionWarning] = useState(false);
 
   const form = useForm<CT600FormData>({
     resolver: zodResolver(ct600Schema),
@@ -183,8 +185,15 @@ export default function CT600Filing() {
   };
 
   const onSubmitToHMRC = () => {
+    setShowSubmissionWarning(true);
+  };
+
+  const handleConfirmSubmit = () => {
+    setShowSubmissionWarning(false);
     submitToHMRCMutation.mutate();
   };
+
+  const FILING_COST = 30; // CT600 filing cost in credits
 
   const progressPercentage = (currentStep / 4) * 100;
   
@@ -193,7 +202,17 @@ export default function CT600Filing() {
   const remainingTime = currentStep >= 4 ? 0 : stepTimes.slice(currentStep - 1).reduce((a, b) => a + b, 0);
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
+    <>
+      {/* Filing Submission Warning Dialog */}
+      <FilingSubmissionWarning
+        isOpen={showSubmissionWarning}
+        onCancel={() => setShowSubmissionWarning(false)}
+        onConfirm={handleConfirmSubmit}
+        filingType="ct600"
+        creditCost={FILING_COST}
+      />
+
+      <div className="container mx-auto p-6 max-w-7xl">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
@@ -1012,6 +1031,7 @@ export default function CT600Filing() {
           )}
         </form>
       </Form>
-    </div>
+      </div>
+    </>
   );
 }

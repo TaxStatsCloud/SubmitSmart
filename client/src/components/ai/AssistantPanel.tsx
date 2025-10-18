@@ -68,16 +68,37 @@ const AssistantPanel = () => {
         <div className="flex-1 p-4 overflow-y-auto bg-neutral-50">
           {/* Welcome message if no messages */}
           {messages.length === 0 && (
-            <div className="flex mb-4">
-              <div className="w-8 h-8 rounded-full bg-[hsl(var(--primary-100))] flex items-center justify-center flex-shrink-0 mr-2">
-                <span className="material-icons text-[hsl(var(--primary-500))] text-sm">smart_toy</span>
+            <>
+              <div className="flex mb-4">
+                <div className="w-8 h-8 rounded-full bg-[hsl(var(--primary-100))] flex items-center justify-center flex-shrink-0 mr-2">
+                  <span className="material-icons text-[hsl(var(--primary-500))] text-sm">smart_toy</span>
+                </div>
+                <div className="bg-white rounded-lg p-3 shadow-sm border border-neutral-200 max-w-[80%]">
+                  <p className="text-sm text-neutral-800">
+                    Hello {user?.fullName?.split(' ')[0] || 'there'}! I'm Prompt AI, your UK compliance assistant. I can help you prepare your filings, answer compliance questions, or guide you through the platform. What would you like help with today?
+                  </p>
+                </div>
               </div>
-              <div className="bg-white rounded-lg p-3 shadow-sm border border-neutral-200 max-w-[80%]">
-                <p className="text-sm text-neutral-800">
-                  Hello {user?.fullName?.split(' ')[0] || 'there'}! I'm Prompt AI, your UK compliance assistant. I can help you prepare your filings, answer compliance questions, or guide you through the platform. What would you like help with today?
-                </p>
+              
+              {/* AI Disclaimer - Most Urgent */}
+              <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <span className="material-icons text-amber-600 text-sm mt-0.5">warning</span>
+                  <div className="text-xs text-amber-900">
+                    <p className="font-semibold mb-1">Important Disclaimer</p>
+                    <p className="mb-2">
+                      Prompt AI provides <strong>general guidance only</strong> and is not a substitute for professional accounting, tax, or legal advice. 
+                    </p>
+                    <p className="mb-2">
+                      While we strive for accuracy, AI-generated information may contain errors. <strong>Always verify critical information</strong> with a qualified professional before making filing decisions.
+                    </p>
+                    <p>
+                      For complex matters, consult a chartered accountant, tax advisor, or solicitor. We are not liable for decisions made based on AI-generated content.
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
+            </>
           )}
 
           {/* Actual message history */}

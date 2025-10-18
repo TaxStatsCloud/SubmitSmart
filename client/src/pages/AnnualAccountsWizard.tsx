@@ -21,6 +21,7 @@ import { FileSpreadsheet, Building2, Calculator, CheckCircle, AlertTriangle, Sen
 import { FieldHint, InlineHint } from "@/components/wizard/FieldHint";
 import { HelpPanel } from "@/components/wizard/HelpPanel";
 import { ValidationGuidance } from "@/components/wizard/ValidationGuidance";
+import { FilingSubmissionWarning } from "@/components/filing/FilingSubmissionWarning";
 
 // Annual Accounts Form Schema
 const annualAccountsSchema = z.object({
@@ -74,6 +75,7 @@ export default function AnnualAccountsWizard() {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [iXBRLPreview, setIXBRLPreview] = useState<any>(null);
+  const [showSubmissionWarning, setShowSubmissionWarning] = useState(false);
   
   // Credit requirements
   const FILING_COST = 25; // Annual Accounts filing cost in credits
@@ -190,6 +192,11 @@ export default function AnnualAccountsWizard() {
   };
 
   const onSubmit = () => {
+    setShowSubmissionWarning(true);
+  };
+
+  const handleConfirmSubmit = () => {
+    setShowSubmissionWarning(false);
     submitToCompaniesHouseMutation.mutate();
   };
 
@@ -200,7 +207,17 @@ export default function AnnualAccountsWizard() {
   const remainingTime = currentStep >= 5 ? 0 : stepTimes.slice(currentStep - 1).reduce((a, b) => a + b, 0);
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
+    <>
+      {/* Filing Submission Warning Dialog */}
+      <FilingSubmissionWarning
+        isOpen={showSubmissionWarning}
+        onCancel={() => setShowSubmissionWarning(false)}
+        onConfirm={handleConfirmSubmit}
+        filingType="annual_accounts"
+        creditCost={FILING_COST}
+      />
+
+      <div className="container mx-auto p-6 max-w-7xl">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
@@ -1160,6 +1177,7 @@ export default function AnnualAccountsWizard() {
           )}
         </form>
       </Form>
-    </div>
+      </div>
+    </>
   );
 }
