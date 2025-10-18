@@ -184,23 +184,23 @@ export default function Subscription() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-950">
       <div className="container mx-auto px-6 py-12 max-w-7xl">
         <div className="text-center mb-16">
-          <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 text-blue-800 text-sm font-medium mb-6">
+          <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 text-sm font-bold mb-6">
             <Zap className="h-4 w-4 mr-2" />
             AI-Powered Corporate Compliance
           </div>
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent mb-6">
+          <h1 className="text-5xl font-bold text-neutral-900 dark:text-neutral-100 mb-6">
             Choose Your Plan
           </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-neutral-800 dark:text-neutral-200 mb-8 max-w-2xl mx-auto font-medium">
             Professional-grade UK compliance automation with enterprise-level security and support
           </p>
-          <Alert className="max-w-3xl mx-auto mb-12 border-amber-200 bg-amber-50">
-            <Shield className="h-5 w-5 text-amber-600" />
-            <AlertDescription className="text-amber-800">
-              <strong>April 2027 Mandate:</strong> All UK companies must use software for filing. 
+          <Alert className="max-w-3xl mx-auto mb-12 border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950">
+            <Shield className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            <AlertDescription className="text-amber-900 dark:text-amber-100 font-medium">
+              <strong className="font-bold">April 2027 Mandate:</strong> All UK companies must use software for filing. 
               Join 10,000+ companies already using our platform - no long-term contracts required.
             </AlertDescription>
           </Alert>
@@ -211,14 +211,14 @@ export default function Subscription() {
             <Card 
               key={plan.id} 
               className={`relative transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10 ${
-                plan.popular ? 'border-2 border-blue-500 shadow-xl shadow-blue-500/20 scale-105' : 'border border-gray-200 hover:border-blue-300'
+                plan.popular ? 'border-2 border-blue-500 shadow-xl shadow-blue-500/20 scale-105' : 'border-2 border-gray-300 dark:border-neutral-700 hover:border-blue-400'
               } ${
                 selectedPlan.id === plan.id ? 'ring-2 ring-blue-500' : ''
-              } bg-white/80 backdrop-blur-sm`}
+              } bg-white dark:bg-neutral-800`}
             >
               {plan.popular && (
-                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-1 text-sm font-medium">
+                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
+                  <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-1 text-sm font-bold shadow-lg">
                     <Star className="h-3 w-3 mr-1" />
                     Most Popular
                   </Badge>
@@ -226,27 +226,27 @@ export default function Subscription() {
               )}
               
               <CardHeader className="text-center pb-6">
-                <CardTitle className="text-2xl font-bold text-gray-900 dark:text-neutral-100">{plan.name}</CardTitle>
-                <CardDescription className="text-gray-700 dark:text-neutral-300 min-h-[3rem] text-base px-2">{plan.description}</CardDescription>
+                <CardTitle className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{plan.name}</CardTitle>
+                <CardDescription className="text-neutral-800 dark:text-neutral-200 min-h-[3rem] text-base px-2 font-medium">{plan.description}</CardDescription>
                 <div className="py-6">
-                  <div className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-neutral-100 break-words">£{plan.price.toFixed(2)}</div>
-                  <div className="text-gray-700 dark:text-neutral-300 mt-2 font-semibold">{plan.credits} credits</div>
-                  <div className="text-sm text-gray-600 dark:text-neutral-400 mt-1">
+                  <div className="text-4xl md:text-5xl font-bold text-neutral-900 dark:text-neutral-100 break-words">£{plan.price.toFixed(2)}</div>
+                  <div className="text-neutral-800 dark:text-neutral-200 mt-2 font-bold text-lg">{plan.credits} credits</div>
+                  <div className="text-sm text-neutral-700 dark:text-neutral-300 mt-1 font-medium">
                     £{(plan.price / plan.credits).toFixed(2)} per credit
                   </div>
                 </div>
               </CardHeader>
               
               <CardContent className="pt-0">
-                <Badge variant="outline" className="mb-6 text-xs bg-gray-50 dark:bg-neutral-800 text-gray-800 dark:text-neutral-200 border-gray-300 dark:border-neutral-600">
+                <Badge variant="outline" className="mb-6 text-xs bg-gray-100 dark:bg-neutral-700 text-gray-900 dark:text-neutral-100 border-gray-400 dark:border-neutral-600 font-semibold">
                   {plan.filingTypes}
                 </Badge>
                 
                 <ul className="space-y-3 mb-8">
                   {plan.features.map((feature, idx) => (
                     <li key={idx} className="flex items-start gap-3 text-sm">
-                      <Check className="h-4 w-4 text-green-500 dark:text-green-400 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-800 dark:text-neutral-200">{feature}</span>
+                      <Check className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                      <span className="text-neutral-800 dark:text-neutral-200 font-medium">{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -254,8 +254,8 @@ export default function Subscription() {
                 <Button 
                   onClick={() => handleSelectPlan(plan)}
                   variant={selectedPlan.id === plan.id ? "default" : "outline"}
-                  className={`w-full py-3 text-base font-semibold transition-all ${
-                    plan.popular ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700' : ''
+                  className={`w-full py-3 text-base font-bold transition-all border-2 ${
+                    plan.popular ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white' : ''
                   }`}
                   size="lg"
                 >
@@ -267,14 +267,14 @@ export default function Subscription() {
         </div>
 
         {clientSecret && (
-          <Card className="max-w-md mx-auto">
+          <Card className="max-w-md mx-auto bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-neutral-900 dark:text-neutral-100">
                 <Crown className="h-5 w-5" />
                 Complete Your Purchase
               </CardTitle>
-              <CardDescription>
-                {selectedPlan.name} - £{selectedPlan.price} for {selectedPlan.credits} credits
+              <CardDescription className="text-neutral-700 dark:text-neutral-300 font-medium">
+                {selectedPlan.name} - £{selectedPlan.price.toFixed(2)} for {selectedPlan.credits} credits
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -286,34 +286,34 @@ export default function Subscription() {
         )}
 
         <div className="mt-16 text-center">
-          <h2 className="text-3xl font-bold mb-8 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+          <h2 className="text-3xl font-bold mb-8 text-neutral-900 dark:text-neutral-100">
             Why Choose PromptSubmissions?
           </h2>
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-8 rounded-2xl shadow-lg">
-              <div className="bg-blue-500 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 p-8 rounded-2xl shadow-lg border-2 border-blue-200 dark:border-blue-800">
+              <div className="bg-blue-500 dark:bg-blue-600 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6">
                 <Zap className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold mb-4 text-gray-900">AI-Powered Efficiency</h3>
-              <p className="text-gray-700 leading-relaxed">
+              <h3 className="text-xl font-bold mb-4 text-neutral-900 dark:text-neutral-100">AI-Powered Efficiency</h3>
+              <p className="text-neutral-800 dark:text-neutral-200 leading-relaxed font-medium">
                 Process documents and generate filings 10x faster than traditional methods with cutting-edge AI technology
               </p>
             </div>
-            <div className="bg-gradient-to-br from-green-50 to-green-100 p-8 rounded-2xl shadow-lg">
-              <div className="bg-green-500 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6">
+            <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 p-8 rounded-2xl shadow-lg border-2 border-green-200 dark:border-green-800">
+              <div className="bg-green-500 dark:bg-green-600 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6">
                 <Shield className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold mb-4 text-gray-900">100% Compliance</h3>
-              <p className="text-gray-700 leading-relaxed">
+              <h3 className="text-xl font-bold mb-4 text-neutral-900 dark:text-neutral-100">100% Compliance</h3>
+              <p className="text-neutral-800 dark:text-neutral-200 leading-relaxed font-medium">
                 Built specifically for UK regulations with automatic updates and enterprise-grade security
               </p>
             </div>
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-8 rounded-2xl shadow-lg">
-              <div className="bg-purple-500 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6">
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 p-8 rounded-2xl shadow-lg border-2 border-purple-200 dark:border-purple-800">
+              <div className="bg-purple-500 dark:bg-purple-600 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6">
                 <Star className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold mb-4 text-gray-900">No Contracts</h3>
-              <p className="text-gray-700 leading-relaxed">
+              <h3 className="text-xl font-bold mb-4 text-neutral-900 dark:text-neutral-100">No Contracts</h3>
+              <p className="text-neutral-800 dark:text-neutral-200 leading-relaxed font-medium">
                 Pay-as-you-go pricing with no monthly commitments, perfect for seasonal business needs
               </p>
             </div>
