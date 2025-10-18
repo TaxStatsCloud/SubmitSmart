@@ -15,7 +15,7 @@ import {
   companiesHouseFilings, type CompaniesHouseFiling, type InsertCompaniesHouseFiling,
   userCompanies, type UserCompany, type InsertUserCompany
 } from "@shared/schema";
-import { eq, and, gte, sql } from "drizzle-orm";
+import { eq, and, or, gte, sql } from "drizzle-orm";
 import { db } from "./db";
 
 export interface IStorage {
@@ -80,6 +80,7 @@ export interface IStorage {
   getCreditPackage(id: number): Promise<CreditPackage | undefined>;
   getAllCreditPackages(): Promise<CreditPackage[]>;
   getActiveCreditPackages(): Promise<CreditPackage[]>;
+  getCreditPackagesForUser(userId: number): Promise<CreditPackage[]>;
   createCreditPackage(packageData: InsertCreditPackage): Promise<CreditPackage>;
   updateCreditPackage(id: number, packageData: Partial<CreditPackage>): Promise<CreditPackage>;
   deleteCreditPackage(id: number): Promise<void>;
@@ -511,6 +512,30 @@ export class MemStorage implements IStorage {
   async getActiveCreditPackages(): Promise<CreditPackage[]> {
     return Array.from(this.creditPackages.values())
       .filter(pkg => pkg.isActive);
+  }
+
+  async getCreditPackagesForUser(userId: number): Promise<CreditPackage[]> {
+    // Get user's subscription tier
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+
+    let userTierLevel = 1; // Default to Basic tier
+    if (user.subscriptionTierId) {
+      const tier = await this.getSubscriptionTier(user.subscriptionTierId);
+      if (tier) {
+        userTierLevel = tier.tierLevel;
+      }
+    }
+
+    // Return active packages available to user's tier
+    return Array.from(this.creditPackages.values())
+      .filter(pkg => 
+        pkg.isActive && 
+        (!pkg.minTierLevel || pkg.minTierLevel <= userTierLevel)
+      )
+      .sort((a, b) => a.creditAmount - b.creditAmount);
   }
   
   async createCreditPackage(packageData: InsertCreditPackage): Promise<CreditPackage> {
@@ -1638,6 +1663,38 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(creditPackages)
       .where(eq(creditPackages.isActive, true));
+  }
+
+  async getCreditPackagesForUser(userId: number): Promise<CreditPackage[]> {
+    // Get user's subscription tier
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+
+    let userTierLevel = 1; // Default to Basic tier
+    if (user.subscriptionTierId) {
+      const tier = await this.getSubscriptionTier(user.subscriptionTierId);
+      if (tier) {
+        userTierLevel = tier.tierLevel;
+      }
+    }
+
+    // Return all active packages where minTierLevel is null OR minTierLevel <= user's tier level
+    // This means: Basic users see packages with null or 1, Professional see null/1/2, Enterprise see all
+    return await db
+      .select()
+      .from(creditPackages)
+      .where(
+        and(
+          eq(creditPackages.isActive, true),
+          or(
+            sql`${creditPackages.minTierLevel} IS NULL`,
+            sql`${creditPackages.minTierLevel} <= ${userTierLevel}`
+          )
+        )
+      )
+      .orderBy(creditPackages.creditAmount);
   }
 
   async createCreditPackage(packageData: InsertCreditPackage): Promise<CreditPackage> {

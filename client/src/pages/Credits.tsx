@@ -20,6 +20,8 @@ type CreditPackage = {
   description: string;
   price: number;
   creditAmount: number;
+  minTierLevel: number | null;
+  tierDiscount: number;
   isActive: boolean;
   isPopular: boolean;
   createdAt: Date;
@@ -195,9 +197,9 @@ const Credits = () => {
     queryClient.invalidateQueries({ queryKey: ['/api/billing/transactions'] });
   };
 
-  // Fetch available credit packages
+  // Fetch tier-specific credit packages for current user
   const { data: packages, isLoading: isLoadingPackages } = useQuery({
-    queryKey: ['/api/billing/packages'],
+    queryKey: ['/api/billing/packages/user'],
     enabled: true,
   });
 

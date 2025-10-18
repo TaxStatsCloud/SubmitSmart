@@ -44,6 +44,25 @@ router.get('/packages', async (req, res) => {
   }
 });
 
+// Get tier-specific credit packages for current user
+router.get('/packages/user', async (req, res) => {
+  try {
+    // For demo purposes, using sample user
+    // if (!req.isAuthenticated()) {
+    //   return res.status(401).json({ error: 'Not authenticated' });
+    // }
+    
+    // For demo purposes - in production use req.user.id
+    const userId = 1;
+    
+    const packages = await storage.getCreditPackagesForUser(userId);
+    res.json(packages);
+  } catch (error) {
+    console.error('Error fetching tier-specific credit packages:', error);
+    res.status(500).json({ error: 'Failed to get credit packages' });
+  }
+});
+
 // Get filing costs
 router.get('/filing-costs', async (req, res) => {
   try {

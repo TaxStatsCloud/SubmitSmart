@@ -569,6 +569,8 @@ export const creditPackages = pgTable("credit_packages", {
   description: text("description"),
   price: integer("price").notNull(), // in pence/cents
   creditAmount: integer("credit_amount").notNull(),
+  minTierLevel: integer("min_tier_level"), // null=all tiers, 1=Basic+, 2=Professional+, 3=Enterprise only
+  tierDiscount: integer("tier_discount").default(0), // Additional % discount for tier (0-100)
   isActive: boolean("is_active").notNull().default(true),
   isPopular: boolean("is_popular").default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -580,6 +582,8 @@ export const insertCreditPackageSchema = createInsertSchema(creditPackages).pick
   description: true,
   price: true,
   creditAmount: true,
+  minTierLevel: true,
+  tierDiscount: true,
   isActive: true,
   isPopular: true,
 });
