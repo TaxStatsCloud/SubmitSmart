@@ -226,27 +226,27 @@ export default function Subscription() {
               )}
               
               <CardHeader className="text-center pb-6">
-                <CardTitle className="text-2xl font-bold text-gray-900">{plan.name}</CardTitle>
-                <CardDescription className="text-gray-600 min-h-[3rem] text-base">{plan.description}</CardDescription>
+                <CardTitle className="text-2xl font-bold text-gray-900 dark:text-neutral-100">{plan.name}</CardTitle>
+                <CardDescription className="text-gray-700 dark:text-neutral-300 min-h-[3rem] text-base px-2">{plan.description}</CardDescription>
                 <div className="py-6">
-                  <div className="text-5xl font-bold text-gray-900">£{plan.price}</div>
-                  <div className="text-gray-600 mt-2">{plan.credits} credits</div>
-                  <div className="text-sm text-gray-500 mt-1">
+                  <div className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-neutral-100 break-words">£{plan.price.toFixed(2)}</div>
+                  <div className="text-gray-700 dark:text-neutral-300 mt-2 font-semibold">{plan.credits} credits</div>
+                  <div className="text-sm text-gray-600 dark:text-neutral-400 mt-1">
                     £{(plan.price / plan.credits).toFixed(2)} per credit
                   </div>
                 </div>
               </CardHeader>
               
               <CardContent className="pt-0">
-                <Badge variant="outline" className="mb-6 text-xs bg-gray-50">
+                <Badge variant="outline" className="mb-6 text-xs bg-gray-50 dark:bg-neutral-800 text-gray-800 dark:text-neutral-200 border-gray-300 dark:border-neutral-600">
                   {plan.filingTypes}
                 </Badge>
                 
                 <ul className="space-y-3 mb-8">
                   {plan.features.map((feature, idx) => (
                     <li key={idx} className="flex items-start gap-3 text-sm">
-                      <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700">{feature}</span>
+                      <Check className="h-4 w-4 text-green-500 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-800 dark:text-neutral-200">{feature}</span>
                     </li>
                   ))}
                 </ul>
