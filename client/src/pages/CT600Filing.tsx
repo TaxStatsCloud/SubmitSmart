@@ -16,11 +16,12 @@ import { Badge } from "@/components/ui/badge";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Calculator, FileText, CheckCircle, AlertTriangle, Send, ArrowLeft, ArrowRight, Building2, TrendingUp, BarChart3, Download } from "lucide-react";
+import { Calculator, FileText, CheckCircle, AlertTriangle, Send, ArrowLeft, ArrowRight, Building2, TrendingUp, BarChart3, Download, FileCheck } from "lucide-react";
 import { FieldHint, InlineHint } from "@/components/wizard/FieldHint";
 import { HelpPanel } from "@/components/wizard/HelpPanel";
 import { ValidationGuidance } from "@/components/wizard/ValidationGuidance";
 import { FilingSubmissionWarning } from "@/components/filing/FilingSubmissionWarning";
+import { DocumentSelector } from "@/components/filings/DocumentSelector";
 
 // CT600 Form Schema with Comparative Period Support and Activity Detection
 const ct600Schema = z.object({
@@ -90,6 +91,7 @@ export default function CT600Filing() {
   const [computation, setComputation] = useState<any>(null);
   const [prefillApplied, setPrefillApplied] = useState(false);
   const [showSubmissionWarning, setShowSubmissionWarning] = useState(false);
+  const [selectedDocumentIds, setSelectedDocumentIds] = useState<number[]>([]);
 
   const form = useForm<CT600FormData>({
     resolver: zodResolver(ct600Schema),
@@ -184,7 +186,7 @@ export default function CT600Filing() {
     },
     onSuccess: (data) => {
       setComputation(data);
-      setCurrentStep(3);
+      setCurrentStep(4);
       toast({
         title: "Tax Computed",
         description: `Corporation Tax: £${data.corporationTaxDue.toFixed(2)}`,
@@ -206,6 +208,7 @@ export default function CT600Filing() {
       const response = await apiRequest('POST', '/api/ct600/submit', {
         ...formData,
         computation,
+        documentIds: selectedDocumentIds,
       });
       return response.json();
     },
@@ -215,7 +218,7 @@ export default function CT600Filing() {
         title: "Submitted Successfully",
         description: "CT600 has been submitted to HMRC",
       });
-      setCurrentStep(4);
+      setCurrentStep(5);
     },
     onError: (error: any) => {
       toast({
@@ -244,11 +247,11 @@ export default function CT600Filing() {
 
   const FILING_COST = 30; // CT600 filing cost in credits
 
-  const progressPercentage = (currentStep / 4) * 100;
+  const progressPercentage = (currentStep / 5) * 100;
   
   // Estimated time per step in minutes
-  const stepTimes = [5, 12, 3, 2]; // Company Info, Financials & Adjustments, Review, Submit
-  const remainingTime = currentStep >= 4 ? 0 : stepTimes.slice(currentStep - 1).reduce((a, b) => a + b, 0);
+  const stepTimes = [5, 12, 5, 3, 2]; // Company Info, Financials & Adjustments, Documents, Review, Submit
+  const remainingTime = currentStep >= 5 ? 0 : stepTimes.slice(currentStep - 1).reduce((a, b) => a + b, 0);
 
   return (
     <>
@@ -277,15 +280,16 @@ export default function CT600Filing() {
           <span className="text-sm font-medium">Progress</span>
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">~{remainingTime} min remaining</span>
-            <span className="text-sm text-muted-foreground">Step {currentStep} of 4</span>
+            <span className="text-sm text-muted-foreground">Step {currentStep} of 5</span>
           </div>
         </div>
         <Progress value={progressPercentage} className="h-2" />
         <div className="flex justify-between mt-2">
           <span className={`text-xs ${currentStep >= 1 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Company Info</span>
           <span className={`text-xs ${currentStep >= 2 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Financials</span>
-          <span className={`text-xs ${currentStep >= 3 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Review</span>
-          <span className={`text-xs ${currentStep >= 4 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Submit</span>
+          <span className={`text-xs ${currentStep >= 3 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Documents</span>
+          <span className={`text-xs ${currentStep >= 4 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Review</span>
+          <span className={`text-xs ${currentStep >= 5 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Submit</span>
         </div>
       </div>
 
@@ -933,8 +937,84 @@ export default function CT600Filing() {
             </div>
           )}
 
-          {/* Step 3: Review & Computation */}
-          {currentStep === 3 && computation && (
+          {/* Step 3: Supporting Documents */}
+          {currentStep === 3 && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <DocumentSelector
+                  selectedDocumentIds={selectedDocumentIds}
+                  onSelectionChange={setSelectedDocumentIds}
+                  filingType="ct600"
+                  recommendedTypes={["trial_balance", "accounting_export", "bank_statement"]}
+                />
+
+                <div className="flex justify-between mt-6">
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    onClick={() => setCurrentStep(2)}
+                    data-testid="button-back"
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                  </Button>
+                  <Button 
+                    type="button" 
+                    onClick={() => {
+                      const values = form.getValues();
+                      generateComputationMutation.mutate(values);
+                    }}
+                    disabled={generateComputationMutation.isPending}
+                    data-testid="button-continue"
+                  >
+                    {generateComputationMutation.isPending ? "Generating Computation..." : "Continue to Review"}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="lg:col-span-1">
+                <HelpPanel 
+                  title="Why Attach Documents?"
+                  sections={[
+                    {
+                      icon: FileCheck,
+                      title: "HMRC Compliance",
+                      description: "HMRC may request supporting documents for your Corporation Tax return.",
+                      tips: [
+                        "Keep evidence for all claims and deductions",
+                        "Maintain audit trail for 6+ years",
+                        "Capital allowances require detailed records",
+                        "R&D claims need project documentation"
+                      ]
+                    },
+                    {
+                      icon: AlertTriangle,
+                      title: "Recommended Documents",
+                      description: "Attach key documents to support your tax computation.",
+                      tips: [
+                        "Annual Accounts or management accounts",
+                        "Capital allowances calculations",
+                        "R&D relief calculations (if applicable)",
+                        "Loss memorandum (if claiming losses)"
+                      ]
+                    }
+                  ]}
+                  documentRequirements={{
+                    required: [],
+                    optional: [
+                      "Annual Accounts",
+                      "Capital allowances schedule",
+                      "R&D calculations",
+                      "Loss memorandum"
+                    ]
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Review & Computation */}
+          {currentStep === 4 && computation && (
             <Card className="p-6">
               <div className="flex items-center gap-2 mb-4">
                 <CheckCircle className="h-5 w-5 text-green-600" />
@@ -1050,10 +1130,10 @@ export default function CT600Filing() {
                 <Button 
                   type="button" 
                   variant="outline"
-                  onClick={() => setCurrentStep(2)}
-                  data-testid="button-back-to-financials"
+                  onClick={() => setCurrentStep(3)}
+                  data-testid="button-back"
                 >
-                  <ArrowLeft className="mr-2 h-4 w-4" /> Edit Financials
+                  <ArrowLeft className="mr-2 h-4 w-4" /> Back
                 </Button>
                 <Button 
                   type="button" 
@@ -1068,8 +1148,8 @@ export default function CT600Filing() {
             </Card>
           )}
 
-          {/* Step 4: Success */}
-          {currentStep === 4 && (
+          {/* Step 5: Success */}
+          {currentStep === 5 && (
             <Card className="p-6 text-center">
               <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
               <h2 className="text-2xl font-semibold mb-2">CT600 Submitted Successfully</h2>
