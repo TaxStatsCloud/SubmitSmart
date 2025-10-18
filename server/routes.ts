@@ -28,6 +28,7 @@ import annualAccountsRoutes from "./routes/annualAccountsRoutes";
 import confirmationStatementRoutes from "./routes/confirmationStatementRoutes";
 import monitoringRoutes from "./routes/monitoringRoutes";
 import analyticsRoutes from "./routes/analyticsRoutes";
+import recommendationRoutes from "./routes/recommendationRoutes";
 import Stripe from "stripe";
 import { setupAuth, isAuthenticated, hashPassword } from "./auth";
 import { db } from "./db";
@@ -314,6 +315,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register analytics routes (user-specific)
   app.use('/api/analytics', analyticsRoutes);
+  
+  // Register recommendation routes
+  app.use('/api/recommendations', recommendationRoutes);
   
   // Enhanced Stripe payment routes
   app.post("/api/create-payment-intent", async (req, res) => {
