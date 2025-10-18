@@ -311,10 +311,10 @@ export default function CT600Filing() {
           {currentStep === 1 && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
-                <Card className="p-6">
+                <Card className="p-6 bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
                   <div className="flex items-center gap-2 mb-4">
                     <Building2 className="h-5 w-5 text-primary" />
-                    <h2 className="text-xl font-semibold">Company Information & Accounting Period</h2>
+                    <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">Company Information & Accounting Period</h2>
                   </div>
                   
                   <ValidationGuidance 
@@ -530,10 +530,10 @@ export default function CT600Filing() {
           {currentStep === 2 && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
-                <Card className="p-6">
+                <Card className="p-6 bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
                   <div className="flex items-center gap-2 mb-4">
                     <FileText className="h-5 w-5 text-primary" />
-                    <h2 className="text-xl font-semibold">Trading Income & Tax Adjustments</h2>
+                    <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">Trading Income & Tax Adjustments</h2>
                   </div>
 
                   <Alert className="mb-4 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">

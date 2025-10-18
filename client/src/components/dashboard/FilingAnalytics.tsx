@@ -92,17 +92,17 @@ const FilingAnalytics = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {statCards.map((stat) => (
-          <Card key={stat.title} className="hover:shadow-lg transition-shadow">
+          <Card key={stat.title} className="hover:shadow-lg transition-shadow bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-neutral-600">{stat.title}</p>
-                  <h3 className="text-2xl font-bold text-neutral-900 mt-1">{stat.value}</h3>
+                  <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">{stat.title}</p>
+                  <h3 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mt-1">{stat.value}</h3>
                   {stat.subtitle && (
-                    <p className="text-xs text-neutral-500 mt-1">{stat.subtitle}</p>
+                    <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">{stat.subtitle}</p>
                   )}
                 </div>
-                <div className={`${stat.bgColor} p-3 rounded-full`}>
+                <div className={`${stat.bgColor} dark:opacity-80 p-3 rounded-full`}>
                   <stat.icon className={`h-6 w-6 ${stat.color}`} />
                 </div>
               </div>
@@ -113,23 +113,23 @@ const FilingAnalytics = () => {
 
       {/* Success Rate Banner */}
       {analytics.totalFilings > 0 && (
-        <Card className="mb-6 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+        <Card className="mb-6 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 border-blue-200 dark:border-blue-800">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="bg-white p-3 rounded-full">
-                  <TrendingUp className="h-6 w-6 text-blue-600" />
+                <div className="bg-white dark:bg-neutral-800 p-3 rounded-full">
+                  <TrendingUp className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-neutral-900">Success Rate</h3>
-                  <p className="text-sm text-neutral-600">Filing accuracy and completion</p>
+                  <h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">Success Rate</h3>
+                  <p className="text-sm text-neutral-700 dark:text-neutral-300 font-medium">Filing accuracy and completion</p>
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-4xl font-bold text-blue-600">
+                <div className="text-4xl font-bold text-blue-600 dark:text-blue-400">
                   {analytics.successRate.toFixed(1)}%
                 </div>
-                <p className="text-sm text-neutral-600">
+                <p className="text-sm text-neutral-700 dark:text-neutral-300 font-medium">
                   {analytics.completedFilings} of {analytics.totalFilings} filings
                 </p>
               </div>
@@ -140,15 +140,15 @@ const FilingAnalytics = () => {
 
       {/* Pending/Draft Work Notice */}
       {hasPendingWork && (
-        <Card className="mb-6 bg-amber-50 border-amber-200">
+        <Card className="mb-6 bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="bg-amber-100 p-2 rounded-full">
-                <FileText className="h-5 w-5 text-amber-600" />
+              <div className="bg-amber-100 dark:bg-amber-900 p-2 rounded-full">
+                <FileText className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-amber-900">Work in Progress</h3>
-                <p className="text-sm text-amber-700">
+                <h3 className="font-bold text-amber-900 dark:text-amber-100">Work in Progress</h3>
+                <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">
                   You have {analytics.pendingFilings} draft or pending filing{analytics.pendingFilings > 1 ? 's' : ''} that {analytics.pendingFilings > 1 ? 'haven\'t' : 'hasn\'t'} been submitted yet.
                 </p>
               </div>
@@ -161,9 +161,9 @@ const FilingAnalytics = () => {
       {analytics.totalFilings > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Filings by Type */}
-          <Card>
+          <Card className="bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
             <CardHeader>
-              <CardTitle className="text-lg">Submitted Filings by Type</CardTitle>
+              <CardTitle className="text-lg text-neutral-900 dark:text-neutral-100">Submitted Filings by Type</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={250}>
@@ -199,9 +199,9 @@ const FilingAnalytics = () => {
           </Card>
 
           {/* Filing Success Rate */}
-          <Card>
+          <Card className="bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
             <CardHeader>
-              <CardTitle className="text-lg">Filing Outcomes</CardTitle>
+              <CardTitle className="text-lg text-neutral-900 dark:text-neutral-100">Filing Outcomes</CardTitle>
             </CardHeader>
             <CardContent>
               {statusData.length > 0 ? (
