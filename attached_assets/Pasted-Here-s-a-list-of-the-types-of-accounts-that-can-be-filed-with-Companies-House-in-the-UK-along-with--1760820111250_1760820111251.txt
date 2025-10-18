@@ -1,0 +1,63 @@
+Here’s a list of the types of accounts that can be filed with Companies House in the UK, along with the applicable accounting standards for each:
+
+1. Micro-Entity Accounts
+
+For companies with at least 2 of: turnover ≤ £632,000, balance sheet total ≤ £316,000, and no more than 10 employees.
+
+Must file simplified accounts; audit exemption usually applies.
+
+Standard: FRS 105 (The Financial Reporting Standard applicable to the Micro-entities Regime).​
+
+2. Small Company Accounts
+
+For companies with at least 2 of: turnover ≤ £10.2 million, balance sheet total ≤ £5.1 million, and no more than 50 employees.
+
+May file abridged accounts (simplified with reduced disclosures), or full accounts; audit exemption often applies.
+
+Standard: FRS 102 (with small companies regime), or FRS 102 Section 1A for small entities. Abridged accounts require consent of all members.​
+
+3. Medium-Sized Company Accounts
+
+Turnover ≤ £36 million, balance sheet total ≤ £18 million, and no more than 250 employees.
+
+Must file full accounts, but may have some reduced disclosure exemptions.
+
+Standard: FRS 102.​
+
+4. Large Company Accounts
+
+Above medium-sized thresholds.
+
+Must file full accounts; audit required.
+
+Standard: FRS 102 or IFRS (International Financial Reporting Standards).​
+
+5. Dormant Company Accounts
+
+For companies with no 'significant' transactions during the financial year.
+
+Only need to prepare and file a balance sheet and certain notes; audit exemption usually applies.
+
+Standard: FRS 102 (dormant regime) or FRS 105 if the company also qualifies as micro-entity.​
+
+Applicable Standards (UK GAAP and IFRS)
+
+FRS 100: Application of Financial Reporting Requirements
+
+FRS 101: Reduced Disclosure Framework (for qualifying subsidiaries)
+
+FRS 102: Main standard for most UK companies
+
+FRS 105: For micro-entities only
+
+IFRS: Optional for companies listed on a stock market or who opt in​
+
+Summary Table:
+
+Type	Size Criteria	Standard	Audit Required?	Disclosure Level
+Micro-entity	Smallest	FRS 105	Usually exempt	Minimal, highly simplified
+Small company	Small but above micro	FRS 102/1A	Usually exempt	Simplified/abridged or full
+Medium company	Above small, ≤ medium	FRS 102	May be required	Full, some exemptions possible
+Large company	Large	FRS 102/IFRS	Required	Full disclosure
+Dormant company	No trading activity	FRS 102/FRS105	Exempt	Minimal, certain notes only
+Note: The size thresholds and reporting requirements are strictly defined under the Companies Act 2006.
