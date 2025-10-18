@@ -112,6 +112,7 @@ Implemented comprehensive CT600 validation system mapped to all 165 HMRC form bo
 
 ## User Preferences
 - **Silicon Valley-level UI/UX**: Premium design with glass morphism, gradients, and professional visual hierarchy
+- **Dark Mode Support**: Full dark mode implementation with system preference detection and manual toggle
 - **Competitive Pricing**: Enterprise-level pricing that reflects the platform's professional capabilities
 - **AI Excellence**: Chatbot must be expert-level on UK accounting rules, tax compliance, and platform usage
 - Focus on professional, clean UI design with cutting-edge visual elements

@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Link, useLocation } from "wouter";
 import { LogOut, Menu } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const Header = () => {
   const [location] = useLocation();
@@ -69,6 +70,11 @@ const Header = () => {
             <span className="material-icons">notifications</span>
             <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-[hsl(var(--accent-500))]"></span>
           </button>
+
+          {/* Theme Toggle */}
+          <div className="ml-2">
+            <ThemeToggle />
+          </div>
 
           {/* AI Assistant Button */}
           <Button 
