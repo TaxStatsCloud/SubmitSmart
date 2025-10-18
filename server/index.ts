@@ -5,6 +5,7 @@ import { initializeAgents } from "./services/agents/agentOrchestrator";
 import { initializeSchedules } from "./services/agents/scheduler";
 import { logger } from "./utils/logger";
 import { apiTrackingMiddleware, errorTrackingMiddleware } from "./middleware/analyticsMiddleware";
+import { seedSubscriptionTiers } from "./db/seed-tiers";
 
 const app = express();
 app.use(express.json());
@@ -62,6 +63,13 @@ app.use((req, res, next) => {
       CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
     `);
     logger.info('Session table created successfully');
+  }
+
+  // Seed subscription tiers if they don't exist
+  try {
+    await seedSubscriptionTiers();
+  } catch (error) {
+    logger.error('Failed to seed subscription tiers:', error);
   }
 
   const server = await registerRoutes(app);

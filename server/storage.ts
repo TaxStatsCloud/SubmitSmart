@@ -5,6 +5,8 @@ import {
   filings, type Filing, type InsertFiling,
   activities, type Activity, type InsertActivity,
   assistantMessages, type AssistantMessage, type InsertAssistantMessage,
+  subscriptionTiers, type SubscriptionTier, type InsertSubscriptionTier,
+  userSubscriptions, type UserSubscription, type InsertUserSubscription,
   creditPackages, type CreditPackage, type InsertCreditPackage,
   filingCosts, type FilingCost, type InsertFilingCost,
   creditTransactions, type CreditTransaction, type InsertCreditTransaction,
@@ -114,6 +116,23 @@ export interface IStorage {
   createCompaniesHouseFiling(data: InsertCompaniesHouseFiling): Promise<CompaniesHouseFiling>;
   updateCompaniesHouseFiling(id: number, data: Partial<CompaniesHouseFiling>): Promise<CompaniesHouseFiling>;
   deleteCompaniesHouseFiling(id: number): Promise<void>;
+  
+  // Subscription tier methods
+  getSubscriptionTier(id: number): Promise<SubscriptionTier | undefined>;
+  getSubscriptionTierByName(name: string): Promise<SubscriptionTier | undefined>;
+  getAllSubscriptionTiers(): Promise<SubscriptionTier[]>;
+  getActiveSubscriptionTiers(): Promise<SubscriptionTier[]>;
+  createSubscriptionTier(data: InsertSubscriptionTier): Promise<SubscriptionTier>;
+  updateSubscriptionTier(id: number, data: Partial<SubscriptionTier>): Promise<SubscriptionTier>;
+  deleteSubscriptionTier(id: number): Promise<void>;
+  
+  // User subscription methods
+  getUserSubscription(id: number): Promise<UserSubscription | undefined>;
+  getUserSubscriptionsByUser(userId: number): Promise<UserSubscription[]>;
+  getActiveUserSubscription(userId: number): Promise<UserSubscription | undefined>;
+  createUserSubscription(data: InsertUserSubscription): Promise<UserSubscription>;
+  updateUserSubscription(id: number, data: Partial<UserSubscription>): Promise<UserSubscription>;
+  cancelUserSubscription(id: number, cancelAtPeriodEnd: boolean): Promise<UserSubscription>;
 }
 
 export class MemStorage implements IStorage {
@@ -1893,6 +1912,140 @@ export class DatabaseStorage implements IStorage {
 
   async deleteCompaniesHouseFiling(id: number): Promise<void> {
     await db.delete(companiesHouseFilings).where(eq(companiesHouseFilings.id, id));
+  }
+
+  // Subscription tier methods
+  async getSubscriptionTier(id: number): Promise<SubscriptionTier | undefined> {
+    const [tier] = await db.select().from(subscriptionTiers).where(eq(subscriptionTiers.id, id));
+    return tier;
+  }
+
+  async getSubscriptionTierByName(name: string): Promise<SubscriptionTier | undefined> {
+    const [tier] = await db.select().from(subscriptionTiers).where(eq(subscriptionTiers.name, name));
+    return tier;
+  }
+
+  async getAllSubscriptionTiers(): Promise<SubscriptionTier[]> {
+    return await db.select().from(subscriptionTiers).orderBy(subscriptionTiers.sortOrder);
+  }
+
+  async getActiveSubscriptionTiers(): Promise<SubscriptionTier[]> {
+    return await db
+      .select()
+      .from(subscriptionTiers)
+      .where(eq(subscriptionTiers.isActive, true))
+      .orderBy(subscriptionTiers.sortOrder);
+  }
+
+  async createSubscriptionTier(data: InsertSubscriptionTier): Promise<SubscriptionTier> {
+    const [tier] = await db
+      .insert(subscriptionTiers)
+      .values({
+        ...data,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return tier;
+  }
+
+  async updateSubscriptionTier(id: number, data: Partial<SubscriptionTier>): Promise<SubscriptionTier> {
+    const [updatedTier] = await db
+      .update(subscriptionTiers)
+      .set({
+        ...data,
+        updatedAt: new Date()
+      })
+      .where(eq(subscriptionTiers.id, id))
+      .returning();
+    
+    if (!updatedTier) {
+      throw new Error(`Subscription tier with ID ${id} not found`);
+    }
+    
+    return updatedTier;
+  }
+
+  async deleteSubscriptionTier(id: number): Promise<void> {
+    await db.delete(subscriptionTiers).where(eq(subscriptionTiers.id, id));
+  }
+
+  // User subscription methods
+  async getUserSubscription(id: number): Promise<UserSubscription | undefined> {
+    const [subscription] = await db.select().from(userSubscriptions).where(eq(userSubscriptions.id, id));
+    return subscription;
+  }
+
+  async getUserSubscriptionsByUser(userId: number): Promise<UserSubscription[]> {
+    return await db
+      .select()
+      .from(userSubscriptions)
+      .where(eq(userSubscriptions.userId, userId))
+      .orderBy(userSubscriptions.createdAt);
+  }
+
+  async getActiveUserSubscription(userId: number): Promise<UserSubscription | undefined> {
+    const [subscription] = await db
+      .select()
+      .from(userSubscriptions)
+      .where(and(
+        eq(userSubscriptions.userId, userId),
+        eq(userSubscriptions.status, 'active')
+      ));
+    return subscription;
+  }
+
+  async createUserSubscription(data: InsertUserSubscription): Promise<UserSubscription> {
+    const [subscription] = await db
+      .insert(userSubscriptions)
+      .values({
+        ...data,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return subscription;
+  }
+
+  async updateUserSubscription(id: number, data: Partial<UserSubscription>): Promise<UserSubscription> {
+    const [updatedSubscription] = await db
+      .update(userSubscriptions)
+      .set({
+        ...data,
+        updatedAt: new Date()
+      })
+      .where(eq(userSubscriptions.id, id))
+      .returning();
+    
+    if (!updatedSubscription) {
+      throw new Error(`User subscription with ID ${id} not found`);
+    }
+    
+    return updatedSubscription;
+  }
+
+  async cancelUserSubscription(id: number, cancelAtPeriodEnd: boolean): Promise<UserSubscription> {
+    const updateData: Partial<UserSubscription> = {
+      cancelAtPeriodEnd,
+      updatedAt: new Date()
+    };
+    
+    // If immediate cancellation, set status to cancelled
+    if (!cancelAtPeriodEnd) {
+      updateData.status = 'cancelled';
+    }
+    
+    const [cancelledSubscription] = await db
+      .update(userSubscriptions)
+      .set(updateData)
+      .where(eq(userSubscriptions.id, id))
+      .returning();
+    
+    if (!cancelledSubscription) {
+      throw new Error(`User subscription with ID ${id} not found`);
+    }
+    
+    return cancelledSubscription;
   }
 }
 

@@ -30,6 +30,7 @@ export const users = pgTable("users", {
   // Common fields
   role: text("role").notNull().default("director"), // director, accountant, admin
   companyId: integer("company_id").references(() => companies.id),
+  subscriptionTierId: integer("subscription_tier_id").references(() => subscriptionTiers.id),
   credits: integer("credits").notNull().default(50),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -476,6 +477,68 @@ export const insertAgentRunSchema = createInsertSchema(agentRuns).pick({
   metadata: true
 });
 
+// Subscription tiers - Professional and Enterprise pricing
+export const subscriptionTiers = pgTable("subscription_tiers", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(), // basic, professional, enterprise
+  displayName: text("display_name").notNull(),
+  description: text("description"),
+  monthlyPrice: integer("monthly_price").notNull(), // in pence (0 for basic)
+  annualPrice: integer("annual_price"), // in pence (discounted annual rate)
+  creditMultiplier: integer("credit_multiplier").notNull().default(100), // stored as percentage (100 = 1.0x, 120 = 1.2x, 150 = 1.5x)
+  features: jsonb("features"), // { multi_company_management: bool, priority_support: bool, batch_operations: bool, dedicated_support: bool, custom_sla: bool, api_access: bool }
+  maxCompanies: integer("max_companies"), // null = unlimited
+  maxUsers: integer("max_users"), // null = unlimited for enterprise
+  isActive: boolean("is_active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0), // for display ordering
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertSubscriptionTierSchema = createInsertSchema(subscriptionTiers).pick({
+  name: true,
+  displayName: true,
+  description: true,
+  monthlyPrice: true,
+  annualPrice: true,
+  creditMultiplier: true,
+  features: true,
+  maxCompanies: true,
+  maxUsers: true,
+  isActive: true,
+  sortOrder: true,
+});
+
+// User subscriptions - Tracks active subscriptions and billing
+export const userSubscriptions = pgTable("user_subscriptions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  tierId: integer("tier_id").notNull().references(() => subscriptionTiers.id),
+  status: text("status").notNull().default("active"), // active, cancelled, expired, past_due
+  billingCycle: text("billing_cycle").notNull(), // monthly, annual
+  currentPeriodStart: timestamp("current_period_start").notNull(),
+  currentPeriodEnd: timestamp("current_period_end").notNull(),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  stripeCustomerId: text("stripe_customer_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertUserSubscriptionSchema = createInsertSchema(userSubscriptions).pick({
+  userId: true,
+  tierId: true,
+  status: true,
+  billingCycle: true,
+  currentPeriodStart: true,
+  currentPeriodEnd: true,
+  cancelAtPeriodEnd: true,
+  stripeSubscriptionId: true,
+  stripeCustomerId: true,
+  metadata: true,
+});
+
 // Credit packages
 export const creditPackages = pgTable("credit_packages", {
   id: serial("id").primaryKey(),
@@ -683,6 +746,12 @@ export type InsertDocumentTemplate = z.infer<typeof insertDocumentTemplateSchema
 export type AgentRun = typeof agentRuns.$inferSelect;
 export type InsertAgentRun = z.infer<typeof insertAgentRunSchema>;
 
+export type SubscriptionTier = typeof subscriptionTiers.$inferSelect;
+export type InsertSubscriptionTier = z.infer<typeof insertSubscriptionTierSchema>;
+
+export type UserSubscription = typeof userSubscriptions.$inferSelect;
+export type InsertUserSubscription = z.infer<typeof insertUserSubscriptionSchema>;
+
 export type CreditPackage = typeof creditPackages.$inferSelect;
 export type InsertCreditPackage = z.infer<typeof insertCreditPackageSchema>;
 
@@ -707,11 +776,13 @@ export type InsertOpeningTrialBalance = z.infer<typeof insertOpeningTrialBalance
 // Define relationships between tables for better querying
 export const usersRelations = relations(users, ({ one, many }) => ({
   company: one(companies, { fields: [users.companyId], references: [companies.id] }),
+  subscriptionTier: one(subscriptionTiers, { fields: [users.subscriptionTierId], references: [subscriptionTiers.id] }),
   documents: many(documents),
   filings: many(filings),
   activities: many(activities),
   assistantMessages: many(assistantMessages),
-  transactions: many(creditTransactions)
+  transactions: many(creditTransactions),
+  subscriptions: many(userSubscriptions)
 }));
 
 export const companiesRelations = relations(companies, ({ many }) => ({
@@ -774,6 +845,18 @@ export const outreachCampaignsRelations = relations(outreachCampaigns, ({ one })
     fields: [outreachCampaigns.contactId], 
     references: [companyContacts.id]
   })
+}));
+
+// Subscription tiers relations
+export const subscriptionTiersRelations = relations(subscriptionTiers, ({ many }) => ({
+  users: many(users),
+  subscriptions: many(userSubscriptions)
+}));
+
+// User subscriptions relations
+export const userSubscriptionsRelations = relations(userSubscriptions, ({ one }) => ({
+  user: one(users, { fields: [userSubscriptions.userId], references: [users.id] }),
+  tier: one(subscriptionTiers, { fields: [userSubscriptions.tierId], references: [subscriptionTiers.id] })
 }));
 
 // Credit packages relations
