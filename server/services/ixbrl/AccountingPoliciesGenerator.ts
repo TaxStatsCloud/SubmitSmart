@@ -144,9 +144,9 @@ export class AccountingPoliciesGenerator {
     let html = '<h4>Basis of Preparation</h4>\n';
     html += '<p>';
     html += IXBRLGenerator.tagText(
-      `These financial statements have been prepared in accordance with ${data.accountingFramework} ` +
-      `"The Financial Reporting Standard applicable in the UK and Republic of Ireland" ` +
-      `and the Companies Act 2006.`,
+      'These financial statements have been prepared in accordance with ' + data.accountingFramework + ' ' +
+      '"The Financial Reporting Standard applicable in the UK and Republic of Ireland" ' +
+      'and the Companies Act 2006.',
       'DescriptionBasisPreparationFinancialStatements',
       'current'
     );
@@ -182,7 +182,7 @@ export class AccountingPoliciesGenerator {
       html += '</p>\n';
 
       if (data.goingConcernUncertainties) {
-        html += `<p>${data.goingConcernUncertainties}</p>\n`;
+        html += '<p>' + data.goingConcernUncertainties + '</p>\n';
       }
     } else {
       html += '<p>The directors do not consider the going concern basis to be appropriate. ';
@@ -199,11 +199,13 @@ export class AccountingPoliciesGenerator {
    */
   private static generateTurnoverRecognitionPolicy(data: AccountingPoliciesData): string {
     let html = '<h4>Turnover</h4>\n';
-    html += `<p>${IXBRLGenerator.tagText(
+    html += '<p>';
+    html += IXBRLGenerator.tagText(
       data.turnoverRecognitionPolicy,
       'DescriptionAccountingPolicyTurnover',
       'current'
-    )}</p>\n`;
+    );
+    html += '</p>\n';
     html += '<br/>\n';
 
     return html;
@@ -214,11 +216,13 @@ export class AccountingPoliciesGenerator {
    */
   private static generateTangibleFixedAssetsPolicy(data: AccountingPoliciesData): string {
     let html = '<h4>Tangible Fixed Assets</h4>\n';
-    html += `<p>${IXBRLGenerator.tagText(
+    html += '<p>';
+    html += IXBRLGenerator.tagText(
       data.tangibleFixedAssetsDepreciationPolicy,
       'DescriptionAccountingPolicyPropertyPlantEquipment',
       'current'
-    )}</p>\n`;
+    );
+    html += '</p>\n';
     html += '<br/>\n';
 
     return html;
@@ -229,11 +233,13 @@ export class AccountingPoliciesGenerator {
    */
   private static generateStocksPolicy(data: AccountingPoliciesData): string {
     let html = '<h4>Stocks</h4>\n';
-    html += `<p>${IXBRLGenerator.tagText(
+    html += '<p>';
+    html += IXBRLGenerator.tagText(
       data.stocksValuationPolicy!,
       'DescriptionAccountingPolicyInventories',
       'current'
-    )}</p>\n`;
+    );
+    html += '</p>\n';
     html += '<br/>\n';
 
     return html;
@@ -244,11 +250,13 @@ export class AccountingPoliciesGenerator {
    */
   private static generateTaxationPolicy(data: AccountingPoliciesData): string {
     let html = '<h4>Taxation</h4>\n';
-    html += `<p>${IXBRLGenerator.tagText(
+    html += '<p>';
+    html += IXBRLGenerator.tagText(
       data.taxationPolicy,
       'DescriptionAccountingPolicyIncomeTax',
       'current'
-    )}</p>\n`;
+    );
+    html += '</p>\n';
     html += '<br/>\n';
 
     return html;
@@ -259,11 +267,13 @@ export class AccountingPoliciesGenerator {
    */
   private static generatePensionCostsPolicy(data: AccountingPoliciesData): string {
     let html = '<h4>Pension Costs</h4>\n';
-    html += `<p>${IXBRLGenerator.tagText(
+    html += '<p>';
+    html += IXBRLGenerator.tagText(
       data.pensionCosts!,
       'DescriptionAccountingPolicyEmployeeBenefits',
       'current'
-    )}</p>\n';
+    );
+    html += '</p>\n';
     html += '<br/>\n';
 
     return html;
@@ -274,11 +284,13 @@ export class AccountingPoliciesGenerator {
    */
   private static generateForeignCurrencyPolicy(data: AccountingPoliciesData): string {
     let html = '<h4>Foreign Currency Translation</h4>\n';
-    html += `<p>${IXBRLGenerator.tagText(
+    html += '<p>';
+    html += IXBRLGenerator.tagText(
       data.foreignCurrency!,
       'DescriptionAccountingPolicyForeignCurrency',
       'current'
-    )}</p>\n`;
+    );
+    html += '</p>\n';
     html += '<br/>\n';
 
     return html;
@@ -292,7 +304,7 @@ export class NotesToAccountsGenerator {
   static generate(data: NotesToAccountsData, entitySize: EntitySize): string {
     let html = '<div class="notes-to-accounts">\n';
     html += '<h2>Notes to the Financial Statements</h2>\n';
-    html += `<p>For the year ended ${data.accountingPolicies.periodEnd}</p>\n`;
+    html += '<p>For the year ended ' + data.accountingPolicies.periodEnd + '</p>\n';
     html += '<br/>\n';
 
     // Note 1: Accounting Policies
@@ -455,16 +467,16 @@ export class NotesToAccountsGenerator {
     html += '<tbody>\n';
 
     html += '<tr><td colspan="3"><strong>Authorised</strong></td></tr>\n';
-    html += `<tr><td>${data.shareCapital!.authorised.shareClass}</td><td class="number">`;
+    html += '<tr><td>' + data.shareCapital!.authorised.shareClass + '</td><td class="number">';
     html += IXBRLGenerator.tagNonFraction(data.shareCapital!.authorised.numShares, 'NumberOrdinarySharesAuthorised', 'balance-sheet', 'pure', 0);
-    html += `</td><td class="number">`;
+    html += '</td><td class="number">';
     html += IXBRLGenerator.tagMonetary(data.shareCapital!.authorised.nominalValue, 'AuthorisedShareCapital', 'balance-sheet', 'GBP', 2);
     html += '</td></tr>\n';
 
     html += '<tr><td colspan="3"><strong>Issued and Fully Paid</strong></td></tr>\n';
-    html += `<tr><td>${data.shareCapital!.issued.shareClass}</td><td class="number">`;
+    html += '<tr><td>' + data.shareCapital!.issued.shareClass + '</td><td class="number">';
     html += IXBRLGenerator.tagNonFraction(data.shareCapital!.issued.numShares, 'NumberOrdinarySharesIssued', 'balance-sheet', 'pure', 0);
-    html += `</td><td class="number">`;
+    html += '</td><td class="number">';
     html += IXBRLGenerator.tagMonetary(data.shareCapital!.issued.nominalValue, 'CalledUpShareCapital', 'balance-sheet', 'GBP', 2);
     html += '</td></tr>\n';
 
@@ -480,11 +492,13 @@ export class NotesToAccountsGenerator {
    */
   private static generateUltimateControllingPartyNote(data: NotesToAccountsData): string {
     let html = '<h3>Note: Ultimate Controlling Party</h3>\n';
-    html += `<p>${IXBRLGenerator.tagText(
+    html += '<p>';
+    html += IXBRLGenerator.tagText(
       data.ultimateControllingParty!,
       'NameUltimateParentUndertaking',
       'current'
-    )}</p>\n`;
+    );
+    html += '</p>\n';
     html += '<br/>\n';
 
     return html;

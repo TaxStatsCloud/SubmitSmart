@@ -10,6 +10,7 @@ import { isAuthenticated } from '../auth';
 import { logger } from '../utils/logger';
 import { storage } from '../storage';
 import { auditService } from '../services/auditService';
+import { IXBRLPackagingService } from '../services/ixbrl/IXBRLPackagingService';
 
 const router = Router();
 router.use(isAuthenticated);
@@ -146,6 +147,70 @@ router.post('/submit', async (req, res) => {
       return res.status(400).json({ error: 'User does not have an associated company' });
     }
 
+    // Generate actual iXBRL HTML with proper tagging using IXBRLPackagingService
+    let generatedIxbrlHtml = null;
+    if (ixbrlData) {
+      try {
+        // Transform ixbrlData into IXBRLPackagingService format
+        const packageData = {
+          context: {
+            companyNumber: ixbrlData.companyInfo?.number || formData.companyNumber,
+            companyName: ixbrlData.companyInfo?.name || formData.companyName,
+            periodStart: ixbrlData.companyInfo?.financialYearStart || formData.financialYearStart,
+            periodEnd: ixbrlData.companyInfo?.financialYearEnd || formData.financialYearEnd,
+            balanceSheetDate: ixbrlData.companyInfo?.financialYearEnd || formData.financialYearEnd,
+            entitySize: ixbrlData.entitySize || 'micro'
+          },
+          balanceSheet: {
+            currentYear: ixbrlData.balanceSheet || {},
+            previousYear: {}
+          },
+          profitLoss: {
+            currentYear: ixbrlData.profitAndLoss || {},
+            previousYear: {}
+          },
+          directorsReport: {
+            companyName: ixbrlData.companyInfo?.name || formData.companyName,
+            companyNumber: ixbrlData.companyInfo?.number || formData.companyNumber,
+            periodEnd: ixbrlData.companyInfo?.financialYearEnd || formData.financialYearEnd,
+            directors: ixbrlData.directors?.map((d: string) => ({ name: d })) || [],
+            principalActivities: formData.principalActivities || 'Trading company',
+            auditExemption: ixbrlData.auditExempt !== false,
+            smallCompanyRegime: ixbrlData.entitySize === 'micro' || ixbrlData.entitySize === 'small',
+            directorApprovalDate: formData.approvalDate || ixbrlData.companyInfo?.financialYearEnd,
+            directorSignature: formData.signatoryDirector || ixbrlData.directors?.[0] || '',
+            directorPosition: 'Director'
+          },
+          notes: {
+            accountingPolicies: {
+              companyName: ixbrlData.companyInfo?.name || formData.companyName,
+              companyNumber: ixbrlData.companyInfo?.number || formData.companyNumber,
+              periodEnd: ixbrlData.companyInfo?.financialYearEnd || formData.financialYearEnd,
+              accountingFramework: 'FRS 102',
+              goingConcern: true,
+              turnoverRecognitionPolicy: 'Turnover represents the amounts receivable for goods and services provided in the normal course of business, net of trade discounts, VAT and other sales related taxes.',
+              tangibleFixedAssetsDepreciationPolicy: 'Tangible fixed assets are stated at cost less accumulated depreciation.',
+              taxationPolicy: 'Current tax is provided at amounts expected to be paid (or recovered) using the tax rates and laws that have been enacted or substantively enacted by the balance sheet date.',
+              pensionCosts: ixbrlData.accountingPolicies || 'The company operates a defined contribution pension scheme. Contributions are charged to the profit and loss account as they become payable.'
+            }
+          },
+          entitySize: ixbrlData.entitySize || 'micro'
+        };
+
+        // Generate iXBRL HTML with proper tagging
+        const zipBuffer = IXBRLPackagingService.createSubmissionPackage(packageData as any);
+        generatedIxbrlHtml = zipBuffer.toString('base64');
+        
+        annualAccountsLogger.info('iXBRL HTML generated with proper tagging', {
+          companyNumber: packageData.context.companyNumber,
+          packageSize: zipBuffer.length
+        });
+      } catch (error: any) {
+        annualAccountsLogger.error('Error generating iXBRL HTML:', error);
+        // Continue with submission even if iXBRL generation fails (for now)
+      }
+    }
+
     try {
       // Atomically create filing with credit deduction
       // All operations (credit check, deduction, filing creation, transaction log) happen in a single DB transaction
@@ -157,7 +222,10 @@ router.post('/submit', async (req, res) => {
           status: 'submitted',
           data: {
             ...formData,
-            ixbrlData,
+            ixbrlData: {
+              ...ixbrlData,
+              ixbrlHtml: generatedIxbrlHtml // Store the generated iXBRL HTML
+            },
             submittedAt: new Date().toISOString(),
           },
           documentIds: documentIds || [], // Link source documents
@@ -172,6 +240,7 @@ router.post('/submit', async (req, res) => {
         filingId: filing.id,
         companyNumber: formData.companyName,
         creditsDeducted: REQUIRED_CREDITS,
+        ixbrlGenerated: !!generatedIxbrlHtml
       });
 
       // Log audit event
