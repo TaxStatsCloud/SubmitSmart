@@ -11,7 +11,7 @@ const Sidebar = () => {
   const isActive = (path: string) => location === path;
 
   return (
-    <aside className="hidden md:flex md:flex-shrink-0">
+    <aside className="hidden lg:flex lg:flex-shrink-0">
       <div className="flex flex-col w-64 bg-white border-r border-neutral-200">
         {/* Logo */}
         <div className="flex items-center justify-center h-16 px-4 border-b border-neutral-200 bg-[hsl(var(--primary-500))]">
