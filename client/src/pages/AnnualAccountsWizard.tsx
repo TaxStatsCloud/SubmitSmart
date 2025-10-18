@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -23,7 +23,7 @@ import { HelpPanel } from "@/components/wizard/HelpPanel";
 import { ValidationGuidance } from "@/components/wizard/ValidationGuidance";
 import { FilingSubmissionWarning } from "@/components/filing/FilingSubmissionWarning";
 
-// Annual Accounts Form Schema
+// Annual Accounts Form Schema with Comparative Year Support
 const annualAccountsSchema = z.object({
   // Company Details
   companyName: z.string().min(1, "Company name is required"),
@@ -37,30 +37,59 @@ const annualAccountsSchema = z.object({
   // Entity Size (auto-detected but can be overridden)
   entitySize: z.enum(["micro", "small", "medium", "large"]),
   
-  // Balance Sheet - Fixed Assets
+  // === CURRENT YEAR ===
+  
+  // Balance Sheet - Fixed Assets (Current Year)
   intangibleAssets: z.coerce.number().min(0).default(0),
   tangibleAssets: z.coerce.number().min(0).default(0),
   investments: z.coerce.number().min(0).default(0),
   
-  // Balance Sheet - Current Assets
+  // Balance Sheet - Current Assets (Current Year)
   stocks: z.coerce.number().min(0).default(0),
   debtors: z.coerce.number().min(0).default(0),
   cashAtBank: z.coerce.number().min(0).default(0),
   
-  // Balance Sheet - Creditors
+  // Balance Sheet - Creditors (Current Year)
   creditorsDueWithinYear: z.coerce.number().min(0).default(0),
   creditorsDueAfterYear: z.coerce.number().min(0).default(0),
   
-  // Balance Sheet - Capital & Reserves
+  // Balance Sheet - Capital & Reserves (Current Year)
   calledUpShareCapital: z.coerce.number().min(0).default(0),
   profitAndLossAccount: z.coerce.number().default(0),
   
-  // P&L Account
+  // P&L Account (Current Year)
   turnover: z.coerce.number().min(0).default(0),
   costOfSales: z.coerce.number().min(0).default(0),
   grossProfit: z.coerce.number().default(0),
   administrativeExpenses: z.coerce.number().min(0).default(0),
   operatingProfit: z.coerce.number().default(0),
+  
+  // === PRIOR YEAR (Comparative Figures) ===
+  
+  // Balance Sheet - Fixed Assets (Prior Year)
+  intangibleAssetsPrior: z.coerce.number().min(0).default(0).optional(),
+  tangibleAssetsPrior: z.coerce.number().min(0).default(0).optional(),
+  investmentsPrior: z.coerce.number().min(0).default(0).optional(),
+  
+  // Balance Sheet - Current Assets (Prior Year)
+  stocksPrior: z.coerce.number().min(0).default(0).optional(),
+  debtorsPrior: z.coerce.number().min(0).default(0).optional(),
+  cashAtBankPrior: z.coerce.number().min(0).default(0).optional(),
+  
+  // Balance Sheet - Creditors (Prior Year)
+  creditorsDueWithinYearPrior: z.coerce.number().min(0).default(0).optional(),
+  creditorsDueAfterYearPrior: z.coerce.number().min(0).default(0).optional(),
+  
+  // Balance Sheet - Capital & Reserves (Prior Year)
+  calledUpShareCapitalPrior: z.coerce.number().min(0).default(0).optional(),
+  profitAndLossAccountPrior: z.coerce.number().default(0).optional(),
+  
+  // P&L Account (Prior Year)
+  turnoverPrior: z.coerce.number().min(0).default(0).optional(),
+  costOfSalesPrior: z.coerce.number().min(0).default(0).optional(),
+  grossProfitPrior: z.coerce.number().default(0).optional(),
+  administrativeExpensesPrior: z.coerce.number().min(0).default(0).optional(),
+  operatingProfitPrior: z.coerce.number().default(0).optional(),
   
   // Directors & Audit
   directorNames: z.string().min(1, "At least one director required"),
@@ -76,6 +105,7 @@ export default function AnnualAccountsWizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [iXBRLPreview, setIXBRLPreview] = useState<any>(null);
   const [showSubmissionWarning, setShowSubmissionWarning] = useState(false);
+  const [priorYearDataLoaded, setPriorYearDataLoaded] = useState(false);
   
   // Credit requirements
   const FILING_COST = 25; // Annual Accounts filing cost in credits
@@ -91,6 +121,7 @@ export default function AnnualAccountsWizard() {
       financialYearStart: "",
       financialYearEnd: "",
       entitySize: "small",
+      // Current Year
       intangibleAssets: 0,
       tangibleAssets: 0,
       investments: 0,
@@ -106,11 +137,57 @@ export default function AnnualAccountsWizard() {
       grossProfit: 0,
       administrativeExpenses: 0,
       operatingProfit: 0,
+      // Prior Year (Comparative Figures)
+      intangibleAssetsPrior: 0,
+      tangibleAssetsPrior: 0,
+      investmentsPrior: 0,
+      stocksPrior: 0,
+      debtorsPrior: 0,
+      cashAtBankPrior: 0,
+      creditorsDueWithinYearPrior: 0,
+      creditorsDueAfterYearPrior: 0,
+      calledUpShareCapitalPrior: 0,
+      profitAndLossAccountPrior: 0,
+      turnoverPrior: 0,
+      costOfSalesPrior: 0,
+      grossProfitPrior: 0,
+      administrativeExpensesPrior: 0,
+      operatingProfitPrior: 0,
+      // Other
       directorNames: "",
       auditExempt: true,
       accountingPolicies: "",
     },
   });
+
+  // Fetch prior year data for auto-population
+  const { data: priorYearData } = useQuery({
+    queryKey: ['/api/annual-accounts/prior-year', user?.companyId],
+    enabled: !!user?.companyId && !priorYearDataLoaded,
+    staleTime: Infinity, // Don't refetch once loaded
+  });
+
+  // Auto-populate prior year fields when data loads
+  useEffect(() => {
+    if (priorYearData?.success && priorYearData.data && !priorYearDataLoaded) {
+      const data = priorYearData.data;
+      
+      // Set all prior year fields
+      Object.keys(data).forEach((key) => {
+        if (key !== 'yearEnding' && key !== 'sourceType') {
+          form.setValue(key as any, data[key]);
+        }
+      });
+
+      setPriorYearDataLoaded(true);
+
+      // Show notification
+      toast({
+        title: "Prior Year Data Loaded",
+        description: `Comparative figures loaded from ${new Date(data.yearEnding).toLocaleDateString('en-GB')} (${data.sourceType})`,
+      });
+    }
+  }, [priorYearData, priorYearDataLoaded, form, toast]);
 
   // Auto-detect entity size based on turnover
   const autoDetectEntitySize = () => {

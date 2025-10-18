@@ -212,4 +212,90 @@ router.post('/submit', async (req, res) => {
   }
 });
 
+/**
+ * Fetch prior year data for comparative figures
+ * GET /api/annual-accounts/prior-year/:companyId
+ */
+router.get('/prior-year/:companyId', async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const companyId = parseInt(req.params.companyId);
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    if (!companyId) {
+      return res.status(400).json({ error: 'Company ID is required' });
+    }
+
+    annualAccountsLogger.info('Fetching prior year data', { userId, companyId });
+
+    // Import required modules at the top
+    const { db } = await import('@db');
+    const { priorYearData } = await import('@shared/schema');
+    const { eq, and, desc } = await import('drizzle-orm');
+
+    // Fetch the most recent prior year data for this company
+    const priorData = await db
+      .select()
+      .from(priorYearData)
+      .where(
+        and(
+          eq(priorYearData.companyId, companyId),
+          eq(priorYearData.dataType, 'annual_accounts')
+        )
+      )
+      .orderBy(desc(priorYearData.yearEnding))
+      .limit(1);
+
+    if (!priorData || priorData.length === 0) {
+      return res.json({
+        success: false,
+        message: 'No prior year data found',
+        data: null
+      });
+    }
+
+    const data = priorData[0].data as any;
+
+    annualAccountsLogger.info('Prior year data loaded', { 
+      companyId, 
+      yearEnding: priorData[0].yearEnding,
+      sourceType: priorData[0].sourceType 
+    });
+
+    res.json({
+      success: true,
+      data: {
+        yearEnding: priorData[0].yearEnding,
+        sourceType: priorData[0].sourceType,
+        // Map the data to the form fields with "Prior" suffix
+        intangibleAssetsPrior: data.intangibleAssets || 0,
+        tangibleAssetsPrior: data.tangibleAssets || 0,
+        investmentsPrior: data.investments || 0,
+        stocksPrior: data.stocks || 0,
+        debtorsPrior: data.debtors || 0,
+        cashAtBankPrior: data.cashAtBank || 0,
+        creditorsDueWithinYearPrior: data.creditorsDueWithinYear || 0,
+        creditorsDueAfterYearPrior: data.creditorsDueAfterYear || 0,
+        calledUpShareCapitalPrior: data.calledUpShareCapital || 0,
+        profitAndLossAccountPrior: data.profitAndLossAccount || 0,
+        turnoverPrior: data.turnover || 0,
+        costOfSalesPrior: data.costOfSales || 0,
+        grossProfitPrior: data.grossProfit || 0,
+        administrativeExpensesPrior: data.administrativeExpenses || 0,
+        operatingProfitPrior: data.operatingProfit || 0,
+      }
+    });
+
+  } catch (error: any) {
+    annualAccountsLogger.error('Error fetching prior year data:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch prior year data',
+      details: error.message 
+    });
+  }
+});
+
 export default router;
