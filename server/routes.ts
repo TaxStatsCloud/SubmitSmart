@@ -3349,5 +3349,92 @@ Generate the note content:`;
     }
   });
 
+  /**
+   * GET /api/auditors/filings
+   * Get all filings accessible to the auditor (read-only)
+   */
+  app.get('/api/auditors/filings', isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const user = await storage.getUser(userId);
+
+      if (!user || user.role !== 'auditor') {
+        return res.status(403).json({ error: 'Only auditors can access this endpoint' });
+      }
+
+      // Find all accepted invitations for this auditor that haven't expired
+      const invitations = await db.query.auditorInvitations.findMany({
+        where: and(
+          eq(schema.auditorInvitations.acceptedUserId, userId),
+          eq(schema.auditorInvitations.status, 'accepted')
+        ),
+      });
+
+      // Filter out expired invitations
+      const validInvitations = invitations.filter(inv => new Date(inv.expiresAt) > new Date());
+
+      if (validInvitations.length === 0) {
+        return res.json([]);
+      }
+
+      // Collect all accessible filing IDs and company IDs from valid invitations
+      const accessibleCompanyIds = new Set<number>();
+      const specificFilingIds = new Set<number>();
+
+      for (const invitation of validInvitations) {
+        accessibleCompanyIds.add(invitation.companyId);
+        if (invitation.filingIds && invitation.filingIds.length > 0) {
+          invitation.filingIds.forEach(id => specificFilingIds.add(id));
+        }
+      }
+
+      // Fetch filings based on access level (only from valid invitations)
+      const filings = await db.query.filings.findMany({
+        where: or(
+          // Filings from companies where auditor has full access
+          ...Array.from(accessibleCompanyIds).map(companyId => {
+            const hasFullAccess = validInvitations.some(inv => 
+              inv.companyId === companyId && (!inv.filingIds || inv.filingIds.length === 0)
+            );
+            if (hasFullAccess) {
+              return eq(schema.filings.companyId, companyId);
+            }
+            return sql`false`;
+          }),
+          // Specific filings the auditor has access to
+          ...(specificFilingIds.size > 0 
+            ? [inArray(schema.filings.id, Array.from(specificFilingIds))] 
+            : [])
+        ),
+      });
+
+      // Enrich filings with documents and company info
+      const enrichedFilings = await Promise.all(filings.map(async (filing) => {
+        // Fetch documents
+        const documents = filing.documentIds && filing.documentIds.length > 0
+          ? await db.query.documents.findMany({
+              where: inArray(schema.documents.id, filing.documentIds),
+            })
+          : [];
+
+        // Fetch company
+        const company = await db.query.companies.findFirst({
+          where: eq(schema.companies.id, filing.companyId),
+        });
+
+        return {
+          ...filing,
+          documents,
+          company: company || { id: filing.companyId, name: 'Unknown Company', registrationNumber: 'N/A' },
+        };
+      }));
+
+      res.json(enrichedFilings);
+    } catch (error: any) {
+      console.error('Fetch auditor filings error:', error);
+      res.status(500).json({ error: 'Failed to fetch accessible filings' });
+    }
+  });
+
   return httpServer;
 }
