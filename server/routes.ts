@@ -2199,11 +2199,13 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
   });
 
   // Assistant routes
-  app.get('/api/assistant/messages', async (req, res) => {
+  app.get('/api/assistant/messages', isAuthenticated, async (req, res) => {
     try {
-      // In a real app, would filter by user from session
-      const userId = 1; // Sample user ID
+      if (!req.user) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
       
+      const userId = (req.user as any).id;
       const messages = await storage.getAssistantMessagesByUser(userId);
       res.json(messages);
     } catch (error: any) {
@@ -2211,10 +2213,13 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
     }
   });
 
-  app.post('/api/assistant/messages', async (req, res) => {
+  app.post('/api/assistant/messages', isAuthenticated, async (req, res) => {
     try {
-      // In a real app, would get user ID from session
-      const userId = 1; // Sample user ID
+      if (!req.user) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+      
+      const userId = (req.user as any).id;
       
       // Validate user message
       const { content } = req.body;
@@ -2248,11 +2253,13 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
     }
   });
 
-  app.delete('/api/assistant/messages', async (req, res) => {
+  app.delete('/api/assistant/messages', isAuthenticated, async (req, res) => {
     try {
-      // In a real app, would get user ID from session
-      const userId = 1; // Sample user ID
+      if (!req.user) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
       
+      const userId = (req.user as any).id;
       await storage.deleteAssistantMessagesByUser(userId);
       
       res.json({ message: 'Assistant messages cleared successfully' });
