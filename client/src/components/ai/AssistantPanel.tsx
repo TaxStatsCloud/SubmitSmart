@@ -46,7 +46,7 @@ const AssistantPanel = () => {
         <div className="bg-[hsl(var(--primary-500))] p-4 flex items-center justify-between">
           <div className="flex items-center">
             <span className="material-icons text-white mr-2">smart_toy</span>
-            <h3 className="text-white font-semibold">PromptSubmissions Assistant</h3>
+            <h3 className="text-white font-semibold">Prompt AI</h3>
           </div>
           <div>
             <button 
@@ -74,7 +74,7 @@ const AssistantPanel = () => {
               </div>
               <div className="bg-white rounded-lg p-3 shadow-sm border border-neutral-200 max-w-[80%]">
                 <p className="text-sm text-neutral-800">
-                  Hello {user?.fullName?.split(' ')[0] || 'there'}! I'm your PromptSubmissions Assistant. I can help you prepare your filings, answer compliance questions, or guide you through the platform. What would you like help with today?
+                  Hello {user?.fullName?.split(' ')[0] || 'there'}! I'm Prompt AI, your UK compliance assistant. I can help you prepare your filings, answer compliance questions, or guide you through the platform. What would you like help with today?
                 </p>
               </div>
             </div>

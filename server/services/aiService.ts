@@ -51,7 +51,7 @@ export async function generateResponse(userMessage: string, userId: number): Pro
     }
     
     // Create a comprehensive system prompt with context
-    const systemPrompt = `You are "PromptSubmissions Assistant", an AI assistant specialized in helping UK companies with regulatory filings and compliance.
+    const systemPrompt = `You are "Prompt AI", an AI assistant specialized in helping UK companies with regulatory filings and compliance.
 
 User Information:
 - Name: ${user.fullName}

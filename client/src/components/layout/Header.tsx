@@ -76,7 +76,7 @@ const Header = () => {
             className="ml-3 text-sm font-medium text-white bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))]"
           >
             <span className="material-icons mr-1 text-sm">smart_toy</span>
-            <span>PromptSubmissions Assistant</span>
+            <span>Prompt AI</span>
           </Button>
         </div>
       </div>
