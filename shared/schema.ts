@@ -1024,3 +1024,120 @@ export const adminNotificationsRelations = relations(adminNotifications, ({ one 
   auditLog: one(auditLogs, { fields: [adminNotifications.auditLogId], references: [auditLogs.id] })
 }));
 
+// Accounting Policy Templates - Pre-configured templates for common industries
+export const accountingPolicyTemplates = pgTable("accounting_policy_templates", {
+  id: serial("id").primaryKey(),
+  industry: text("industry").notNull(), // e.g., "Tech/SaaS", "Retail", "Professional Services"
+  entitySize: text("entity_size").notNull(), // micro, small, medium, large
+  templateName: text("template_name").notNull(),
+  description: text("description"),
+  basisOfPreparation: text("basis_of_preparation").notNull(),
+  goingConcern: text("going_concern").notNull(),
+  turnoverRecognitionPolicy: text("turnover_recognition_policy").notNull(),
+  tangibleFixedAssetsPolicy: text("tangible_fixed_assets_policy").notNull(),
+  stocksValuationPolicy: text("stocks_valuation_policy"),
+  taxationPolicy: text("taxation_policy").notNull(),
+  pensionCosts: text("pension_costs"),
+  foreignCurrency: text("foreign_currency"),
+  leases: text("leases"),
+  industrySpecificPolicies: jsonb("industry_specific_policies"), // Additional policies specific to industry
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertAccountingPolicyTemplateSchema = createInsertSchema(accountingPolicyTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type AccountingPolicyTemplate = typeof accountingPolicyTemplates.$inferSelect;
+export type InsertAccountingPolicyTemplate = z.infer<typeof insertAccountingPolicyTemplateSchema>;
+
+// Accounting Policies History - Track changes to accounting policies year-over-year
+export const accountingPoliciesHistory = pgTable("accounting_policies_history", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id),
+  filingId: integer("filing_id").references(() => filings.id, { onDelete: "cascade" }),
+  yearEnding: text("year_ending").notNull(), // e.g., "2024-12-31"
+  accountingFramework: text("accounting_framework").notNull(), // FRS 102, FRS 105, UK IFRS
+  policiesData: jsonb("policies_data").notNull(), // Full accounting policies as JSON
+  changesFromPriorYear: jsonb("changes_from_prior_year"), // Detected changes from previous year
+  changeReason: text("change_reason"), // User explanation for policy changes
+  financialImpact: jsonb("financial_impact"), // Impact on current and prior year figures
+  isRestatement: boolean("is_restatement").default(false), // True if prior year restated
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertAccountingPoliciesHistorySchema = createInsertSchema(accountingPoliciesHistory).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type AccountingPoliciesHistory = typeof accountingPoliciesHistory.$inferSelect;
+export type InsertAccountingPoliciesHistory = z.infer<typeof insertAccountingPoliciesHistorySchema>;
+
+// Accounting policies history relations
+export const accountingPoliciesHistoryRelations = relations(accountingPoliciesHistory, ({ one }) => ({
+  company: one(companies, { fields: [accountingPoliciesHistory.companyId], references: [companies.id] }),
+  user: one(users, { fields: [accountingPoliciesHistory.userId], references: [users.id] }),
+  filing: one(filings, { fields: [accountingPoliciesHistory.filingId], references: [filings.id] })
+}));
+
+// Custom Notes - User-defined additional notes for financial statements
+export const customNotes = pgTable("custom_notes", {
+  id: serial("id").primaryKey(),
+  filingId: integer("filing_id").notNull().references(() => filings.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id),
+  noteTitle: text("note_title").notNull(),
+  noteContent: text("note_content").notNull(),
+  displayOrder: integer("display_order").notNull().default(0), // Order in which notes appear
+  ixbrlTag: text("ixbrl_tag"), // Optional iXBRL tag for tagging
+  noteType: text("note_type").default("general"), // general, accounting_policy, disclosure, etc.
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertCustomNoteSchema = createInsertSchema(customNotes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type CustomNote = typeof customNotes.$inferSelect;
+export type InsertCustomNote = z.infer<typeof insertCustomNoteSchema>;
+
+// Custom notes relations
+export const customNotesRelations = relations(customNotes, ({ one }) => ({
+  filing: one(filings, { fields: [customNotes.filingId], references: [filings.id] }),
+  user: one(users, { fields: [customNotes.userId], references: [users.id] })
+}));
+
+// AI Rate Limits - Track AI endpoint usage to prevent token burn
+export const aiRateLimits = pgTable("ai_rate_limits", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  ipAddress: text("ip_address"),
+  endpoint: text("endpoint").notNull(), // e.g., "/api/ai/directors-report", "/api/ai/bulk-generate-reports"
+  requestCount: integer("request_count").notNull().default(1),
+  windowStart: timestamp("window_start").notNull().defaultNow(), // Start of current rate limit window
+  windowEnd: timestamp("window_end").notNull(), // End of current rate limit window
+  lastRequest: timestamp("last_request").notNull().defaultNow(),
+  isBlocked: boolean("is_blocked").default(false), // True if user exceeded rate limit
+  blockedUntil: timestamp("blocked_until"), // When the block expires
+});
+
+export const insertAIRateLimitSchema = createInsertSchema(aiRateLimits).omit({
+  id: true,
+});
+
+export type AIRateLimit = typeof aiRateLimits.$inferSelect;
+export type InsertAIRateLimit = z.infer<typeof insertAIRateLimitSchema>;
+
+// AI rate limits relations
+export const aiRateLimitsRelations = relations(aiRateLimits, ({ one }) => ({
+  user: one(users, { fields: [aiRateLimits.userId], references: [users.id] })
+}));
+
