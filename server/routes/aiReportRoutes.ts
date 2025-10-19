@@ -286,6 +286,8 @@ router.post('/cash-flow-statement', aiRateLimiter({
  * Generate All Reports in Bulk with Discount
  * POST /api/ai/bulk-generate-reports
  * Cost: 500 credits (vs 650 individually = 23% savings)
+ * 
+ * Request body: Same as individual endpoints (flat structure), will be transformed internally
  */
 router.post('/bulk-generate-reports', aiRateLimiter({ 
   requiredCredits: BULK_AI_CREDIT_COST, 
@@ -297,19 +299,70 @@ router.post('/bulk-generate-reports', aiRateLimiter({
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
+    const {
+      companyNumber,
+      companyName,
+      accountingPeriodEnd,
+      entitySize,
+      directors,
+      principalActivities,
+      financialResults,
+      dividends,
+      futureDevelopments,
+      currentYearTB,
+      priorYearTB
+    } = req.body;
+
+    // Build nested input structure for bulk generator
+    const bulkInput = {
+      directorsReport: {
+        companyNumber,
+        companyName,
+        periodEnd: accountingPeriodEnd,
+        directors: directors || [],
+        principalActivities,
+        turnover: financialResults?.turnover,
+        profit: financialResults?.profit,
+        dividends,
+        futureOutlook: futureDevelopments
+      },
+      notesToAccounts: {
+        companyNumber,
+        companyName,
+        periodEnd: accountingPeriodEnd,
+        entitySize: entitySize || 'SMALL'
+      },
+      strategicReport: entitySize === 'LARGE' ? {
+        companyNumber,
+        companyName,
+        periodEnd: accountingPeriodEnd,
+        businessModel: principalActivities,
+        strategicObjectives: futureDevelopments,
+        turnover: financialResults?.turnover,
+        profit: financialResults?.profit
+      } : undefined,
+      cashFlowStatement: (entitySize === 'MEDIUM' || entitySize === 'LARGE') && currentYearTB && priorYearTB ? {
+        companyNumber,
+        companyName,
+        periodEnd: accountingPeriodEnd,
+        currentYearTB,
+        priorYearTB
+      } : undefined
+    };
+
     // Generate all reports FIRST (fail fast if generation fails)
-    const bulkReports = await generateBulkAIReports(req.body);
+    const bulkReports = await generateBulkAIReports(bulkInput);
 
     // Atomically deduct credits (prevents race conditions)
     try {
       const remainingCredits = await storage.deductAICredits(
         userId,
         BULK_AI_CREDIT_COST,
-        `Bulk AI Report Generation for ${req.body.directorsReport.companyName}`,
+        `Bulk AI Report Generation for ${companyName}`,
         { 
           reportType: 'bulk_generation',
-          companyNumber: req.body.directorsReport.companyNumber,
-          companyName: req.body.directorsReport.companyName,
+          companyNumber,
+          companyName,
           reportsGenerated: bulkReports.reportsGenerated,
           creditsSaved: BULK_SAVINGS
         }
@@ -317,7 +370,8 @@ router.post('/bulk-generate-reports', aiRateLimiter({
 
       aiReportLogger.info('Bulk AI reports generated and charged', {
         userId,
-        companyNumber: req.body.directorsReport.companyNumber,
+        companyNumber,
+        companyName,
         reportsGenerated: bulkReports.reportsGenerated,
         creditsDeducted: BULK_AI_CREDIT_COST,
         creditsSaved: BULK_SAVINGS
