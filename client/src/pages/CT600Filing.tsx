@@ -1080,28 +1080,30 @@ export default function CT600Filing() {
 
               <div className="space-y-6">
                 {/* Trading Profit */}
-                <div>
-                  <h3 className="font-medium mb-3">Trading Profit Calculation</h3>
-                  <div className="bg-muted p-4 rounded-md space-y-2">
-                    <div className="flex justify-between">
-                      <span>Turnover:</span>
-                      <span className="font-medium">£{computation.breakdown.tradingProfitCalculation.turnover.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Cost of Sales:</span>
-                      <span className="font-medium">-£{computation.breakdown.tradingProfitCalculation.costOfSales.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Operating Expenses:</span>
-                      <span className="font-medium">-£{computation.breakdown.tradingProfitCalculation.operatingExpenses.toFixed(2)}</span>
-                    </div>
-                    <Separator />
-                    <div className="flex justify-between font-semibold">
-                      <span>Trading Profit:</span>
-                      <span className="text-primary" data-testid="text-trading-profit">£{computation.breakdown.tradingProfitCalculation.tradingProfit.toFixed(2)}</span>
+                {computation.breakdown?.tradingProfitCalculation && (
+                  <div>
+                    <h3 className="font-medium mb-3">Trading Profit Calculation</h3>
+                    <div className="bg-muted p-4 rounded-md space-y-2">
+                      <div className="flex justify-between">
+                        <span>Turnover:</span>
+                        <span className="font-medium">£{computation.breakdown.tradingProfitCalculation.turnover.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Cost of Sales:</span>
+                        <span className="font-medium">-£{computation.breakdown.tradingProfitCalculation.costOfSales.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Operating Expenses:</span>
+                        <span className="font-medium">-£{computation.breakdown.tradingProfitCalculation.operatingExpenses.toFixed(2)}</span>
+                      </div>
+                      <Separator />
+                      <div className="flex justify-between font-semibold">
+                        <span>Trading Profit:</span>
+                        <span className="text-primary" data-testid="text-trading-profit">£{computation.breakdown.tradingProfitCalculation.tradingProfit.toFixed(2)}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {/* Tax Calculation */}
                 <div>
@@ -1109,35 +1111,35 @@ export default function CT600Filing() {
                   <div className="bg-muted p-4 rounded-md space-y-2">
                     <div className="flex justify-between">
                       <span>Chargeable Profits:</span>
-                      <span className="font-medium">£{computation.chargeableProfits.toFixed(2)}</span>
+                      <span className="font-medium">£{(computation.chargeableProfits || 0).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Applicable Rate:</span>
-                      <span className="font-medium">{(computation.corporationTaxRate * 100).toFixed(2)}%</span>
+                      <span className="font-medium">{((computation.corporationTaxRate || 0) * 100).toFixed(2)}%</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Tax Before Reliefs:</span>
-                      <span className="font-medium">£{computation.corporationTaxBeforeReliefs.toFixed(2)}</span>
+                      <span className="font-medium">£{(computation.corporationTaxBeforeReliefs || 0).toFixed(2)}</span>
                     </div>
-                    {computation.totalReliefs > 0 && (
+                    {(computation.totalReliefs || 0) > 0 && (
                       <div className="flex justify-between">
                         <span>Total Reliefs:</span>
-                        <span className="font-medium text-green-600">-£{computation.totalReliefs.toFixed(2)}</span>
+                        <span className="font-medium text-green-600">-£{(computation.totalReliefs || 0).toFixed(2)}</span>
                       </div>
                     )}
                     <Separator />
                     <div className="flex justify-between font-semibold text-lg">
                       <span>Corporation Tax Due:</span>
-                      <span className="text-primary" data-testid="text-tax-due">£{computation.corporationTaxDue.toFixed(2)}</span>
+                      <span className="text-primary" data-testid="text-tax-due">£{(computation.corporationTaxDue || 0).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
 
-                {computation.breakdown.taxCalculation.marginalReliefApplied && (
+                {computation.breakdown?.taxCalculation?.marginalReliefApplied && (
                   <Alert>
                     <CheckCircle className="h-4 w-4" />
                     <AlertDescription>
-                      Marginal Relief applied: £{computation.breakdown.taxCalculation.marginalReliefAmount.toFixed(2)}
+                      Marginal Relief applied: £{(computation.breakdown?.taxCalculation?.marginalReliefAmount || 0).toFixed(2)}
                     </AlertDescription>
                   </Alert>
                 )}
