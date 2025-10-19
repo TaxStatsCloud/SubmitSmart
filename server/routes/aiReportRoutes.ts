@@ -17,6 +17,8 @@ import { generateDirectorsReport } from '../services/ai/DirectorsReportAIGenerat
 import { generateStrategicReport } from '../services/ai/StrategicReportAIGenerator';
 import { generateNotesToAccounts } from '../services/ai/NotesToAccountsAIGenerator';
 import { generateCashFlowStatement } from '../services/ai/CashFlowAIGenerator';
+import { generateBulkAIReports, BULK_AI_CREDIT_COST, INDIVIDUAL_TOTAL_COST, BULK_SAVINGS } from '../services/ai/BulkAIReportGenerator';
+import { aiRateLimiter } from '../middleware/aiRateLimiter';
 
 const router = Router();
 router.use(isAuthenticated);
@@ -28,7 +30,10 @@ const aiReportLogger = logger.withContext('AIReportRoutes');
  * POST /api/ai/directors-report
  * Cost: 150 credits
  */
-router.post('/directors-report', async (req, res) => {
+router.post('/directors-report', aiRateLimiter({ 
+  requiredCredits: getAIAssistanceCost('DIRECTORS_REPORT'), 
+  endpoint: '/api/ai/directors-report' 
+}), async (req, res) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
@@ -89,7 +94,10 @@ router.post('/directors-report', async (req, res) => {
  * POST /api/ai/strategic-report
  * Cost: 200 credits
  */
-router.post('/strategic-report', async (req, res) => {
+router.post('/strategic-report', aiRateLimiter({ 
+  requiredCredits: getAIAssistanceCost('STRATEGIC_REPORT'), 
+  endpoint: '/api/ai/strategic-report' 
+}), async (req, res) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
@@ -150,7 +158,10 @@ router.post('/strategic-report', async (req, res) => {
  * POST /api/ai/notes-to-accounts
  * Cost: 100 credits
  */
-router.post('/notes-to-accounts', async (req, res) => {
+router.post('/notes-to-accounts', aiRateLimiter({ 
+  requiredCredits: getAIAssistanceCost('NOTES_TO_ACCOUNTS'), 
+  endpoint: '/api/ai/notes-to-accounts' 
+}), async (req, res) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
@@ -211,7 +222,10 @@ router.post('/notes-to-accounts', async (req, res) => {
  * POST /api/ai/cash-flow-statement
  * Cost: 200 credits
  */
-router.post('/cash-flow-statement', async (req, res) => {
+router.post('/cash-flow-statement', aiRateLimiter({ 
+  requiredCredits: getAIAssistanceCost('CASH_FLOW_STATEMENT'), 
+  endpoint: '/api/ai/cash-flow-statement' 
+}), async (req, res) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
@@ -265,6 +279,75 @@ router.post('/cash-flow-statement', async (req, res) => {
   } catch (error: any) {
     aiReportLogger.error('Error generating Cash Flow Statement:', error);
     res.status(500).json({ error: 'Failed to generate Cash Flow Statement' });
+  }
+});
+
+/**
+ * Generate All Reports in Bulk with Discount
+ * POST /api/ai/bulk-generate-reports
+ * Cost: 500 credits (vs 650 individually = 23% savings)
+ */
+router.post('/bulk-generate-reports', aiRateLimiter({ 
+  requiredCredits: BULK_AI_CREDIT_COST, 
+  endpoint: '/api/ai/bulk-generate-reports' 
+}), async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Generate all reports FIRST (fail fast if generation fails)
+    const bulkReports = await generateBulkAIReports(req.body);
+
+    // Atomically deduct credits (prevents race conditions)
+    try {
+      const remainingCredits = await storage.deductAICredits(
+        userId,
+        BULK_AI_CREDIT_COST,
+        `Bulk AI Report Generation for ${req.body.directorsReport.companyName}`,
+        { 
+          reportType: 'bulk_generation',
+          companyNumber: req.body.directorsReport.companyNumber,
+          companyName: req.body.directorsReport.companyName,
+          reportsGenerated: bulkReports.reportsGenerated,
+          creditsSaved: BULK_SAVINGS
+        }
+      );
+
+      aiReportLogger.info('Bulk AI reports generated and charged', {
+        userId,
+        companyNumber: req.body.directorsReport.companyNumber,
+        reportsGenerated: bulkReports.reportsGenerated,
+        creditsDeducted: BULK_AI_CREDIT_COST,
+        creditsSaved: BULK_SAVINGS
+      });
+
+      res.json({
+        success: true,
+        ...bulkReports,
+        creditsUsed: BULK_AI_CREDIT_COST,
+        creditsSaved: BULK_SAVINGS,
+        individualCost: INDIVIDUAL_TOTAL_COST,
+        remainingCredits
+      });
+    } catch (error: any) {
+      // Handle insufficient credits error
+      if (error.message?.includes('does not have enough credits')) {
+        const user = await storage.getUser(userId);
+        return res.status(402).json({
+          error: 'Insufficient credits',
+          required: BULK_AI_CREDIT_COST,
+          available: user?.credits || 0,
+          message: `Bulk generation requires ${BULK_AI_CREDIT_COST} credits (saves you ${BULK_SAVINGS} credits vs individual reports)`
+        });
+      }
+      throw error;
+    }
+
+  } catch (error: any) {
+    aiReportLogger.error('Error in bulk AI report generation:', error);
+    res.status(500).json({ error: 'Failed to generate bulk AI reports' });
   }
 });
 
