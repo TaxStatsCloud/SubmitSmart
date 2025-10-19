@@ -37,49 +37,46 @@ router.post('/directors-report', async (req, res) => {
 
     const REQUIRED_CREDITS = getAIAssistanceCost('DIRECTORS_REPORT');
 
-    // Check user credits
-    const user = await storage.getUser(userId);
-    if (!user) {
-      return res.status(401).json({ error: 'User not found' });
-    }
-
-    if (user.credits < REQUIRED_CREDITS) {
-      return res.status(402).json({
-        error: 'Insufficient credits',
-        required: REQUIRED_CREDITS,
-        available: user.credits
-      });
-    }
-
-    // Generate the report
+    // Generate the report FIRST (fail fast if generation fails)
     const report = await generateDirectorsReport(req.body);
 
-    // Deduct credits
-    await storage.updateUser(userId, {
-      credits: user.credits - REQUIRED_CREDITS
-    });
+    // Atomically deduct credits (prevents race conditions)
+    try {
+      const remainingCredits = await storage.deductAICredits(
+        userId,
+        REQUIRED_CREDITS,
+        `AI Directors Report Generation for ${req.body.companyName}`,
+        { 
+          reportType: 'directors_report',
+          companyNumber: req.body.companyNumber,
+          companyName: req.body.companyName
+        }
+      );
 
-    // Log the transaction
-    await storage.createCreditTransaction({
-      userId,
-      amount: -REQUIRED_CREDITS,
-      type: 'usage',
-      description: `AI Directors Report Generation for ${req.body.companyName}`,
-      balance: user.credits - REQUIRED_CREDITS
-    });
+      aiReportLogger.info('Directors report generated', {
+        userId,
+        companyNumber: req.body.companyNumber,
+        creditsDeducted: REQUIRED_CREDITS
+      });
 
-    aiReportLogger.info('Directors report generated', {
-      userId,
-      companyNumber: req.body.companyNumber,
-      creditsDeducted: REQUIRED_CREDITS
-    });
-
-    res.json({
-      success: true,
-      report,
-      creditsUsed: REQUIRED_CREDITS,
-      remainingCredits: user.credits - REQUIRED_CREDITS
-    });
+      res.json({
+        success: true,
+        report,
+        creditsUsed: REQUIRED_CREDITS,
+        remainingCredits
+      });
+    } catch (error: any) {
+      // Handle insufficient credits error
+      if (error.message?.includes('does not have enough credits')) {
+        const user = await storage.getUser(userId);
+        return res.status(402).json({
+          error: 'Insufficient credits',
+          required: REQUIRED_CREDITS,
+          available: user?.credits || 0
+        });
+      }
+      throw error;
+    }
 
   } catch (error: any) {
     aiReportLogger.error('Error generating directors report:', error);
@@ -101,49 +98,46 @@ router.post('/strategic-report', async (req, res) => {
 
     const REQUIRED_CREDITS = getAIAssistanceCost('STRATEGIC_REPORT');
 
-    // Check user credits
-    const user = await storage.getUser(userId);
-    if (!user) {
-      return res.status(401).json({ error: 'User not found' });
-    }
-
-    if (user.credits < REQUIRED_CREDITS) {
-      return res.status(402).json({
-        error: 'Insufficient credits',
-        required: REQUIRED_CREDITS,
-        available: user.credits
-      });
-    }
-
-    // Generate the report
+    // Generate the report FIRST (fail fast if generation fails)
     const report = await generateStrategicReport(req.body);
 
-    // Deduct credits
-    await storage.updateUser(userId, {
-      credits: user.credits - REQUIRED_CREDITS
-    });
+    // Atomically deduct credits (prevents race conditions)
+    try {
+      const remainingCredits = await storage.deductAICredits(
+        userId,
+        REQUIRED_CREDITS,
+        `AI Strategic Report Generation for ${req.body.companyName}`,
+        { 
+          reportType: 'strategic_report',
+          companyNumber: req.body.companyNumber,
+          companyName: req.body.companyName
+        }
+      );
 
-    // Log the transaction
-    await storage.createCreditTransaction({
-      userId,
-      amount: -REQUIRED_CREDITS,
-      type: 'usage',
-      description: `AI Strategic Report Generation for ${req.body.companyName}`,
-      balance: user.credits - REQUIRED_CREDITS
-    });
+      aiReportLogger.info('Strategic report generated', {
+        userId,
+        companyNumber: req.body.companyNumber,
+        creditsDeducted: REQUIRED_CREDITS
+      });
 
-    aiReportLogger.info('Strategic report generated', {
-      userId,
-      companyNumber: req.body.companyNumber,
-      creditsDeducted: REQUIRED_CREDITS
-    });
-
-    res.json({
-      success: true,
-      report,
-      creditsUsed: REQUIRED_CREDITS,
-      remainingCredits: user.credits - REQUIRED_CREDITS
-    });
+      res.json({
+        success: true,
+        report,
+        creditsUsed: REQUIRED_CREDITS,
+        remainingCredits
+      });
+    } catch (error: any) {
+      // Handle insufficient credits error
+      if (error.message?.includes('does not have enough credits')) {
+        const user = await storage.getUser(userId);
+        return res.status(402).json({
+          error: 'Insufficient credits',
+          required: REQUIRED_CREDITS,
+          available: user?.credits || 0
+        });
+      }
+      throw error;
+    }
 
   } catch (error: any) {
     aiReportLogger.error('Error generating strategic report:', error);
@@ -165,49 +159,46 @@ router.post('/notes-to-accounts', async (req, res) => {
 
     const REQUIRED_CREDITS = getAIAssistanceCost('NOTES_TO_ACCOUNTS');
 
-    // Check user credits
-    const user = await storage.getUser(userId);
-    if (!user) {
-      return res.status(401).json({ error: 'User not found' });
-    }
-
-    if (user.credits < REQUIRED_CREDITS) {
-      return res.status(402).json({
-        error: 'Insufficient credits',
-        required: REQUIRED_CREDITS,
-        available: user.credits
-      });
-    }
-
-    // Generate the notes
+    // Generate the notes FIRST (fail fast if generation fails)
     const notes = await generateNotesToAccounts(req.body);
 
-    // Deduct credits
-    await storage.updateUser(userId, {
-      credits: user.credits - REQUIRED_CREDITS
-    });
+    // Atomically deduct credits (prevents race conditions)
+    try {
+      const remainingCredits = await storage.deductAICredits(
+        userId,
+        REQUIRED_CREDITS,
+        `AI Notes to Accounts Generation for ${req.body.companyName}`,
+        { 
+          reportType: 'notes_to_accounts',
+          companyNumber: req.body.companyNumber,
+          companyName: req.body.companyName
+        }
+      );
 
-    // Log the transaction
-    await storage.createCreditTransaction({
-      userId,
-      amount: -REQUIRED_CREDITS,
-      type: 'usage',
-      description: `AI Notes to Accounts Generation for ${req.body.companyName}`,
-      balance: user.credits - REQUIRED_CREDITS
-    });
+      aiReportLogger.info('Notes to accounts generated', {
+        userId,
+        companyNumber: req.body.companyNumber,
+        creditsDeducted: REQUIRED_CREDITS
+      });
 
-    aiReportLogger.info('Notes to accounts generated', {
-      userId,
-      companyNumber: req.body.companyNumber,
-      creditsDeducted: REQUIRED_CREDITS
-    });
-
-    res.json({
-      success: true,
-      notes,
-      creditsUsed: REQUIRED_CREDITS,
-      remainingCredits: user.credits - REQUIRED_CREDITS
-    });
+      res.json({
+        success: true,
+        notes,
+        creditsUsed: REQUIRED_CREDITS,
+        remainingCredits
+      });
+    } catch (error: any) {
+      // Handle insufficient credits error
+      if (error.message?.includes('does not have enough credits')) {
+        const user = await storage.getUser(userId);
+        return res.status(402).json({
+          error: 'Insufficient credits',
+          required: REQUIRED_CREDITS,
+          available: user?.credits || 0
+        });
+      }
+      throw error;
+    }
 
   } catch (error: any) {
     aiReportLogger.error('Error generating notes to accounts:', error);
@@ -229,50 +220,47 @@ router.post('/cash-flow-statement', async (req, res) => {
 
     const REQUIRED_CREDITS = getAIAssistanceCost('CASH_FLOW_STATEMENT');
 
-    // Check user credits
-    const user = await storage.getUser(userId);
-    if (!user) {
-      return res.status(401).json({ error: 'User not found' });
-    }
-
-    if (user.credits < REQUIRED_CREDITS) {
-      return res.status(402).json({
-        error: 'Insufficient credits',
-        required: REQUIRED_CREDITS,
-        available: user.credits
-      });
-    }
-
-    // Generate the Cash Flow Statement
+    // Generate the Cash Flow Statement FIRST (fail fast if generation fails)
     const cashFlow = await generateCashFlowStatement(req.body);
 
-    // Deduct credits
-    await storage.updateUser(userId, {
-      credits: user.credits - REQUIRED_CREDITS
-    });
+    // Atomically deduct credits (prevents race conditions)
+    try {
+      const remainingCredits = await storage.deductAICredits(
+        userId,
+        REQUIRED_CREDITS,
+        `AI Cash Flow Statement Generation for ${req.body.companyName}`,
+        { 
+          reportType: 'cash_flow_statement',
+          companyNumber: req.body.companyNumber,
+          companyName: req.body.companyName
+        }
+      );
 
-    // Log the transaction
-    await storage.createCreditTransaction({
-      userId,
-      amount: -REQUIRED_CREDITS,
-      type: 'usage',
-      description: `AI Cash Flow Statement Generation for ${req.body.companyName}`,
-      balance: user.credits - REQUIRED_CREDITS
-    });
+      aiReportLogger.info('Cash Flow Statement generated', {
+        userId,
+        companyNumber: req.body.companyNumber,
+        creditsDeducted: REQUIRED_CREDITS,
+        netCashFromOperating: cashFlow.netCashFromOperatingActivities
+      });
 
-    aiReportLogger.info('Cash Flow Statement generated', {
-      userId,
-      companyNumber: req.body.companyNumber,
-      creditsDeducted: REQUIRED_CREDITS,
-      netCashFromOperating: cashFlow.netCashFromOperatingActivities
-    });
-
-    res.json({
-      success: true,
-      cashFlow,
-      creditsUsed: REQUIRED_CREDITS,
-      remainingCredits: user.credits - REQUIRED_CREDITS
-    });
+      res.json({
+        success: true,
+        cashFlow,
+        creditsUsed: REQUIRED_CREDITS,
+        remainingCredits
+      });
+    } catch (error: any) {
+      // Handle insufficient credits error
+      if (error.message?.includes('does not have enough credits')) {
+        const user = await storage.getUser(userId);
+        return res.status(402).json({
+          error: 'Insufficient credits',
+          required: REQUIRED_CREDITS,
+          available: user?.credits || 0
+        });
+      }
+      throw error;
+    }
 
   } catch (error: any) {
     aiReportLogger.error('Error generating Cash Flow Statement:', error);

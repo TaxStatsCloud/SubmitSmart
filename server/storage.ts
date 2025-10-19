@@ -61,6 +61,7 @@ export interface IStorage {
   getUpcomingFilings(daysAhead: number): Promise<Filing[]>;
   createFiling(filing: InsertFiling): Promise<Filing>;
   createFilingWithCreditDeduction(filing: InsertFiling, creditCost: number, description: string): Promise<{ filing: Filing; remainingCredits: number }>;
+  deductAICredits(userId: number, creditCost: number, description: string, metadata?: Record<string, any>): Promise<number>;
   updateFiling(id: number, filingData: Partial<Filing>): Promise<Filing>;
   deleteFiling(id: number): Promise<void>;
   
@@ -1574,6 +1575,51 @@ export class DatabaseStorage implements IStorage {
         filing,
         remainingCredits: updatedUser.credits
       };
+    });
+  }
+
+  /**
+   * Atomically deduct credits for AI generation (prevents race conditions)
+   * Returns the remaining credit balance after deduction
+   */
+  async deductAICredits(
+    userId: number,
+    creditCost: number,
+    description: string,
+    metadata?: Record<string, any>
+  ): Promise<number> {
+    // Wrap credit deduction and transaction logging in a single atomic transaction
+    return await db.transaction(async (tx) => {
+      // 1. Atomically deduct credits using SQL to prevent race conditions
+      const [updatedUser] = await tx
+        .update(users)
+        .set({ credits: sql`${users.credits} - ${creditCost}` })
+        .where(
+          and(
+            eq(users.id, userId),
+            gte(users.credits, creditCost)
+          )
+        )
+        .returning();
+
+      if (!updatedUser) {
+        throw new Error(`User ${userId} does not have enough credits (required: ${creditCost})`);
+      }
+
+      // 2. Create credit transaction record
+      const now = new Date();
+      await tx.insert(creditTransactions).values({
+        userId,
+        type: 'ai_generation',
+        amount: -creditCost,
+        balance: updatedUser.credits,
+        description,
+        metadata,
+        createdAt: now
+      });
+
+      // Return remaining credits
+      return updatedUser.credits;
     });
   }
 
