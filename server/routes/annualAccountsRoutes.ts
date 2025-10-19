@@ -37,7 +37,9 @@ router.post('/generate-ixbrl', async (req, res) => {
       return res.status(400).json({ error: 'Missing required company information' });
     }
 
-    // Calculate entity size based on turnover and assets
+    // Respect user's entity size selection - only override if financials require a higher tier
+    // This preview generation doesn't enforce tiered pricing (that happens at submission)
+    // Just use what the user selected or detect from financials if not provided
     const totalAssets = 
       (formData.intangibleAssets || 0) + 
       (formData.tangibleAssets || 0) + 
@@ -46,16 +48,29 @@ router.post('/generate-ixbrl', async (req, res) => {
       (formData.debtors || 0) + 
       (formData.cashAtBank || 0);
 
-    let entitySize = formData.entitySize;
-    if (formData.turnover <= 632000 && totalAssets <= 316000) {
-      entitySize = 'micro';
-    } else if (formData.turnover <= 10200000 && totalAssets <= 5100000) {
-      entitySize = 'small';
-    } else if (formData.turnover <= 36000000 && totalAssets <= 18000000) {
-      entitySize = 'medium';
-    } else {
-      entitySize = 'large';
+    // Use user's selection if provided, otherwise detect from financials
+    let entitySize = formData.entitySize || 'small'; // Default to small if not specified
+    
+    // Only auto-detect if user didn't provide a selection
+    if (!formData.entitySize) {
+      const turnover = formData.turnover || 0;
+      if (turnover <= 632000 && totalAssets <= 316000) {
+        entitySize = 'micro';
+      } else if (turnover <= 10200000 && totalAssets <= 5100000) {
+        entitySize = 'small';
+      } else if (turnover <= 36000000 && totalAssets <= 18000000) {
+        entitySize = 'medium';
+      } else {
+        entitySize = 'large';
+      }
     }
+    
+    annualAccountsLogger.info('iXBRL generation - entity size determined', {
+      userSelected: formData.entitySize,
+      finalSize: entitySize,
+      turnover: formData.turnover || 0,
+      totalAssets
+    });
 
     // Generate iXBRL document (simplified version - real implementation would use proper taxonomy)
     const ixbrlData = {
@@ -127,24 +142,13 @@ router.post('/generate-ixbrl', async (req, res) => {
  * POST /api/annual-accounts/submit
  */
 router.post('/submit', async (req, res) => {
-  console.log('=== ANNUAL ACCOUNTS SUBMIT ROUTE HIT ===');
-  annualAccountsLogger.info('=== ANNUAL ACCOUNTS SUBMIT ROUTE CALLED ===', {
-    hasUser: !!req.user,
-    userId: req.user?.id,
-    bodyKeys: Object.keys(req.body)
-  });
-  
   try {
     const userId = req.user?.id;
     if (!userId) {
-      console.log('NO USER ID - UNAUTHORIZED');
-      annualAccountsLogger.error('No user ID in request');
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    console.log('User ID:', userId);
     const { ixbrlData, documentIds, ...formData } = req.body;
-    console.log('Form data entity size:', formData.entitySize);
     
     // ============ CRITICAL VALIDATION ============
     // Prevent users from forging entity size to bypass tiered pricing
@@ -244,8 +248,21 @@ router.post('/submit', async (req, res) => {
       });
     }
     
-    // Use the detected entity size for credit calculation
-    const entitySize = detectedEntitySize;
+    // Use the LARGER of detected vs declared (allow users to upgrade, charge for what they selected)
+    // Users can choose to file as a larger entity (e.g., file as 'small' when they qualify for 'micro')
+    // This is allowed and they should be charged for the tier they selected
+    const entitySize = sizeHierarchy[declaredEntitySize] >= sizeHierarchy[detectedEntitySize] 
+      ? declaredEntitySize 
+      : detectedEntitySize;
+    
+    annualAccountsLogger.info('Entity size for filing', {
+      detected: detectedEntitySize,
+      declared: declaredEntitySize,
+      final: entitySize,
+      turnover,
+      totalAssets,
+      employees
+    });
     
     // Validate required sections for medium/large entities
     if (entitySize === 'medium' || entitySize === 'large') {
@@ -318,28 +335,14 @@ router.post('/submit', async (req, res) => {
     // Calculate tiered credit cost based on validated entity size
     const REQUIRED_CREDITS = getAnnualAccountsCost(entitySize);
     
-    // DEBUGGING: Direct test of the function
-    console.log('=== CRITICAL DEBUG ===');
-    console.log('Entity size:', entitySize);
-    console.log('Entity size type:', typeof entitySize);
-    console.log('REQUIRED_CREDITS:', REQUIRED_CREDITS);
-    console.log('Direct test small:', getAnnualAccountsCost('small'));
-    console.log('Direct test micro:', getAnnualAccountsCost('micro'));
-    console.log('=== END DEBUG ===');
-    
     annualAccountsLogger.info('Filing validated and credit cost calculated', {
       declaredEntitySize,
       detectedEntitySize,
       finalEntitySize: entitySize,
-      entitySizeType: typeof entitySize,
-      entitySizeValue: entitySize,
       credits: REQUIRED_CREDITS,
-      creditsType: typeof REQUIRED_CREDITS,
       turnover,
       totalAssets,
-      employees,
-      rawAnnualAccountsTiers: JSON.stringify({ micro: 150, small: 200, medium: 300, large: 400 }),
-      getAnnualAccountsCostResult: getAnnualAccountsCost(entitySize as EntitySize)
+      employees
     });
     
     // Get user to check company association

@@ -39,11 +39,7 @@ export type CT600Complexity = keyof typeof CT600_TIERS;
  * Get credit cost for Annual Accounts based on entity size
  */
 export function getAnnualAccountsCost(entitySize: EntitySize): number {
-  console.log('[getAnnualAccountsCost] Called with:', entitySize, 'Type:', typeof entitySize);
-  const result = ANNUAL_ACCOUNTS_TIERS[entitySize];
-  console.log('[getAnnualAccountsCost] Returning:', result);
-  console.log('[getAnnualAccountsCost] ANNUAL_ACCOUNTS_TIERS:', JSON.stringify(ANNUAL_ACCOUNTS_TIERS));
-  return result;
+  return ANNUAL_ACCOUNTS_TIERS[entitySize];
 }
 
 /**
