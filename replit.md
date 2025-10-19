@@ -62,8 +62,11 @@ The system incorporates multi-company management with tier-based limits, a secur
 - **Strategic Report Generator** (200 credits): Produces comprehensive strategic reports for large companies with business model, KPIs, principal risks, Section 172(1) statement, and ESG disclosures
 - **Notes to Accounts Generator** (100 credits): Generates detailed accounting policy notes with FRS 102 compliance, basis of preparation, going concern, and all key accounting policies
 - **Cash Flow Statement Generator** (200 credits): Analyzes current and prior year Trial Balances to produce FRS 102 compliant Cash Flow Statements using the indirect method, with operating, investing, and financing activities sections
+- **Bulk Generation with Dynamic Pricing** (20% discount): Generates multiple reports in parallel with FAIR PRICING - you only pay for reports actually generated. Examples: 2 reports (Directors + Notes) = 200 credits vs 250 individually; all 4 reports = 520 credits vs 650 individually. Pricing calculated dynamically based on company size and provided data.
 
-API endpoints at `/api/ai/directors-report`, `/api/ai/strategic-report`, `/api/ai/notes-to-accounts`, and `/api/ai/cash-flow-statement` validate credits, generate reports, deduct charges, and log transactions. All AI output schemas are 100% aligned with the Annual Accounts Wizard form fields for seamless integration.
+API endpoints at `/api/ai/directors-report`, `/api/ai/strategic-report`, `/api/ai/notes-to-accounts`, `/api/ai/cash-flow-statement`, and `/api/ai/bulk-generate-reports` validate credits, generate reports, deduct charges, and log transactions. Bulk endpoint uses dynamic pricing with optional rate limiter credit check to ensure fairness. All AI output schemas are 100% aligned with the Annual Accounts Wizard form fields for seamless integration.
+
+**Production-Grade Rate Limiting**: Global 10 AI requests/minute limit across ALL endpoints using atomic PostgreSQL transactions with SELECT FOR UPDATE row-level locking. UPSERT pattern prevents first-time race conditions. 5-minute automatic blocking for abusers with comprehensive logging.
 
 ## External Dependencies
 - **OpenAI**: AI-driven document processing, financial data extraction, and smart filing recommendations.

@@ -38,25 +38,65 @@ export interface BulkReportOutput {
 }
 
 /**
- * Bulk Credit Cost Constants
- * Individual costs: Directors (150) + Strategic (200) + Notes (100) + Cash Flow (200) = 650
- * Bulk discount: 500 credits (23% savings = 150 credits)
+ * Bulk Discount Configuration
+ * Apply 20% discount to whatever reports are actually generated
+ * This ensures fair pricing - you only pay for what you get
  */
-export const BULK_AI_CREDIT_COST = 500;
-export const INDIVIDUAL_TOTAL_COST = 650; // 150 + 200 + 100 + 200
-export const BULK_SAVINGS = INDIVIDUAL_TOTAL_COST - BULK_AI_CREDIT_COST; // 150 credits
+export const BULK_DISCOUNT_PERCENTAGE = 0.20; // 20% discount
 
 /**
- * Generate all 4 AI reports in parallel with bulk discount
+ * Individual Report Costs
+ */
+export const REPORT_COSTS = {
+  DIRECTORS: 150,
+  STRATEGIC: 200,
+  NOTES: 100,
+  CASH_FLOW: 200
+} as const;
+
+/**
+ * Calculate bulk pricing based on reports that will actually be generated
+ * Applies 20% discount to the sum of individual report costs
+ */
+export function calculateBulkPricing(input: BulkReportInput): {
+  individualCost: number;
+  bulkCost: number;
+  savings: number;
+} {
+  let individualCost = REPORT_COSTS.DIRECTORS + REPORT_COSTS.NOTES; // Always include these
+  
+  if (input.strategicReport) {
+    individualCost += REPORT_COSTS.STRATEGIC;
+  }
+  
+  if (input.cashFlowStatement) {
+    individualCost += REPORT_COSTS.CASH_FLOW;
+  }
+  
+  const bulkCost = Math.round(individualCost * (1 - BULK_DISCOUNT_PERCENTAGE));
+  const savings = individualCost - bulkCost;
+  
+  return { individualCost, bulkCost, savings };
+}
+
+/**
+ * Generate all requested AI reports in parallel with bulk discount
+ * FAIR PRICING: You only pay for the reports that are actually generated
  */
 export async function generateBulkAIReports(
   input: BulkReportInput
 ): Promise<BulkReportOutput> {
   try {
+    // Calculate pricing based on what will be generated
+    const pricing = calculateBulkPricing(input);
+    
     bulkLogger.info('Starting bulk AI report generation', {
       companyName: input.directorsReport.companyName,
       includesStrategic: !!input.strategicReport,
-      includesCashFlow: !!input.cashFlowStatement
+      includesCashFlow: !!input.cashFlowStatement,
+      individualCost: pricing.individualCost,
+      bulkCost: pricing.bulkCost,
+      savings: pricing.savings
     });
 
     // Generate all reports in parallel for maximum speed
@@ -88,8 +128,8 @@ export async function generateBulkAIReports(
     bulkLogger.info('Bulk AI reports generated successfully', {
       companyName: input.directorsReport.companyName,
       reportsGenerated,
-      creditsUsed: BULK_AI_CREDIT_COST,
-      creditsSaved: BULK_SAVINGS
+      creditsUsed: pricing.bulkCost,
+      creditsSaved: pricing.savings
     });
 
     return {
@@ -98,8 +138,8 @@ export async function generateBulkAIReports(
       notesToAccounts,
       cashFlowStatement,
       reportsGenerated,
-      creditsUsed: BULK_AI_CREDIT_COST,
-      creditsSaved: BULK_SAVINGS
+      creditsUsed: pricing.bulkCost,
+      creditsSaved: pricing.savings
     };
 
   } catch (error: any) {

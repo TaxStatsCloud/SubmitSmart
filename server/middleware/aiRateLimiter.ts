@@ -29,7 +29,7 @@ const MAX_REQUESTS_PER_WINDOW = 10; // 10 total AI requests per minute
 const BLOCK_DURATION_MS = 5 * 60 * 1000; // 5 minute block for abusers
 
 export interface AIRateLimiterOptions {
-  requiredCredits: number;
+  requiredCredits?: number; // Optional - if not provided, skip credit pre-check
   endpoint: string;
 }
 
@@ -57,27 +57,30 @@ export function aiRateLimiter(options: AIRateLimiterOptions) {
 
       // ============================================================
       // STEP 1: Pre-check user credits (fail fast before OpenAI)
+      // Skip if requiredCredits not provided (for dynamic pricing endpoints)
       // ============================================================
-      const [user] = await db.select().from(users).where(eq(users.id, userId));
-      
-      if (!user) {
-        return res.status(401).json({ error: 'User not found' });
-      }
+      if (requiredCredits !== undefined && requiredCredits > 0) {
+        const [user] = await db.select().from(users).where(eq(users.id, userId));
+        
+        if (!user) {
+          return res.status(401).json({ error: 'User not found' });
+        }
 
-      if (user.credits < requiredCredits) {
-        rateLimiterLogger.warn('Blocked - insufficient credits', {
-          userId,
-          endpoint,
-          required: requiredCredits,
-          available: user.credits
-        });
+        if (user.credits < requiredCredits) {
+          rateLimiterLogger.warn('Blocked - insufficient credits', {
+            userId,
+            endpoint,
+            required: requiredCredits,
+            available: user.credits
+          });
 
-        return res.status(402).json({
-          error: 'Insufficient credits',
-          required: requiredCredits,
-          available: user.credits,
-          message: `You need ${requiredCredits} credits but only have ${user.credits}. Please purchase more credits.`
-        });
+          return res.status(402).json({
+            error: 'Insufficient credits',
+            required: requiredCredits,
+            available: user.credits,
+            message: `You need ${requiredCredits} credits but only have ${user.credits}. Please purchase more credits.`
+          });
+        }
       }
 
       // ============================================================

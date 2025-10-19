@@ -17,7 +17,7 @@ import { generateDirectorsReport } from '../services/ai/DirectorsReportAIGenerat
 import { generateStrategicReport } from '../services/ai/StrategicReportAIGenerator';
 import { generateNotesToAccounts } from '../services/ai/NotesToAccountsAIGenerator';
 import { generateCashFlowStatement } from '../services/ai/CashFlowAIGenerator';
-import { generateBulkAIReports, BULK_AI_CREDIT_COST, INDIVIDUAL_TOTAL_COST, BULK_SAVINGS } from '../services/ai/BulkAIReportGenerator';
+import { generateBulkAIReports, calculateBulkPricing } from '../services/ai/BulkAIReportGenerator';
 import { aiRateLimiter } from '../middleware/aiRateLimiter';
 
 const router = Router();
@@ -283,15 +283,19 @@ router.post('/cash-flow-statement', aiRateLimiter({
 });
 
 /**
- * Generate All Reports in Bulk with Discount
+ * Generate All Requested Reports in Bulk with 20% Discount
  * POST /api/ai/bulk-generate-reports
- * Cost: 500 credits (vs 650 individually = 23% savings)
+ * FAIR PRICING: You only pay for the reports that are actually generated
+ * 
+ * Cost examples:
+ * - Directors + Notes only (2 reports): 200 credits (vs 250 individually)
+ * - All 4 reports: 520 credits (vs 650 individually)
  * 
  * Request body: Same as individual endpoints (flat structure), will be transformed internally
  */
 router.post('/bulk-generate-reports', aiRateLimiter({ 
-  requiredCredits: BULK_AI_CREDIT_COST, 
   endpoint: '/api/ai/bulk-generate-reports' 
+  // No requiredCredits - we calculate exact cost in the handler for fair pricing
 }), async (req, res) => {
   try {
     const userId = req.user?.id;
@@ -350,21 +354,36 @@ router.post('/bulk-generate-reports', aiRateLimiter({
       } : undefined
     };
 
+    // Calculate exact pricing based on what will be generated
+    const pricing = calculateBulkPricing(bulkInput);
+
+    // Double-check user has enough credits for the ACTUAL cost (not the max estimate)
+    const user = await storage.getUser(userId);
+    if (!user || user.credits < pricing.bulkCost) {
+      return res.status(402).json({
+        error: 'Insufficient credits',
+        required: pricing.bulkCost,
+        available: user?.credits || 0,
+        message: `This bulk generation requires ${pricing.bulkCost} credits (saves you ${pricing.savings} credits vs ${pricing.individualCost} individually)`
+      });
+    }
+
     // Generate all reports FIRST (fail fast if generation fails)
     const bulkReports = await generateBulkAIReports(bulkInput);
 
-    // Atomically deduct credits (prevents race conditions)
+    // Atomically deduct the ACTUAL credits used (prevents race conditions)
     try {
       const remainingCredits = await storage.deductAICredits(
         userId,
-        BULK_AI_CREDIT_COST,
+        bulkReports.creditsUsed, // Use actual cost from generator
         `Bulk AI Report Generation for ${companyName}`,
         { 
           reportType: 'bulk_generation',
           companyNumber,
           companyName,
           reportsGenerated: bulkReports.reportsGenerated,
-          creditsSaved: BULK_SAVINGS
+          creditsSaved: bulkReports.creditsSaved,
+          individualCost: pricing.individualCost
         }
       );
 
@@ -373,27 +392,25 @@ router.post('/bulk-generate-reports', aiRateLimiter({
         companyNumber,
         companyName,
         reportsGenerated: bulkReports.reportsGenerated,
-        creditsDeducted: BULK_AI_CREDIT_COST,
-        creditsSaved: BULK_SAVINGS
+        creditsDeducted: bulkReports.creditsUsed,
+        creditsSaved: bulkReports.creditsSaved,
+        individualCost: pricing.individualCost
       });
 
       res.json({
         success: true,
         ...bulkReports,
-        creditsUsed: BULK_AI_CREDIT_COST,
-        creditsSaved: BULK_SAVINGS,
-        individualCost: INDIVIDUAL_TOTAL_COST,
+        individualCost: pricing.individualCost,
         remainingCredits
       });
     } catch (error: any) {
       // Handle insufficient credits error
       if (error.message?.includes('does not have enough credits')) {
-        const user = await storage.getUser(userId);
         return res.status(402).json({
           error: 'Insufficient credits',
-          required: BULK_AI_CREDIT_COST,
+          required: bulkReports.creditsUsed,
           available: user?.credits || 0,
-          message: `Bulk generation requires ${BULK_AI_CREDIT_COST} credits (saves you ${BULK_SAVINGS} credits vs individual reports)`
+          message: `Bulk generation requires ${bulkReports.creditsUsed} credits (saves you ${bulkReports.creditsSaved} credits vs ${pricing.individualCost} individually)`
         });
       }
       throw error;
