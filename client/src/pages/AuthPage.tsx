@@ -11,6 +11,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Helmet } from "react-helmet-async";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -61,6 +62,32 @@ export default function AuthPage() {
   }
 
   return (
+    <>
+      <Helmet>
+        {/* Primary Meta Tags */}
+        <title>Sign In | PromptSubmissions - UK Corporate Compliance Software</title>
+        <meta name="title" content="Sign In | PromptSubmissions - UK Corporate Compliance Software" />
+        <meta name="description" content="Sign in to automate your UK corporate compliance. Access Corporation Tax CT600, Annual Accounts filing, and Confirmation Statements with AI-powered accuracy for Companies House and HMRC." />
+        <meta name="keywords" content="sign in, login, UK accounting software, corporation tax software, annual accounts filing, HMRC software, Companies House software, accountant login" />
+        <meta name="robots" content="index, follow" />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://promptsubmissions.com/auth" />
+        <meta property="og:title" content="Sign In | PromptSubmissions - UK Corporate Compliance" />
+        <meta property="og:description" content="Access your account to file Corporation Tax, Annual Accounts, and Confirmation Statements with AI automation." />
+        <meta property="og:site_name" content="PromptSubmissions" />
+        <meta property="og:locale" content="en_GB" />
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="Sign In | PromptSubmissions" />
+        <meta name="twitter:description" content="Access your UK corporate compliance account" />
+        
+        {/* Canonical */}
+        <link rel="canonical" href="https://promptsubmissions.com/auth" />
+      </Helmet>
+
     <div className="min-h-screen grid lg:grid-cols-2">
       {/* Left Side - Auth Forms */}
       <div className="flex items-center justify-center p-8">
@@ -274,5 +301,6 @@ export default function AuthPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
