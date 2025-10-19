@@ -10,8 +10,8 @@ import { isAuthenticated, isAdmin } from '../auth';
 import { logger } from '../utils/logger';
 import { storage } from '../storage';
 import { db } from '../db';
-import { filings, users, creditTransactions } from '@shared/schema';
-import { sql, gte, and, eq, desc } from 'drizzle-orm';
+import { filings, users, creditTransactions, aiRateLimits } from '@shared/schema';
+import { sql, gte, and, eq, desc, lte } from 'drizzle-orm';
 import os from 'os';
 
 const router = Router();
@@ -268,6 +268,96 @@ router.get('/filings/timeline', async (req, res) => {
   } catch (error: any) {
     monitoringLogger.error('Error fetching filing timeline:', error);
     res.status(500).json({ error: 'Failed to fetch filing timeline' });
+  }
+});
+
+/**
+ * Get AI rate limiter metrics
+ * GET /api/monitoring/rate-limiter
+ */
+router.get('/rate-limiter', async (req, res) => {
+  try {
+    const now = new Date();
+    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+
+    // Get currently blocked users
+    const blockedUsers = await db
+      .select({
+        userId: aiRateLimits.userId,
+        ipAddress: aiRateLimits.ipAddress,
+        blockedUntil: aiRateLimits.blockedUntil,
+        totalBlockCount: aiRateLimits.totalBlockCount,
+        lastRequestAt: aiRateLimits.lastRequestAt,
+      })
+      .from(aiRateLimits)
+      .where(
+        and(
+          eq(aiRateLimits.isBlocked, true),
+          gte(aiRateLimits.blockedUntil, now)
+        )
+      )
+      .orderBy(desc(aiRateLimits.lastRequestAt));
+
+    // Get users with active rate limit windows
+    const activeWindows = await db
+      .select({
+        userId: aiRateLimits.userId,
+        requestCount: aiRateLimits.requestCount,
+        windowStartedAt: aiRateLimits.windowStartedAt,
+        lastRequestAt: aiRateLimits.lastRequestAt,
+        totalBlockCount: aiRateLimits.totalBlockCount,
+      })
+      .from(aiRateLimits)
+      .where(
+        and(
+          eq(aiRateLimits.isBlocked, false),
+          gte(aiRateLimits.lastRequestAt, fiveMinutesAgo)
+        )
+      )
+      .orderBy(desc(aiRateLimits.requestCount));
+
+    // Get statistics for past hour
+    const hourlyStats = await db
+      .select({
+        totalUsers: sql<number>`count(distinct ${aiRateLimits.userId})::int`,
+        totalBlocks: sql<number>`sum(case when ${aiRateLimits.isBlocked} then 1 else 0 end)::int`,
+        avgRequestCount: sql<number>`avg(${aiRateLimits.requestCount})::int`,
+        maxRequestCount: sql<number>`max(${aiRateLimits.requestCount})::int`,
+      })
+      .from(aiRateLimits)
+      .where(gte(aiRateLimits.lastRequestAt, oneHourAgo));
+
+    // Get repeat offenders (users blocked multiple times)
+    const repeatOffenders = await db
+      .select({
+        userId: aiRateLimits.userId,
+        totalBlockCount: aiRateLimits.totalBlockCount,
+        lastRequestAt: aiRateLimits.lastRequestAt,
+      })
+      .from(aiRateLimits)
+      .where(gte(aiRateLimits.totalBlockCount, 2))
+      .orderBy(desc(aiRateLimits.totalBlockCount))
+      .limit(10);
+
+    res.json({
+      summary: {
+        activeBlocks: blockedUsers.length,
+        activeWindows: activeWindows.length,
+        totalUsersLastHour: hourlyStats[0]?.totalUsers || 0,
+        totalBlocksLastHour: hourlyStats[0]?.totalBlocks || 0,
+        avgRequestCount: hourlyStats[0]?.avgRequestCount || 0,
+        maxRequestCount: hourlyStats[0]?.maxRequestCount || 0,
+        repeatOffendersCount: repeatOffenders.length,
+      },
+      blockedUsers,
+      activeWindows: activeWindows.slice(0, 10), // Top 10 most active
+      repeatOffenders,
+      timestamp: now.toISOString(),
+    });
+  } catch (error: any) {
+    monitoringLogger.error('Error fetching rate limiter metrics:', error);
+    res.status(500).json({ error: 'Failed to fetch rate limiter metrics' });
   }
 });
 

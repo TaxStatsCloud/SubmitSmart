@@ -5,29 +5,142 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
+type HealthMetrics = {
+  status: 'healthy' | 'degraded';
+  uptime: number;
+  uptimeFormatted: string;
+  memory: {
+    heapUsed: number;
+    heapTotal: number;
+    external: number;
+    rss: number;
+  };
+  cpu: {
+    user: number;
+    system: number;
+  };
+  system: {
+    platform: string;
+    arch: string;
+    cpus: number;
+    totalMemory: number;
+    freeMemory: number;
+  };
+  database: {
+    connected: boolean;
+  };
+  timestamp: string;
+};
+
+type FilingStats = {
+  period: string;
+  filingsByType: Record<string, {
+    total: number;
+    submitted: number;
+    draft: number;
+    failed: number;
+    successRate: number;
+  }>;
+  totalFilings: number;
+};
+
+type UserActivity = {
+  period: string;
+  users: {
+    total: number;
+    new: number;
+    active: number;
+  };
+  credits: {
+    used: number;
+    purchased: number;
+    netChange: number;
+  };
+};
+
+type ErrorRecord = {
+  id: number;
+  type: string;
+  userId: number;
+  status: string;
+  createdAt: string;
+  data: any;
+};
+
+type Errors = {
+  errors: ErrorRecord[];
+  count: number;
+};
+
+type Timeline = {
+  period: string;
+  timeline: Array<{
+    date: string;
+    type: string;
+    count: number;
+  }>;
+};
+
+type RateLimiterMetrics = {
+  summary: {
+    activeBlocks: number;
+    activeWindows: number;
+    totalUsersLastHour: number;
+    totalBlocksLastHour: number;
+    avgRequestCount: number;
+    maxRequestCount: number;
+    repeatOffendersCount: number;
+  };
+  blockedUsers: Array<{
+    userId: number;
+    ipAddress: string;
+    blockedUntil: string;
+    totalBlockCount: number;
+    lastRequestAt: string;
+  }>;
+  activeWindows: Array<{
+    userId: number;
+    requestCount: number;
+    windowStartedAt: string;
+    lastRequestAt: string;
+    totalBlockCount: number;
+  }>;
+  repeatOffenders: Array<{
+    userId: number;
+    totalBlockCount: number;
+    lastRequestAt: string;
+  }>;
+  timestamp: string;
+};
+
 export default function MonitoringDashboard() {
-  const { data: health, isLoading: healthLoading } = useQuery({
+  const { data: health, isLoading: healthLoading } = useQuery<HealthMetrics>({
     queryKey: ['/api/monitoring/health'],
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
-  const { data: filingStats, isLoading: filingStatsLoading } = useQuery({
+  const { data: filingStats, isLoading: filingStatsLoading } = useQuery<FilingStats>({
     queryKey: ['/api/monitoring/filings/stats'],
   });
 
-  const { data: userActivity, isLoading: userActivityLoading } = useQuery({
+  const { data: userActivity, isLoading: userActivityLoading } = useQuery<UserActivity>({
     queryKey: ['/api/monitoring/users/activity'],
   });
 
-  const { data: errors, isLoading: errorsLoading } = useQuery({
+  const { data: errors, isLoading: errorsLoading } = useQuery<Errors>({
     queryKey: ['/api/monitoring/errors'],
   });
 
-  const { data: timeline, isLoading: timelineLoading } = useQuery({
+  const { data: timeline, isLoading: timelineLoading } = useQuery<Timeline>({
     queryKey: ['/api/monitoring/filings/timeline'],
   });
 
-  const isLoading = healthLoading || filingStatsLoading || userActivityLoading || errorsLoading || timelineLoading;
+  const { data: rateLimiter, isLoading: rateLimiterLoading } = useQuery<RateLimiterMetrics>({
+    queryKey: ['/api/monitoring/rate-limiter'],
+    refetchInterval: 10000, // Refresh every 10 seconds for real-time monitoring
+  });
+
+  const isLoading = healthLoading || filingStatsLoading || userActivityLoading || errorsLoading || timelineLoading || rateLimiterLoading;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-blue-950 dark:to-indigo-950 p-8">
@@ -125,9 +238,10 @@ export default function MonitoringDashboard() {
             </div>
 
             <Tabs defaultValue="filings" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="filings" data-testid="tab-filings">Filing Statistics</TabsTrigger>
                 <TabsTrigger value="users" data-testid="tab-users">User Activity</TabsTrigger>
+                <TabsTrigger value="rate-limiter" data-testid="tab-rate-limiter">AI Rate Limiter</TabsTrigger>
                 <TabsTrigger value="system" data-testid="tab-system">System Health</TabsTrigger>
                 <TabsTrigger value="errors" data-testid="tab-errors">Recent Errors</TabsTrigger>
               </TabsList>
@@ -272,6 +386,163 @@ export default function MonitoringDashboard() {
                     </CardContent>
                   </Card>
                 </div>
+              </TabsContent>
+
+              <TabsContent value="rate-limiter" className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                  <Card className="border-red-200 dark:border-red-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm" data-testid="card-active-blocks">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Active Blocks</CardTitle>
+                      <AlertTriangle className="h-4 w-4 text-red-600" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-red-600" data-testid="text-active-blocks">
+                        {rateLimiter?.summary?.activeBlocks || 0}
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                        Users currently blocked
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-yellow-200 dark:border-yellow-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm" data-testid="card-active-windows">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Active Windows</CardTitle>
+                      <Zap className="h-4 w-4 text-yellow-600" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold" data-testid="text-active-windows">
+                        {rateLimiter?.summary?.activeWindows || 0}
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                        Users with active rate limits
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-blue-200 dark:border-blue-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm" data-testid="card-total-users-hour">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Users (Last Hour)</CardTitle>
+                      <Users className="h-4 w-4 text-blue-600" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold" data-testid="text-total-users-hour">
+                        {rateLimiter?.summary?.totalUsersLastHour || 0}
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                        Distinct users making AI requests
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-orange-200 dark:border-orange-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm" data-testid="card-repeat-offenders">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Repeat Offenders</CardTitle>
+                      <AlertTriangle className="h-4 w-4 text-orange-600" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-orange-600" data-testid="text-repeat-offenders">
+                        {rateLimiter?.summary?.repeatOffendersCount || 0}
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                        Users blocked 2+ times
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <Card className="border-red-200 dark:border-red-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
+                    <CardHeader>
+                      <CardTitle>Currently Blocked Users</CardTitle>
+                      <CardDescription>Users temporarily blocked for exceeding rate limits</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {rateLimiter?.blockedUsers && rateLimiter.blockedUsers.length > 0 ? (
+                        <div className="space-y-3 max-h-96 overflow-y-auto">
+                          {rateLimiter.blockedUsers.map((user) => (
+                            <div key={user.userId} className="flex justify-between items-center p-3 bg-red-50 dark:bg-red-950/30 rounded-lg" data-testid={`blocked-user-${user.userId}`}>
+                              <div>
+                                <p className="font-semibold">User ID: {user.userId}</p>
+                                <p className="text-sm text-slate-600 dark:text-slate-400">IP: {user.ipAddress}</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-500">Blocks: {user.totalBlockCount}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm font-medium text-red-600">Blocked until</p>
+                                <p className="text-xs">{new Date(user.blockedUntil).toLocaleString()}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-slate-600 dark:text-slate-400">
+                          <CheckCircle className="h-12 w-12 mx-auto mb-2 text-green-600" />
+                          <p>No users currently blocked</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-yellow-200 dark:border-yellow-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
+                    <CardHeader>
+                      <CardTitle>Active Rate Limit Windows</CardTitle>
+                      <CardDescription>Top 10 users by request count (last 5 min)</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {rateLimiter?.activeWindows && rateLimiter.activeWindows.length > 0 ? (
+                        <div className="space-y-3 max-h-96 overflow-y-auto">
+                          {rateLimiter.activeWindows.map((window) => (
+                            <div key={window.userId} className="flex justify-between items-center p-3 bg-yellow-50 dark:bg-yellow-950/30 rounded-lg" data-testid={`active-window-${window.userId}`}>
+                              <div>
+                                <p className="font-semibold">User ID: {window.userId}</p>
+                                <p className="text-sm text-slate-600 dark:text-slate-400">
+                                  Started: {new Date(window.windowStartedAt).toLocaleTimeString()}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <Badge variant={window.requestCount >= 8 ? "destructive" : window.requestCount >= 5 ? "secondary" : "default"}>
+                                  {window.requestCount}/10 requests
+                                </Badge>
+                                <p className="text-xs mt-1 text-slate-500 dark:text-slate-500">Prev blocks: {window.totalBlockCount}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-slate-600 dark:text-slate-400">
+                          <Clock className="h-12 w-12 mx-auto mb-2 text-slate-400" />
+                          <p>No active rate limit windows</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {rateLimiter?.repeatOffenders && rateLimiter.repeatOffenders.length > 0 && (
+                  <Card className="border-orange-200 dark:border-orange-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
+                    <CardHeader>
+                      <CardTitle>Repeat Offenders</CardTitle>
+                      <CardDescription>Users who have been blocked multiple times</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {rateLimiter.repeatOffenders.map((offender) => (
+                          <div key={offender.userId} className="flex justify-between items-center p-3 bg-orange-50 dark:bg-orange-950/30 rounded-lg" data-testid={`offender-${offender.userId}`}>
+                            <div>
+                              <p className="font-semibold">User ID: {offender.userId}</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-500">
+                                Last request: {new Date(offender.lastRequestAt).toLocaleString()}
+                              </p>
+                            </div>
+                            <Badge variant="destructive" data-testid={`offender-${offender.userId}-blocks`}>
+                              {offender.totalBlockCount} blocks
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
 
               <TabsContent value="system" className="space-y-6">
