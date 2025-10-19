@@ -376,17 +376,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const paymentIntent = event.data.object;
       const { credits, planId, userId } = paymentIntent.metadata;
       
-      // Add credits to user account (implement in storage)
+      // Add credits to user account and create transaction (with idempotency protection)
       if (userId && userId !== 'anonymous') {
         try {
-          // Send confirmation email
-          await emailService.sendPaymentConfirmation(
-            paymentIntent.receipt_email || 'user@example.com',
-            paymentIntent.amount / 100, // Convert back to pounds
-            parseInt(credits)
+          const creditAmount = parseInt(credits);
+          const userIdNum = parseInt(userId);
+          
+          // CRITICAL: Validate parsed metadata before processing
+          if (isNaN(creditAmount) || creditAmount <= 0) {
+            console.error(`[STRIPE-WEBHOOK] Invalid credits amount: ${credits}`);
+            return res.json({received: true, error: 'Invalid credits amount'});
+          }
+          if (isNaN(userIdNum) || userIdNum <= 0) {
+            console.error(`[STRIPE-WEBHOOK] Invalid user ID: ${userId}`);
+            return res.json({received: true, error: 'Invalid user ID'});
+          }
+          
+          // IDEMPOTENCY CHECK: Check if this payment intent has already been processed
+          const existingTransactions = await storage.getAllTransactions();
+          const alreadyProcessed = existingTransactions.some(
+            t => t.relatedEntityType === 'credit_purchase' && t.relatedEntityId === paymentIntent.id
           );
+          
+          if (alreadyProcessed) {
+            console.log(`[STRIPE-WEBHOOK] Payment ${paymentIntent.id} already processed, skipping duplicate`);
+            return res.json({received: true, status: 'duplicate'});
+          }
+          
+          // Get user and validate
+          const user = await storage.getUser(userIdNum);
+          if (!user) {
+            console.error(`[STRIPE-WEBHOOK] User ${userIdNum} not found`);
+            return res.json({received: true, error: 'User not found'});
+          }
+          
+          // Add credits to user account
+          await storage.updateUser(userIdNum, {
+            credits: (user.credits || 0) + creditAmount
+          });
+          
+          // Create transaction record for the purchase (idempotent thanks to check above)
+          await storage.createTransaction({
+            userId: userIdNum,
+            amount: creditAmount, // Positive amount for purchase
+            type: 'purchase',
+            description: `Credit purchase: ${planId || 'Credit pack'}`,
+            relatedEntityType: 'credit_purchase',
+            relatedEntityId: paymentIntent.id, // Unique payment intent ID for idempotency
+          });
+          
+          console.log(`[STRIPE-WEBHOOK] Successfully added ${creditAmount} credits to user ${userIdNum} (payment: ${paymentIntent.id})`);
+          
+          // Send confirmation email
+          try {
+            await emailService.sendPaymentConfirmation(
+              paymentIntent.receipt_email || user.email || 'user@example.com',
+              paymentIntent.amount / 100, // Convert back to pounds
+              creditAmount
+            );
+          } catch (emailError: any) {
+            console.error('[STRIPE-WEBHOOK] Email send failed (non-fatal):', emailError);
+          }
         } catch (error: any) {
-          // Handle payment confirmation email errors silently
+          console.error('[STRIPE-WEBHOOK] Error processing payment:', error);
+          // Return success to Stripe to prevent retries, but log the error
+          return res.json({received: true, error: error.message});
         }
       }
     }
@@ -1995,8 +2049,15 @@ Use UK accounting standards and ensure debits equal credits. Use appropriate acc
 
   app.get('/api/filings', async (req, res) => {
     try {
-      // In a real app, would filter by user/company from session
-      const filings = await storage.getAllFilings();
+      const typeFilter = req.query.type as string | undefined;
+      
+      // Get all filings (in real app, would filter by user/company from session)
+      let filings = await storage.getAllFilings();
+      
+      // Filter by type if requested
+      if (typeFilter) {
+        filings = filings.filter(f => f.type === typeFilter);
+      }
       
       // Enhance filings with company names
       const enhancedFilings = await Promise.all(filings.map(async (filing) => {
