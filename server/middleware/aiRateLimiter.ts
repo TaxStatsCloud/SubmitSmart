@@ -82,38 +82,43 @@ export function aiRateLimiter(options: AIRateLimiterOptions) {
 
       // ============================================================
       // STEP 2: Atomic rate limiting with database transaction
-      // Uses SELECT ... FOR UPDATE to lock row and prevent race conditions
+      // Uses UPSERT + SELECT FOR UPDATE to prevent ALL race conditions
       // ============================================================
       await db.transaction(async (tx) => {
         const now = new Date();
         const nowMs = now.getTime();
 
-        // Lock user's rate limit record for update (prevents concurrent bypass)
-        const [rateLimitRecord] = await tx
-          .select()
-          .from(aiRateLimits)
-          .where(eq(aiRateLimits.userId, userId))
-          .for('update'); // PostgreSQL row-level lock
-
-        if (!rateLimitRecord) {
-          // First request ever for this user - create initial record
-          await tx.insert(aiRateLimits).values({
+        // ATOMIC UPSERT: Create row if doesn't exist, or update if it does
+        // This prevents UNIQUE_VIOLATION race on first-time concurrent requests
+        await tx
+          .insert(aiRateLimits)
+          .values({
             userId,
             ipAddress,
-            requestCount: 1,
+            requestCount: 0, // Will be incremented below
             windowStartedAt: now,
             lastRequestAt: now,
             isBlocked: false,
             totalBlockCount: 0
+          })
+          .onConflictDoUpdate({
+            target: aiRateLimits.userId,
+            set: {
+              ipAddress, // Update IP for monitoring
+              updatedAt: now
+            }
           });
 
-          rateLimiterLogger.info('First AI request - created rate limit record', {
-            userId,
-            endpoint,
-            requestCount: 1
-          });
+        // Now lock and read the record (guaranteed to exist after upsert)
+        const [rateLimitRecord] = await tx
+          .select()
+          .from(aiRateLimits)
+          .where(eq(aiRateLimits.userId, userId))
+          .for('update'); // PostgreSQL row-level lock prevents concurrent bypass
 
-          return; // Allow first request
+        if (!rateLimitRecord) {
+          // Should never happen after upsert, but handle gracefully
+          throw new Error('Rate limit record missing after upsert');
         }
 
         // Check if user is currently blocked
@@ -161,15 +166,19 @@ export function aiRateLimiter(options: AIRateLimiterOptions) {
         const windowAgeMs = nowMs - rateLimitRecord.windowStartedAt.getTime();
         const isWindowExpired = windowAgeMs >= RATE_LIMIT_WINDOW_MS;
 
+        // Determine new request count
+        let newRequestCount: number;
+        
         if (isWindowExpired) {
           // Window expired - reset to new window with this request as first
+          newRequestCount = 1;
+          
           await tx
             .update(aiRateLimits)
             .set({
               requestCount: 1,
               windowStartedAt: now,
               lastRequestAt: now,
-              ipAddress, // Update IP for monitoring
               updatedAt: now
             })
             .where(eq(aiRateLimits.userId, userId));
@@ -178,15 +187,14 @@ export function aiRateLimiter(options: AIRateLimiterOptions) {
             userId,
             endpoint,
             requestCount: 1,
-            windowAgeMs
+            previousWindowAgeMs: windowAgeMs
           });
-
-          return; // Allow request
+        } else {
+          // Window is still active - increment request count
+          newRequestCount = rateLimitRecord.requestCount + 1;
         }
 
-        // Window is still active - increment request count
-        const newRequestCount = rateLimitRecord.requestCount + 1;
-
+        // Check rate limit (applies to both new and existing windows)
         if (newRequestCount > MAX_REQUESTS_PER_WINDOW) {
           // EXCEEDED RATE LIMIT - Block user for 5 minutes
           const blockedUntil = new Date(nowMs + BLOCK_DURATION_MS);
@@ -222,16 +230,17 @@ export function aiRateLimiter(options: AIRateLimiterOptions) {
           };
         }
 
-        // Within rate limit - increment and allow
-        await tx
-          .update(aiRateLimits)
-          .set({
-            requestCount: newRequestCount,
-            lastRequestAt: now,
-            ipAddress, // Update IP for monitoring
-            updatedAt: now
-          })
-          .where(eq(aiRateLimits.userId, userId));
+        // Within rate limit - increment and allow (only if window not expired)
+        if (!isWindowExpired) {
+          await tx
+            .update(aiRateLimits)
+            .set({
+              requestCount: newRequestCount,
+              lastRequestAt: now,
+              updatedAt: now
+            })
+            .where(eq(aiRateLimits.userId, userId));
+        }
 
         const elapsedMs = Date.now() - startTime;
         rateLimiterLogger.info('Rate limit check passed', {
@@ -240,6 +249,7 @@ export function aiRateLimiter(options: AIRateLimiterOptions) {
           requestCount: newRequestCount,
           limit: MAX_REQUESTS_PER_WINDOW,
           windowAgeSeconds: Math.round(windowAgeMs / 1000),
+          windowExpired: isWindowExpired,
           checkDurationMs: elapsedMs
         });
       });
