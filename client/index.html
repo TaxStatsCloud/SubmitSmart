@@ -42,7 +42,13 @@
               }, 60000); // Check every minute
             })
             .catch((error) => {
-              console.error('ServiceWorker registration failed:', error);
+              // Silently fail if service worker isn't available (development mode)
+              // Service workers only work in production with HTTPS
+              if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+                console.debug('ServiceWorker not available in development mode');
+              } else {
+                console.warn('ServiceWorker registration failed:', error.message);
+              }
             });
         });
       }

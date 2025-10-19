@@ -94,7 +94,7 @@ const CheckoutForm = ({ onSuccess }: { onSuccess: () => void }) => {
 
 // Credit balance component
 const CreditBalance = () => {
-  const { data: balance, isLoading } = useQuery({
+  const { data: balance, isLoading } = useQuery<{ credits: number }>({
     queryKey: ['/api/billing/credits'],
     enabled: true,
   });
@@ -199,7 +199,7 @@ const Credits = () => {
   };
 
   // Fetch tier-specific credit packages for current user
-  const { data: packages, isLoading: isLoadingPackages } = useQuery({
+  const { data: packages, isLoading: isLoadingPackages } = useQuery<CreditPackage[]>({
     queryKey: ['/api/billing/packages/user'],
     enabled: true,
   });
