@@ -1,24 +1,32 @@
 /**
- * AI Rate Limiting Middleware
+ * AI Rate Limiting Middleware - Production-Grade Atomic Implementation
  * 
- * Prevents OpenAI token burn by:
- * 1. Checking user credits BEFORE generation (fail fast)
- * 2. IP-based throttling (max 10 requests per minute)
- * 3. Blocking users who repeatedly exceed limits
+ * Prevents OpenAI token burn with GLOBAL rate limiting across all AI endpoints:
+ * - Max 10 AI requests per minute per user (across ALL endpoints combined)
+ * - Atomic database transactions with FOR UPDATE row-level locking
+ * - 5-minute automatic blocking for abusers
+ * - Zero race conditions under concurrent load
+ * 
+ * Architecture:
+ * 1. Pre-check user credits (fail fast before OpenAI call)
+ * 2. Use PostgreSQL transaction with SELECT ... FOR UPDATE to lock user's rate limit record
+ * 3. Rolling 60-second window (auto-resets after 60s)
+ * 4. Block user across ALL endpoints on 11th request
+ * 5. Automatic unblocking after 5 minutes
  */
 
 import { Request, Response, NextFunction } from 'express';
 import { db } from '../db';
 import { aiRateLimits, users } from '../../shared/schema';
-import { eq, and, sql, gte } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { logger } from '../utils/logger';
 
 const rateLimiterLogger = logger.withContext('AIRateLimiter');
 
 // Rate limiting configuration
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-const MAX_REQUESTS_PER_WINDOW = 10; // 10 requests per minute
-const BLOCK_DURATION_MS = 5 * 60 * 1000; // 5 minutes block duration
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 60 seconds rolling window
+const MAX_REQUESTS_PER_WINDOW = 10; // 10 total AI requests per minute
+const BLOCK_DURATION_MS = 5 * 60 * 1000; // 5 minute block for abusers
 
 export interface AIRateLimiterOptions {
   requiredCredits: number;
@@ -26,7 +34,7 @@ export interface AIRateLimiterOptions {
 }
 
 /**
- * AI Rate Limiting Middleware
+ * Atomic AI Rate Limiting Middleware
  * 
  * Usage:
  * router.post('/directors-report', aiRateLimiter({ 
@@ -36,6 +44,8 @@ export interface AIRateLimiterOptions {
  */
 export function aiRateLimiter(options: AIRateLimiterOptions) {
   return async (req: Request, res: Response, next: NextFunction) => {
+    const startTime = Date.now();
+    
     try {
       const userId = req.user?.id;
       const ipAddress = req.ip || req.socket.remoteAddress || 'unknown';
@@ -45,7 +55,9 @@ export function aiRateLimiter(options: AIRateLimiterOptions) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      // 1. Pre-check user credits (fail fast before calling OpenAI)
+      // ============================================================
+      // STEP 1: Pre-check user credits (fail fast before OpenAI)
+      // ============================================================
       const [user] = await db.select().from(users).where(eq(users.id, userId));
       
       if (!user) {
@@ -53,200 +65,231 @@ export function aiRateLimiter(options: AIRateLimiterOptions) {
       }
 
       if (user.credits < requiredCredits) {
-        rateLimiterLogger.warn('Blocked request - insufficient credits', {
+        rateLimiterLogger.warn('Blocked - insufficient credits', {
           userId,
+          endpoint,
           required: requiredCredits,
-          available: user.credits,
-          endpoint
+          available: user.credits
         });
 
         return res.status(402).json({
           error: 'Insufficient credits',
           required: requiredCredits,
           available: user.credits,
-          message: `You need ${requiredCredits} credits but only have ${user.credits} available. Please purchase more credits.`
+          message: `You need ${requiredCredits} credits but only have ${user.credits}. Please purchase more credits.`
         });
       }
 
-      // 2. Check if user is currently blocked
-      const now = new Date();
-      const [existingLimit] = await db
-        .select()
-        .from(aiRateLimits)
-        .where(
-          and(
-            eq(aiRateLimits.userId, userId),
-            eq(aiRateLimits.endpoint, endpoint),
-            eq(aiRateLimits.isBlocked, true),
-            gte(aiRateLimits.blockedUntil!, now)
-          )
-        )
-        .limit(1);
+      // ============================================================
+      // STEP 2: Atomic rate limiting with database transaction
+      // Uses SELECT ... FOR UPDATE to lock row and prevent race conditions
+      // ============================================================
+      await db.transaction(async (tx) => {
+        const now = new Date();
+        const nowMs = now.getTime();
 
-      if (existingLimit) {
-        const remainingBlockTime = Math.ceil(
-          (existingLimit.blockedUntil!.getTime() - now.getTime()) / 1000
-        );
+        // Lock user's rate limit record for update (prevents concurrent bypass)
+        const [rateLimitRecord] = await tx
+          .select()
+          .from(aiRateLimits)
+          .where(eq(aiRateLimits.userId, userId))
+          .for('update'); // PostgreSQL row-level lock
 
-        rateLimiterLogger.warn('Blocked request - user is rate limited', {
-          userId,
-          endpoint,
-          remainingBlockTime
-        });
+        if (!rateLimitRecord) {
+          // First request ever for this user - create initial record
+          await tx.insert(aiRateLimits).values({
+            userId,
+            ipAddress,
+            requestCount: 1,
+            windowStartedAt: now,
+            lastRequestAt: now,
+            isBlocked: false,
+            totalBlockCount: 0
+          });
 
-        return res.status(429).json({
-          error: 'Too many requests',
-          message: `You've been temporarily blocked due to excessive requests. Please try again in ${remainingBlockTime} seconds.`,
-          retryAfter: remainingBlockTime
-        });
-      }
+          rateLimiterLogger.info('First AI request - created rate limit record', {
+            userId,
+            endpoint,
+            requestCount: 1
+          });
 
-      // 3. Check rate limit window (GLOBAL across ALL AI endpoints)
-      const windowStart = new Date(now.getTime() - RATE_LIMIT_WINDOW_MS);
-      const windowEnd = new Date(now.getTime());
+          return; // Allow first request
+        }
 
-      // Aggregate ALL AI endpoint requests for this user in the current window
-      const userRateLimitRecords = await db
-        .select()
-        .from(aiRateLimits)
-        .where(
-          and(
-            eq(aiRateLimits.userId, userId),
-            gte(aiRateLimits.windowEnd, windowStart),
-            eq(aiRateLimits.isBlocked, false)
-          )
-        );
-
-      // Calculate total requests across ALL endpoints in current window
-      const totalRequestsInWindow = userRateLimitRecords.reduce(
-        (sum, record) => sum + record.requestCount, 
-        0
-      );
-
-      // Find or create rate limit record for this specific endpoint
-      const [rateLimitRecord] = await db
-        .select()
-        .from(aiRateLimits)
-        .where(
-          and(
-            eq(aiRateLimits.userId, userId),
-            eq(aiRateLimits.endpoint, endpoint),
-            gte(aiRateLimits.windowEnd, windowStart),
-            eq(aiRateLimits.isBlocked, false)
-          )
-        )
-        .orderBy(sql`${aiRateLimits.lastRequest} DESC`)
-        .limit(1);
-
-      // Check if user exceeded GLOBAL limit across all endpoints
-      if (totalRequestsInWindow + 1 > MAX_REQUESTS_PER_WINDOW) {
-        // Exceeded global rate limit - block user across ALL AI endpoints
-        const blockedUntil = new Date(now.getTime() + BLOCK_DURATION_MS);
-
-        // Block user on all their rate limit records
-        await db
-          .update(aiRateLimits)
-          .set({
-            isBlocked: true,
-            blockedUntil
-          })
-          .where(
-            and(
-              eq(aiRateLimits.userId, userId),
-              gte(aiRateLimits.windowEnd, windowStart)
-            )
+        // Check if user is currently blocked
+        if (rateLimitRecord.isBlocked && rateLimitRecord.blockedUntil && rateLimitRecord.blockedUntil > now) {
+          const remainingBlockTimeSeconds = Math.ceil(
+            (rateLimitRecord.blockedUntil.getTime() - nowMs) / 1000
           );
 
-        rateLimiterLogger.warn('User exceeded GLOBAL rate limit - blocking', {
-          userId,
-          endpoint,
-          totalRequestsInWindow: totalRequestsInWindow + 1,
-          limit: MAX_REQUESTS_PER_WINDOW,
-          blockedUntil
-        });
+          rateLimiterLogger.warn('Request blocked - user is rate limited', {
+            userId,
+            endpoint,
+            remainingBlockTimeSeconds,
+            totalBlockCount: rateLimitRecord.totalBlockCount
+          });
 
-        return res.status(429).json({
-          error: 'Too many requests',
-          message: `You've made ${totalRequestsInWindow + 1} AI generation requests in the last minute across all endpoints. Maximum allowed is ${MAX_REQUESTS_PER_WINDOW} total. You've been temporarily blocked for ${BLOCK_DURATION_MS / 60000} minutes.`,
-          retryAfter: BLOCK_DURATION_MS / 1000
-        });
-      }
+          throw {
+            status: 429,
+            error: 'Too many requests',
+            message: `You've been temporarily blocked for making too many AI requests. Please wait ${remainingBlockTimeSeconds} seconds before trying again.`,
+            retryAfter: remainingBlockTimeSeconds
+          };
+        }
 
-      if (rateLimitRecord && rateLimitRecord.windowEnd > now) {
-        // Window still active for this endpoint - increment request count
+        // Unblock user if block duration has expired
+        if (rateLimitRecord.isBlocked && rateLimitRecord.blockedUntil && rateLimitRecord.blockedUntil <= now) {
+          await tx
+            .update(aiRateLimits)
+            .set({
+              isBlocked: false,
+              blockedUntil: null,
+              requestCount: 0,
+              windowStartedAt: now,
+              lastRequestAt: now,
+              updatedAt: now
+            })
+            .where(eq(aiRateLimits.userId, userId));
+
+          rateLimiterLogger.info('User unblocked - block duration expired', {
+            userId,
+            totalBlockCount: rateLimitRecord.totalBlockCount
+          });
+        }
+
+        // Calculate window age
+        const windowAgeMs = nowMs - rateLimitRecord.windowStartedAt.getTime();
+        const isWindowExpired = windowAgeMs >= RATE_LIMIT_WINDOW_MS;
+
+        if (isWindowExpired) {
+          // Window expired - reset to new window with this request as first
+          await tx
+            .update(aiRateLimits)
+            .set({
+              requestCount: 1,
+              windowStartedAt: now,
+              lastRequestAt: now,
+              ipAddress, // Update IP for monitoring
+              updatedAt: now
+            })
+            .where(eq(aiRateLimits.userId, userId));
+
+          rateLimiterLogger.info('New rate limit window started', {
+            userId,
+            endpoint,
+            requestCount: 1,
+            windowAgeMs
+          });
+
+          return; // Allow request
+        }
+
+        // Window is still active - increment request count
         const newRequestCount = rateLimitRecord.requestCount + 1;
 
-        // Update request count for this endpoint
-        await db
+        if (newRequestCount > MAX_REQUESTS_PER_WINDOW) {
+          // EXCEEDED RATE LIMIT - Block user for 5 minutes
+          const blockedUntil = new Date(nowMs + BLOCK_DURATION_MS);
+          const newBlockCount = rateLimitRecord.totalBlockCount + 1;
+
+          await tx
+            .update(aiRateLimits)
+            .set({
+              isBlocked: true,
+              blockedUntil,
+              totalBlockCount: newBlockCount,
+              requestCount: newRequestCount,
+              lastRequestAt: now,
+              updatedAt: now
+            })
+            .where(eq(aiRateLimits.userId, userId));
+
+          rateLimiterLogger.warn('RATE LIMIT EXCEEDED - User blocked', {
+            userId,
+            endpoint,
+            requestCount: newRequestCount,
+            limit: MAX_REQUESTS_PER_WINDOW,
+            blockedUntil,
+            totalBlockCount: newBlockCount,
+            windowAgeMs
+          });
+
+          throw {
+            status: 429,
+            error: 'Too many requests',
+            message: `Rate limit exceeded: ${newRequestCount} AI requests in ${Math.round(windowAgeMs / 1000)} seconds. Maximum allowed is ${MAX_REQUESTS_PER_WINDOW} per minute. You've been blocked for ${BLOCK_DURATION_MS / 60000} minutes.`,
+            retryAfter: BLOCK_DURATION_MS / 1000
+          };
+        }
+
+        // Within rate limit - increment and allow
+        await tx
           .update(aiRateLimits)
           .set({
             requestCount: newRequestCount,
-            lastRequest: now
+            lastRequestAt: now,
+            ipAddress, // Update IP for monitoring
+            updatedAt: now
           })
-          .where(eq(aiRateLimits.id, rateLimitRecord.id));
+          .where(eq(aiRateLimits.userId, userId));
 
-        rateLimiterLogger.info('Rate limit check passed (global tracking)', {
+        const elapsedMs = Date.now() - startTime;
+        rateLimiterLogger.info('Rate limit check passed', {
           userId,
           endpoint,
-          endpointRequestCount: newRequestCount,
-          totalRequestsInWindow: totalRequestsInWindow + 1,
-          limit: MAX_REQUESTS_PER_WINDOW
+          requestCount: newRequestCount,
+          limit: MAX_REQUESTS_PER_WINDOW,
+          windowAgeSeconds: Math.round(windowAgeMs / 1000),
+          checkDurationMs: elapsedMs
         });
+      });
 
-      } else {
-        // Create new rate limit window
-        await db.insert(aiRateLimits).values({
-          userId,
-          ipAddress,
-          endpoint,
-          requestCount: 1,
-          windowStart: now,
-          windowEnd: new Date(now.getTime() + RATE_LIMIT_WINDOW_MS),
-          lastRequest: now,
-          isBlocked: false
-        });
-
-        rateLimiterLogger.info('New rate limit window created', {
-          userId,
-          endpoint
-        });
-      }
-
-      // 4. Cleanup old rate limit records (older than 1 hour)
-      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-      await db
-        .delete(aiRateLimits)
-        .where(
-          and(
-            eq(aiRateLimits.userId, userId),
-            sql`${aiRateLimits.windowEnd} < ${oneHourAgo}`
-          )
-        );
-
-      // All checks passed - proceed to handler
+      // All checks passed - proceed to AI generation handler
       next();
 
     } catch (error: any) {
-      rateLimiterLogger.error('Rate limiter error:', error);
-      // Don't block request on rate limiter error - fail open
+      // Handle rate limit errors thrown from transaction
+      if (error.status === 429) {
+        return res.status(429).json({
+          error: error.error,
+          message: error.message,
+          retryAfter: error.retryAfter
+        });
+      }
+
+      // Unexpected error - log but don't block request (fail open for resilience)
+      rateLimiterLogger.error('Rate limiter unexpected error:', {
+        error: error.message,
+        stack: error.stack,
+        endpoint: options.endpoint
+      });
+      
+      // Fail open to prevent rate limiter bugs from breaking AI features
       next();
     }
   };
 }
 
 /**
- * Cleanup old rate limit records (run periodically)
+ * Cleanup old rate limit records (run via cron job)
+ * Removes records for users who haven't made AI requests in 7 days
  */
-export async function cleanupRateLimitRecords() {
+export async function cleanupStaleRateLimitRecords() {
   try {
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     
-    const result = await db
+    const deleted = await db
       .delete(aiRateLimits)
-      .where(sql`${aiRateLimits.windowEnd} < ${oneDayAgo}`);
+      .where(sql`${aiRateLimits.lastRequestAt} < ${sevenDaysAgo}`)
+      .returning({ userId: aiRateLimits.userId });
 
-    rateLimiterLogger.info('Cleaned up old rate limit records', { result });
+    rateLimiterLogger.info('Cleaned up stale rate limit records', { 
+      count: deleted.length 
+    });
+    
+    return deleted.length;
   } catch (error: any) {
     rateLimiterLogger.error('Error cleaning up rate limit records:', error);
+    return 0;
   }
 }

@@ -1115,18 +1115,20 @@ export const customNotesRelations = relations(customNotes, ({ one }) => ({
   user: one(users, { fields: [customNotes.userId], references: [users.id] })
 }));
 
-// AI Rate Limits - Track AI endpoint usage to prevent token burn
+// AI Rate Limits - GLOBAL tracking across ALL AI endpoints (atomic with FOR UPDATE)
+// Max 10 AI requests per minute per user across directors/strategic/notes/cashflow/bulk endpoints
 export const aiRateLimits = pgTable("ai_rate_limits", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  ipAddress: text("ip_address"),
-  endpoint: text("endpoint").notNull(), // e.g., "/api/ai/directors-report", "/api/ai/bulk-generate-reports"
-  requestCount: integer("request_count").notNull().default(1),
-  windowStart: timestamp("window_start").notNull().defaultNow(), // Start of current rate limit window
-  windowEnd: timestamp("window_end").notNull(), // End of current rate limit window
-  lastRequest: timestamp("last_request").notNull().defaultNow(),
-  isBlocked: boolean("is_blocked").default(false), // True if user exceeded rate limit
-  blockedUntil: timestamp("blocked_until"), // When the block expires
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }).unique(), // ONE record per user
+  ipAddress: text("ip_address"), // For monitoring/analytics, not enforced yet
+  requestCount: integer("request_count").notNull().default(0), // Total requests in current window across ALL endpoints
+  windowStartedAt: timestamp("window_started_at").notNull().defaultNow(), // When current 60s window started
+  lastRequestAt: timestamp("last_request_at").notNull().defaultNow(), // Last request timestamp for cleanup
+  isBlocked: boolean("is_blocked").default(false), // True if user exceeded 10 req/min
+  blockedUntil: timestamp("blocked_until"), // When the 5-minute block expires
+  totalBlockCount: integer("total_block_count").notNull().default(0), // Track repeat offenders
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const insertAIRateLimitSchema = createInsertSchema(aiRateLimits).omit({
