@@ -127,13 +127,24 @@ router.post('/generate-ixbrl', async (req, res) => {
  * POST /api/annual-accounts/submit
  */
 router.post('/submit', async (req, res) => {
+  console.log('=== ANNUAL ACCOUNTS SUBMIT ROUTE HIT ===');
+  annualAccountsLogger.info('=== ANNUAL ACCOUNTS SUBMIT ROUTE CALLED ===', {
+    hasUser: !!req.user,
+    userId: req.user?.id,
+    bodyKeys: Object.keys(req.body)
+  });
+  
   try {
     const userId = req.user?.id;
     if (!userId) {
+      console.log('NO USER ID - UNAUTHORIZED');
+      annualAccountsLogger.error('No user ID in request');
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
+    console.log('User ID:', userId);
     const { ixbrlData, documentIds, ...formData } = req.body;
+    console.log('Form data entity size:', formData.entitySize);
     
     // ============ CRITICAL VALIDATION ============
     // Prevent users from forging entity size to bypass tiered pricing
@@ -307,14 +318,28 @@ router.post('/submit', async (req, res) => {
     // Calculate tiered credit cost based on validated entity size
     const REQUIRED_CREDITS = getAnnualAccountsCost(entitySize);
     
+    // DEBUGGING: Direct test of the function
+    console.log('=== CRITICAL DEBUG ===');
+    console.log('Entity size:', entitySize);
+    console.log('Entity size type:', typeof entitySize);
+    console.log('REQUIRED_CREDITS:', REQUIRED_CREDITS);
+    console.log('Direct test small:', getAnnualAccountsCost('small'));
+    console.log('Direct test micro:', getAnnualAccountsCost('micro'));
+    console.log('=== END DEBUG ===');
+    
     annualAccountsLogger.info('Filing validated and credit cost calculated', {
       declaredEntitySize,
       detectedEntitySize,
       finalEntitySize: entitySize,
+      entitySizeType: typeof entitySize,
+      entitySizeValue: entitySize,
       credits: REQUIRED_CREDITS,
+      creditsType: typeof REQUIRED_CREDITS,
       turnover,
       totalAssets,
-      employees
+      employees,
+      rawAnnualAccountsTiers: JSON.stringify({ micro: 150, small: 200, medium: 300, large: 400 }),
+      getAnnualAccountsCostResult: getAnnualAccountsCost(entitySize as EntitySize)
     });
     
     // Get user to check company association
