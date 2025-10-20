@@ -1161,3 +1161,128 @@ export const aiRateLimitsRelations = relations(aiRateLimits, ({ one }) => ({
   user: one(users, { fields: [aiRateLimits.userId], references: [users.id] })
 }));
 
+// ============================================================================
+// ACCOUNTING SOFTWARE INTEGRATIONS
+// ============================================================================
+
+// Accounting Integration Provider Enum
+export const accountingProviderEnum = pgEnum("accounting_provider", ["xero", "quickbooks", "sage", "freeagent"]);
+
+// Accounting Integrations - Track connected accounting software
+export const accountingIntegrations = pgTable("accounting_integrations", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  companyId: integer("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  provider: text("provider").notNull(), // xero, quickbooks, sage, freeagent
+  status: text("status").notNull().default("pending"), // pending, connected, disconnected, error
+  tenantId: text("tenant_id"), // Provider's organization/company ID
+  tenantName: text("tenant_name"), // Organization name from provider
+  lastSyncAt: timestamp("last_sync_at"),
+  nextSyncAt: timestamp("next_sync_at"),
+  syncFrequency: text("sync_frequency").default("manual"), // manual, daily, weekly, real_time
+  errorMessage: text("error_message"),
+  metadata: jsonb("metadata"), // Provider-specific metadata
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertAccountingIntegrationSchema = createInsertSchema(accountingIntegrations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type AccountingIntegration = typeof accountingIntegrations.$inferSelect;
+export type InsertAccountingIntegration = z.infer<typeof insertAccountingIntegrationSchema>;
+
+// Accounting Integration Tokens - Secure OAuth token storage
+export const accountingIntegrationTokens = pgTable("accounting_integration_tokens", {
+  id: serial("id").primaryKey(),
+  integrationId: integer("integration_id").notNull().references(() => accountingIntegrations.id, { onDelete: "cascade" }).unique(),
+  accessToken: text("access_token").notNull(), // Encrypted in storage
+  refreshToken: text("refresh_token"), // Encrypted in storage
+  tokenType: text("token_type").default("Bearer"),
+  expiresAt: timestamp("expires_at"),
+  scope: text("scope"), // OAuth scopes granted
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertAccountingIntegrationTokenSchema = createInsertSchema(accountingIntegrationTokens).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type AccountingIntegrationToken = typeof accountingIntegrationTokens.$inferSelect;
+export type InsertAccountingIntegrationToken = z.infer<typeof insertAccountingIntegrationTokenSchema>;
+
+// Accounting Data Sync - Track synchronization operations
+export const accountingDataSync = pgTable("accounting_data_sync", {
+  id: serial("id").primaryKey(),
+  integrationId: integer("integration_id").notNull().references(() => accountingIntegrations.id, { onDelete: "cascade" }),
+  companyId: integer("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  syncType: text("sync_type").notNull(), // trial_balance, contacts, invoices, bank_transactions
+  status: text("status").notNull().default("pending"), // pending, in_progress, completed, failed
+  recordsImported: integer("records_imported").default(0),
+  recordsFailed: integer("records_failed").default(0),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  errorLog: jsonb("error_log"), // Array of errors encountered
+  metadata: jsonb("metadata"), // Sync-specific data
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertAccountingDataSyncSchema = createInsertSchema(accountingDataSync).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type AccountingDataSync = typeof accountingDataSync.$inferSelect;
+export type InsertAccountingDataSync = z.infer<typeof insertAccountingDataSyncSchema>;
+
+// Accounting Mappings - Map trial balance codes to accounting system codes
+export const accountingMappings = pgTable("accounting_mappings", {
+  id: serial("id").primaryKey(),
+  integrationId: integer("integration_id").notNull().references(() => accountingIntegrations.id, { onDelete: "cascade" }),
+  companyId: integer("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  internalAccountCode: text("internal_account_code").notNull(), // PromptSubmissions account code
+  externalAccountCode: text("external_account_code").notNull(), // Provider's account code
+  externalAccountName: text("external_account_name"),
+  accountType: text("account_type"), // asset, liability, equity, revenue, expense
+  isMapped: boolean("is_mapped").notNull().default(true),
+  isActive: boolean("is_active").notNull().default(true),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertAccountingMappingSchema = createInsertSchema(accountingMappings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type AccountingMapping = typeof accountingMappings.$inferSelect;
+export type InsertAccountingMapping = z.infer<typeof insertAccountingMappingSchema>;
+
+// Accounting integrations relations
+export const accountingIntegrationsRelations = relations(accountingIntegrations, ({ one, many }) => ({
+  user: one(users, { fields: [accountingIntegrations.userId], references: [users.id] }),
+  company: one(companies, { fields: [accountingIntegrations.companyId], references: [companies.id] }),
+  tokens: one(accountingIntegrationTokens, { fields: [accountingIntegrations.id], references: [accountingIntegrationTokens.integrationId] }),
+  syncs: many(accountingDataSync),
+  mappings: many(accountingMappings),
+}));
+
+export const accountingDataSyncRelations = relations(accountingDataSync, ({ one }) => ({
+  integration: one(accountingIntegrations, { fields: [accountingDataSync.integrationId], references: [accountingIntegrations.id] }),
+  company: one(companies, { fields: [accountingDataSync.companyId], references: [companies.id] }),
+}));
+
+export const accountingMappingsRelations = relations(accountingMappings, ({ one }) => ({
+  integration: one(accountingIntegrations, { fields: [accountingMappings.integrationId], references: [accountingIntegrations.id] }),
+  company: one(companies, { fields: [accountingMappings.companyId], references: [companies.id] }),
+}));
+
