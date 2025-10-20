@@ -13,7 +13,8 @@ import {
   priorYearData, type PriorYearData, type InsertPriorYearData,
   comparativePeriods, type ComparativePeriod, type InsertComparativePeriod,
   companiesHouseFilings, type CompaniesHouseFiling, type InsertCompaniesHouseFiling,
-  userCompanies, type UserCompany, type InsertUserCompany
+  userCompanies, type UserCompany, type InsertUserCompany,
+  processedWebhookEvents, type ProcessedWebhookEvent, type InsertProcessedWebhookEvent
 } from "@shared/schema";
 import { eq, and, or, gte, sql } from "drizzle-orm";
 import { db } from "./db";
@@ -155,6 +156,16 @@ export interface IStorage {
     paymentIntentId: string;
     amount: number;
   }): Promise<{ success: boolean; newBalance: number; transactionId: number }>;
+  processFilingPaymentWebhookAtomic(params: {
+    eventId: string;
+    userId: number;
+    filingId: number;
+    filingType: string;
+    companyId: number;
+    companyName: string;
+    paymentIntentId: string;
+    amount: number;
+  }): Promise<{ success: boolean; filingStatus: string }>;
 }
 
 export class MemStorage implements IStorage {
@@ -1255,6 +1266,20 @@ export class MemStorage implements IStorage {
     paymentIntentId: string;
     amount: number;
   }): Promise<{ success: boolean; newBalance: number; transactionId: number }> {
+    // MemStorage stub - not implemented for production
+    throw new Error('MemStorage does not support atomic webhook processing - use DatabaseStorage');
+  }
+
+  async processFilingPaymentWebhookAtomic(params: {
+    eventId: string;
+    userId: number;
+    filingId: number;
+    filingType: string;
+    companyId: number;
+    companyName: string;
+    paymentIntentId: string;
+    amount: number;
+  }): Promise<{ success: boolean; filingStatus: string }> {
     // MemStorage stub - not implemented for production
     throw new Error('MemStorage does not support atomic webhook processing - use DatabaseStorage');
   }
@@ -2360,6 +2385,72 @@ export class DatabaseStorage implements IStorage {
         success: true,
         newBalance,
         transactionId: transaction.id
+      };
+    });
+  }
+
+  async processFilingPaymentWebhookAtomic(params: {
+    eventId: string;
+    userId: number;
+    filingId: number;
+    filingType: string;
+    companyId: number;
+    companyName: string;
+    paymentIntentId: string;
+    amount: number;
+  }): Promise<{ success: boolean; filingStatus: string }> {
+    // Use database transaction for atomicity
+    return await db.transaction(async (tx) => {
+      // 1. Check if already processed (unique constraint will prevent duplicates)
+      try {
+        await tx.insert(processedWebhookEvents).values({
+          eventId: params.eventId,
+          eventType: 'stripe_filing_payment_succeeded',
+          metadata: {
+            userId: params.userId,
+            filingId: params.filingId,
+            filingType: params.filingType,
+            companyId: params.companyId,
+            companyName: params.companyName,
+            paymentIntentId: params.paymentIntentId,
+            amount: params.amount
+          }
+        });
+      } catch (error: any) {
+        // If unique constraint violation, this event was already processed
+        if (error.code === '23505') { // PostgreSQL unique violation error code
+          throw new Error('ALREADY_PROCESSED');
+        }
+        throw error;
+      }
+
+      // 2. Update filing status to payment_received
+      await tx
+        .update(filings)
+        .set({
+          status: 'payment_received',
+          updatedAt: new Date()
+        })
+        .where(eq(filings.id, params.filingId));
+
+      // 3. Create activity record
+      await tx
+        .insert(activities)
+        .values({
+          userId: params.userId,
+          companyId: params.companyId,
+          type: 'filing_payment',
+          description: `Payment received for ${params.filingType} filing`,
+          metadata: {
+            filingId: params.filingId,
+            paymentAmount: params.amount,
+            stripePaymentId: params.paymentIntentId
+          }
+        });
+
+      return {
+        success: true,
+        filingStatus: 'payment_received'
       };
     });
   }

@@ -142,12 +142,16 @@ router.post('/create-filing-payment', async (req, res) => {
 });
 
 // Stripe webhook endpoint to handle payment events
+// NOTE: This webhook uses the atomic processing method to prevent race conditions
+// IMPORTANT: Always returns 200 to prevent Stripe retry storms
 router.post('/webhook', json({ type: 'application/json' }), async (req, res) => {
   try {
     const sig = req.headers['stripe-signature'] as string;
     
     if (!process.env.STRIPE_SECRET_KEY) {
-      return res.status(500).json({ error: 'Stripe configuration missing' });
+      console.error('[BILLING-WEBHOOK] Stripe configuration missing');
+      // Return 200 even for config errors to prevent retries
+      return res.json({ received: true, error: 'Configuration error' });
     }
     
     if (!process.env.STRIPE_WEBHOOK_SECRET) {
@@ -157,7 +161,7 @@ router.post('/webhook', json({ type: 'application/json' }), async (req, res) => 
       return res.json({ received: true });
     }
     
-    // In production, you would validate the webhook signature
+    // In production, validate the webhook signature
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
     const event = stripe.webhooks.constructEvent(
       req.body,
@@ -168,8 +172,10 @@ router.post('/webhook', json({ type: 'application/json' }), async (req, res) => 
     await handleStripeEvent(event);
     res.json({ received: true });
   } catch (error) {
-    console.error('Error handling webhook:', error);
-    res.status(400).json({ error: error instanceof Error ? error.message : 'Webhook error' });
+    console.error('[BILLING-WEBHOOK] Error handling webhook:', error);
+    // CRITICAL: Return 200 even on errors to prevent Stripe retry storms
+    // All errors are logged but webhook is acknowledged to stop retries
+    res.json({ received: true, error: error instanceof Error ? error.message : 'Webhook error' });
   }
 });
 
@@ -208,15 +214,95 @@ router.post('/deduct-credits', async (req, res) => {
   }
 });
 
-// Helper function to handle Stripe events
+// Helper function to handle Stripe events using atomic processing
 async function handleStripeEvent(event: any) {
-  // Handle the event
   switch (event.type) {
     case 'payment_intent.succeeded':
       const paymentIntent = event.data.object;
-      await handleSuccessfulPayment(paymentIntent.id);
+      const metadata = paymentIntent.metadata;
+      
+      // Process credit package purchase with atomic transaction
+      if (metadata.packageId && metadata.userId) {
+        try {
+          const creditAmount = parseInt(metadata.creditAmount);
+          const userIdNum = parseInt(metadata.userId);
+          
+          // Validate metadata
+          if (isNaN(creditAmount) || creditAmount <= 0) {
+            console.error(`[BILLING-WEBHOOK] Invalid credits amount: ${metadata.creditAmount}`);
+            return; // Return success to prevent retries
+          }
+          if (isNaN(userIdNum) || userIdNum <= 0) {
+            console.error(`[BILLING-WEBHOOK] Invalid user ID: ${metadata.userId}`);
+            return; // Return success to prevent retries
+          }
+          
+          // Use atomic processing method to prevent race conditions
+          await storage.processStripeWebhookAtomic({
+            eventId: paymentIntent.id,
+            userId: userIdNum,
+            credits: creditAmount,
+            planId: metadata.packageName || `package_${metadata.packageId}`,
+            paymentIntentId: paymentIntent.id,
+            amount: paymentIntent.amount / 100, // Convert to pounds
+          });
+          
+          console.log(`[BILLING-WEBHOOK] Successfully processed payment ${paymentIntent.id}: ${creditAmount} credits added to user ${userIdNum}`);
+        } catch (error: any) {
+          if (error.message === 'ALREADY_PROCESSED') {
+            console.log(`[BILLING-WEBHOOK] Payment ${paymentIntent.id} already processed (duplicate webhook), skipping`);
+          } else if (error.message === 'USER_NOT_FOUND') {
+            console.error(`[BILLING-WEBHOOK] User not found: ${metadata.userId}`);
+          } else {
+            console.error('[BILLING-WEBHOOK] Error processing payment:', error);
+          }
+          // Always return success (no throw) to prevent Stripe retry storms
+        }
+      }
+      // Handle filing payments atomically
+      else if (metadata.filingId && metadata.userId) {
+        try {
+          const filingIdNum = parseInt(metadata.filingId);
+          const userIdNum = parseInt(metadata.userId);
+          const companyIdNum = parseInt(metadata.companyId);
+          
+          // Validate metadata
+          if (isNaN(filingIdNum) || filingIdNum <= 0) {
+            console.error(`[BILLING-WEBHOOK] Invalid filing ID: ${metadata.filingId}`);
+            return;
+          }
+          if (isNaN(userIdNum) || userIdNum <= 0) {
+            console.error(`[BILLING-WEBHOOK] Invalid user ID: ${metadata.userId}`);
+            return;
+          }
+          if (isNaN(companyIdNum) || companyIdNum <= 0) {
+            console.error(`[BILLING-WEBHOOK] Invalid company ID: ${metadata.companyId}`);
+            return;
+          }
+          
+          // Use atomic processing for filing payments
+          await storage.processFilingPaymentWebhookAtomic({
+            eventId: paymentIntent.id,
+            userId: userIdNum,
+            filingId: filingIdNum,
+            filingType: metadata.filingType,
+            companyId: companyIdNum,
+            companyName: metadata.companyName,
+            paymentIntentId: paymentIntent.id,
+            amount: paymentIntent.amount / 100, // Convert to pounds
+          });
+          
+          console.log(`[BILLING-WEBHOOK] Successfully processed filing payment ${paymentIntent.id} for filing ${filingIdNum}`);
+        } catch (error: any) {
+          if (error.message === 'ALREADY_PROCESSED') {
+            console.log(`[BILLING-WEBHOOK] Filing payment ${paymentIntent.id} already processed (duplicate webhook), skipping`);
+          } else {
+            console.error('[BILLING-WEBHOOK] Error processing filing payment:', error);
+          }
+          // Always return success (no throw) to prevent Stripe retry storms
+        }
+      }
       break;
-    // Add other event types as needed
     default:
       console.log(`Unhandled event type: ${event.type}`);
   }

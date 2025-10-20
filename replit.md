@@ -68,7 +68,12 @@ API endpoints at `/api/ai/directors-report`, `/api/ai/strategic-report`, `/api/a
 
 **Production-Grade Rate Limiting**: Global 10 AI requests/minute limit across ALL endpoints using atomic PostgreSQL transactions with SELECT FOR UPDATE row-level locking. UPSERT pattern prevents first-time race conditions. 5-minute automatic blocking for abusers with comprehensive logging.
 
-**Atomic Webhook Processing**: Production-grade Stripe webhook handling with database-level idempotency protection using `processedWebhookEvents` table with unique constraint on `eventId`. All webhook operations (event recording, credit addition, transaction creation) execute within a single database transaction ensuring atomicity - if any step fails, all changes rollback. Unique constraint on payment intent ID prevents duplicate processing even under race conditions or webhook retries. Error handling distinguishes between duplicate events (returns success to prevent infinite retries) and actual failures (logs but returns success to prevent Stripe retry storms).
+**Atomic Webhook Processing**: Production-grade Stripe webhook handling with database-level idempotency protection using `processedWebhookEvents` table with unique constraint on `eventId`. All webhook operations execute within database transactions ensuring atomicity:
+
+- **Credit Purchases** (`processStripeWebhookAtomic`): Event recording, credit addition, and transaction creation in single atomic transaction - if any step fails, all changes rollback.
+- **Filing Payments** (`processFilingPaymentWebhookAtomic`): Event recording, filing status update, and activity creation in single atomic transaction.
+
+Unique constraint on `eventId` prevents duplicate processing even under race conditions or webhook retries. Error handling returns HTTP 200 on all handled failures (including duplicates) to prevent Stripe retry storms while logging all errors for monitoring. Both webhook endpoints (`/api/stripe-webhook` and `/api/billing/webhook`) use atomic processing methods ensuring consistency across all payment flows.
 
 ## External Dependencies
 - **OpenAI**: AI-driven document processing, financial data extraction, and smart filing recommendations.
