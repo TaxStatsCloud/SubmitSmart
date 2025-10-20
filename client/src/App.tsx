@@ -83,7 +83,7 @@ function Router() {
         <Route path="/contact" component={Contact} />
         <Route path="/faq" component={FAQ} />
         <Route path="/blog" component={Blog} />
-        <Route path="/blog/april-2027-deadline" component={April2027Deadline} />
+        <Route path="/blog/companies-house-2027-digital-filing-mandate" component={April2027Deadline} />
         <Route path="/blog/understanding-ixbrl-future-of-annual-accounts" component={ChoosingFilingSoftware} />
         <Route path="/blog/ct600-filing-simplified-guide-2025" component={AutomatingCorporationTax} />
         <Route path="/resources" component={Resources} />
@@ -107,7 +107,7 @@ function Router() {
         <Route path="/contact" component={Contact} />
         <Route path="/faq" component={FAQ} />
         <Route path="/blog" component={Blog} />
-        <Route path="/blog/april-2027-deadline" component={April2027Deadline} />
+        <Route path="/blog/companies-house-2027-digital-filing-mandate" component={April2027Deadline} />
         <Route path="/blog/understanding-ixbrl-future-of-annual-accounts" component={ChoosingFilingSoftware} />
         <Route path="/blog/ct600-filing-simplified-guide-2025" component={AutomatingCorporationTax} />
         <Route path="/resources" component={Resources} />

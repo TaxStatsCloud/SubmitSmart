@@ -140,7 +140,7 @@ export default function Blog() {
                 <Button 
                   variant="secondary" 
                   size="lg" 
-                  onClick={() => window.location.href = '/blog/april-2027-deadline'}
+                  onClick={() => window.location.href = `/blog/${blogPosts[0].slug}`}
                   data-testid="button-read-featured"
                 >
                   Read Article
