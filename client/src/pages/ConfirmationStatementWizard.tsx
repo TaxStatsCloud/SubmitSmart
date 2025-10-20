@@ -1367,12 +1367,10 @@ export default function ConfirmationStatementWizard() {
                   </Button>
                   <Button 
                     type="button" 
-                    onClick={onSubmit}
-                    disabled={submitToCompaniesHouseMutation.isPending || !form.watch("statementOfLawfulPurposes")}
-                    data-testid="button-submit"
+                    onClick={() => setCurrentStep(4)}
+                    data-testid="button-next"
                   >
-                    {submitToCompaniesHouseMutation.isPending ? "Submitting..." : "Submit to Companies House"}
-                    <Send className="ml-2 h-4 w-4" />
+                    Next: Documents <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
               </Card>
