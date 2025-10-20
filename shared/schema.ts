@@ -632,6 +632,24 @@ export const insertCreditTransactionSchema = createInsertSchema(creditTransactio
   stripePaymentId: true,
 });
 
+// Processed Webhook Events - For idempotent webhook processing
+export const processedWebhookEvents = pgTable("processed_webhook_events", {
+  id: serial("id").primaryKey(),
+  eventId: text("event_id").notNull().unique(), // Stripe payment_intent.id or other unique event identifier
+  eventType: text("event_type").notNull(), // e.g., 'stripe_payment_intent_succeeded'
+  processedAt: timestamp("processed_at").notNull().defaultNow(),
+  metadata: jsonb("metadata"), // Additional data about the event
+});
+
+export const insertProcessedWebhookEventSchema = createInsertSchema(processedWebhookEvents).pick({
+  eventId: true,
+  eventType: true,
+  metadata: true,
+});
+
+export type ProcessedWebhookEvent = typeof processedWebhookEvents.$inferSelect;
+export type InsertProcessedWebhookEvent = z.infer<typeof insertProcessedWebhookEventSchema>;
+
 // Prior Year Data for Comparative Reporting
 export const priorYearData = pgTable("prior_year_data", {
   id: serial("id").primaryKey(),

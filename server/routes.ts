@@ -376,7 +376,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const paymentIntent = event.data.object;
       const { credits, planId, userId } = paymentIntent.metadata;
       
-      // Add credits to user account and create transaction (with idempotency protection)
+      // Process webhook atomically with full idempotency protection
       if (userId && userId !== 'anonymous') {
         try {
           const creditAmount = parseInt(credits);
@@ -392,54 +392,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.json({received: true, error: 'Invalid user ID'});
           }
           
-          // IDEMPOTENCY CHECK: Check if this payment intent has already been processed
-          const existingTransactions = await storage.getAllTransactions();
-          const alreadyProcessed = existingTransactions.some(
-            t => t.relatedEntityType === 'credit_purchase' && t.relatedEntityId === paymentIntent.id
-          );
-          
-          if (alreadyProcessed) {
-            console.log(`[STRIPE-WEBHOOK] Payment ${paymentIntent.id} already processed, skipping duplicate`);
-            return res.json({received: true, status: 'duplicate'});
-          }
-          
-          // Get user and validate
-          const user = await storage.getUser(userIdNum);
-          if (!user) {
-            console.error(`[STRIPE-WEBHOOK] User ${userIdNum} not found`);
-            return res.json({received: true, error: 'User not found'});
-          }
-          
-          // Add credits to user account
-          await storage.updateUser(userIdNum, {
-            credits: (user.credits || 0) + creditAmount
-          });
-          
-          // Create transaction record for the purchase (idempotent thanks to check above)
-          await storage.createTransaction({
+          // Process webhook atomically - this handles:
+          // - Unique constraint on payment intent ID (prevents duplicates)
+          // - Atomic credit addition + transaction creation (rollback on failure)
+          // - All operations in a single database transaction
+          const result = await storage.processStripeWebhookAtomic({
+            eventId: paymentIntent.id,
             userId: userIdNum,
-            amount: creditAmount, // Positive amount for purchase
-            type: 'purchase',
-            description: `Credit purchase: ${planId || 'Credit pack'}`,
-            relatedEntityType: 'credit_purchase',
-            relatedEntityId: paymentIntent.id, // Unique payment intent ID for idempotency
+            credits: creditAmount,
+            planId: planId || 'credit_pack',
+            paymentIntentId: paymentIntent.id,
+            amount: paymentIntent.amount / 100, // Convert to pounds
           });
           
-          console.log(`[STRIPE-WEBHOOK] Successfully added ${creditAmount} credits to user ${userIdNum} (payment: ${paymentIntent.id})`);
+          console.log(`[STRIPE-WEBHOOK] Successfully processed payment ${paymentIntent.id}: ${creditAmount} credits added to user ${userIdNum}, new balance: ${result.newBalance}`);
           
-          // Send confirmation email
+          // Send confirmation email (non-critical, don't block on failure)
           try {
+            const user = await storage.getUser(userIdNum);
             await emailService.sendPaymentConfirmation(
-              paymentIntent.receipt_email || user.email || 'user@example.com',
-              paymentIntent.amount / 100, // Convert back to pounds
+              paymentIntent.receipt_email || user?.email || 'user@example.com',
+              paymentIntent.amount / 100,
               creditAmount
             );
           } catch (emailError: any) {
             console.error('[STRIPE-WEBHOOK] Email send failed (non-fatal):', emailError);
           }
         } catch (error: any) {
+          // Handle specific errors
+          if (error.message === 'ALREADY_PROCESSED') {
+            console.log(`[STRIPE-WEBHOOK] Payment ${paymentIntent.id} already processed (duplicate webhook), skipping`);
+            return res.json({received: true, status: 'duplicate'});
+          }
+          if (error.message === 'USER_NOT_FOUND') {
+            console.error(`[STRIPE-WEBHOOK] User not found: ${userId}`);
+            return res.json({received: true, error: 'User not found'});
+          }
+          
           console.error('[STRIPE-WEBHOOK] Error processing payment:', error);
-          // Return success to Stripe to prevent retries, but log the error
+          // Return success to Stripe to prevent infinite retries, but log the error
           return res.json({received: true, error: error.message});
         }
       }

@@ -144,6 +144,17 @@ export interface IStorage {
   createUserSubscription(data: InsertUserSubscription): Promise<UserSubscription>;
   updateUserSubscription(id: number, data: Partial<UserSubscription>): Promise<UserSubscription>;
   cancelUserSubscription(id: number, cancelAtPeriodEnd: boolean): Promise<UserSubscription>;
+  
+  // Webhook idempotency methods
+  isWebhookProcessed(eventId: string): Promise<boolean>;
+  processStripeWebhookAtomic(params: {
+    eventId: string;
+    userId: number;
+    credits: number;
+    planId: string;
+    paymentIntentId: string;
+    amount: number;
+  }): Promise<{ success: boolean; newBalance: number; transactionId: number }>;
 }
 
 export class MemStorage implements IStorage {
@@ -1229,6 +1240,24 @@ export class MemStorage implements IStorage {
   async deleteCompaniesHouseFiling(id: number): Promise<void> {
     this.companiesHouseFilings.delete(id);
   }
+
+  // Webhook idempotency methods (stub for MemStorage - not used in production)
+  async isWebhookProcessed(eventId: string): Promise<boolean> {
+    // MemStorage stub - always return false (no idempotency in memory)
+    return false;
+  }
+
+  async processStripeWebhookAtomic(params: {
+    eventId: string;
+    userId: number;
+    credits: number;
+    planId: string;
+    paymentIntentId: string;
+    amount: number;
+  }): Promise<{ success: boolean; newBalance: number; transactionId: number }> {
+    // MemStorage stub - not implemented for production
+    throw new Error('MemStorage does not support atomic webhook processing - use DatabaseStorage');
+  }
 }
 
 // Database implementation of IStorage
@@ -2250,6 +2279,89 @@ export class DatabaseStorage implements IStorage {
     }
     
     return cancelledSubscription;
+  }
+
+  // Webhook idempotency methods
+  async isWebhookProcessed(eventId: string): Promise<boolean> {
+    const [event] = await db
+      .select()
+      .from(processedWebhookEvents)
+      .where(eq(processedWebhookEvents.eventId, eventId));
+    return !!event;
+  }
+
+  async processStripeWebhookAtomic(params: {
+    eventId: string;
+    userId: number;
+    credits: number;
+    planId: string;
+    paymentIntentId: string;
+    amount: number;
+  }): Promise<{ success: boolean; newBalance: number; transactionId: number }> {
+    // Use database transaction for atomicity
+    return await db.transaction(async (tx) => {
+      // 1. Check if already processed (unique constraint will prevent duplicates)
+      try {
+        await tx.insert(processedWebhookEvents).values({
+          eventId: params.eventId,
+          eventType: 'stripe_payment_intent_succeeded',
+          metadata: {
+            userId: params.userId,
+            credits: params.credits,
+            planId: params.planId,
+            paymentIntentId: params.paymentIntentId,
+            amount: params.amount
+          }
+        });
+      } catch (error: any) {
+        // If unique constraint violation, this event was already processed
+        if (error.code === '23505') { // PostgreSQL unique violation error code
+          throw new Error('ALREADY_PROCESSED');
+        }
+        throw error;
+      }
+
+      // 2. Get current user
+      const [user] = await tx.select().from(users).where(eq(users.id, params.userId));
+      if (!user) {
+        throw new Error('USER_NOT_FOUND');
+      }
+
+      // 3. Calculate new balance
+      const newBalance = (user.credits || 0) + params.credits;
+
+      // 4. Update user credits
+      await tx
+        .update(users)
+        .set({ 
+          credits: newBalance,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, params.userId));
+
+      // 5. Create transaction record
+      const [transaction] = await tx
+        .insert(creditTransactions)
+        .values({
+          userId: params.userId,
+          type: 'purchase',
+          amount: params.credits,
+          balance: newBalance,
+          description: `Credit purchase: ${params.planId}`,
+          metadata: {
+            planId: params.planId,
+            amount: params.amount
+          },
+          stripePaymentId: params.paymentIntentId,
+        })
+        .returning();
+
+      return {
+        success: true,
+        newBalance,
+        transactionId: transaction.id
+      };
+    });
   }
 }
 
