@@ -137,7 +137,12 @@ export default function Blog() {
                     {blogPosts[0].readTime}
                   </span>
                 </div>
-                <Button variant="secondary" size="lg" data-testid="button-read-featured">
+                <Button 
+                  variant="secondary" 
+                  size="lg" 
+                  onClick={() => window.location.href = '/blog/april-2027-deadline'}
+                  data-testid="button-read-featured"
+                >
                   Read Article
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
@@ -147,7 +152,12 @@ export default function Blog() {
             {/* Blog Grid */}
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {blogPosts.slice(1).map((post, idx) => (
-                <Card key={idx} className="border-none shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur hover:shadow-2xl transition-shadow cursor-pointer" data-testid={`card-blog-${idx}`}>
+                <Card 
+                  key={idx} 
+                  className="border-none shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur hover:shadow-2xl transition-shadow cursor-pointer" 
+                  onClick={() => window.location.href = `/blog/${post.slug}`}
+                  data-testid={`card-blog-${idx}`}
+                >
                   <CardHeader>
                     <Badge variant="outline" className="w-fit mb-2">{post.category}</Badge>
                     <CardTitle className="hover:text-primary transition-colors">{post.title}</CardTitle>
@@ -164,7 +174,15 @@ export default function Blog() {
                         {post.readTime}
                       </span>
                     </div>
-                    <Button variant="ghost" className="w-full" data-testid={`button-read-${idx}`}>
+                    <Button 
+                      variant="ghost" 
+                      className="w-full" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.location.href = `/blog/${post.slug}`;
+                      }}
+                      data-testid={`button-read-${idx}`}
+                    >
                       Read More
                       <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>

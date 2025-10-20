@@ -62,6 +62,9 @@ import OnboardingTutorial from "@/pages/OnboardingTutorial";
 import Contact from "@/pages/Contact";
 import FAQ from "@/pages/FAQ";
 import Blog from "@/pages/Blog";
+import April2027Deadline from "@/pages/blog/April2027Deadline";
+import ChoosingFilingSoftware from "@/pages/blog/ChoosingFilingSoftware";
+import AutomatingCorporationTax from "@/pages/blog/AutomatingCorporationTax";
 import Resources from "@/pages/Resources";
 import { ProtectedRoute } from "@/lib/protected-route";
 
@@ -80,6 +83,9 @@ function Router() {
         <Route path="/contact" component={Contact} />
         <Route path="/faq" component={FAQ} />
         <Route path="/blog" component={Blog} />
+        <Route path="/blog/april-2027-deadline" component={April2027Deadline} />
+        <Route path="/blog/understanding-ixbrl-future-of-annual-accounts" component={ChoosingFilingSoftware} />
+        <Route path="/blog/ct600-filing-simplified-guide-2025" component={AutomatingCorporationTax} />
         <Route path="/resources" component={Resources} />
         <Route component={Landing} />
       </Switch>
@@ -101,6 +107,9 @@ function Router() {
         <Route path="/contact" component={Contact} />
         <Route path="/faq" component={FAQ} />
         <Route path="/blog" component={Blog} />
+        <Route path="/blog/april-2027-deadline" component={April2027Deadline} />
+        <Route path="/blog/understanding-ixbrl-future-of-annual-accounts" component={ChoosingFilingSoftware} />
+        <Route path="/blog/ct600-filing-simplified-guide-2025" component={AutomatingCorporationTax} />
         <Route path="/resources" component={Resources} />
         
         {/* Onboarding */}
