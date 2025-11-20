@@ -16,10 +16,33 @@ export function initWebSocket(): WebSocket {
     return socket;
   }
 
-  // Get the correct WebSocket URL
-  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  const host = window.location.host;
-  const wsUrl = `${protocol}//${host}/api/ws`;
+  // Get the correct WebSocket URL with proper fallback
+  let wsUrl: string;
+  try {
+    // Preferred: Use origin which includes protocol, hostname, and port
+    const origin = window.location.origin;
+    const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    
+    // Replace http/https with ws/wss
+    wsUrl = origin.replace(/^https?:/, wsProtocol) + "/api/ws";
+    
+    // Fallback: If origin didn't work, construct manually
+    if (!wsUrl || wsUrl.includes("undefined")) {
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const host = window.location.host || "localhost:5000";
+      wsUrl = `${protocol}//${host}/api/ws`;
+    }
+  } catch (e) {
+    // Last resort fallback
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    wsUrl = `${protocol}//localhost:5000/api/ws`;
+  }
+  
+  // Validate URL before creating socket
+  if (!wsUrl || wsUrl.includes("undefined")) {
+    console.error("Failed to construct valid WebSocket URL:", wsUrl);
+    throw new Error("Invalid WebSocket URL");
+  }
   
   // Create new WebSocket
   socket = new WebSocket(wsUrl);

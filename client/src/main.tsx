@@ -3,6 +3,15 @@ import App from "./App";
 import "./index.css";
 import { Helmet, HelmetProvider } from "react-helmet-async";
 
+// Suppress unhandled Vite HMR WebSocket errors in development
+if (import.meta.env.DEV) {
+  window.addEventListener("unhandledrejection", (event) => {
+    if (event.reason?.message?.includes("WebSocket") && event.reason?.message?.includes("undefined")) {
+      event.preventDefault();
+    }
+  });
+}
+
 createRoot(document.getElementById("root")!).render(
   <HelmetProvider>
     <Helmet>
