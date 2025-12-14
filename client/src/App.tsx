@@ -18,6 +18,8 @@ import Credits from "@/pages/Credits";
 import CreditTransactions from "@/pages/CreditTransactions";
 import AppLayout from "@/components/layout/AppLayout";
 import Login from "@/pages/Login";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import Subscription from "@/pages/Subscription";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { AiAssistantProvider } from "@/contexts/AiAssistantContext";
@@ -78,6 +80,9 @@ function Router() {
       <Switch>
         <Route path="/" component={Landing} />
         <Route path="/auth" component={AuthPage} />
+        <Route path="/login" component={Login} />
+        <Route path="/forgot-password" component={ForgotPassword} />
+        <Route path="/reset-password" component={ResetPassword} />
         <Route path="/terms" component={Terms} />
         <Route path="/privacy" component={Privacy} />
         <Route path="/disclaimer" component={Disclaimer} />

@@ -70,6 +70,49 @@ router.get('/filing-costs', async (req, res) => {
   }
 });
 
+// Pre-filing credit validation - check if user has enough credits before starting a filing
+router.get('/validate-credits/:filingType', async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const { filingType } = req.params;
+    const userId = (req.user as any).id;
+
+    // Get user's current credits
+    const userCredits = await storage.getUserCredits(userId);
+
+    // Get cost for this filing type
+    const filingCosts = await storage.getAllFilingCosts();
+    const cost = filingCosts.find((c: any) => c.filingType === filingType);
+
+    if (!cost) {
+      return res.status(404).json({
+        error: `Filing type '${filingType}' not found`,
+        valid: false
+      });
+    }
+
+    const hasEnoughCredits = userCredits >= cost.creditCost;
+    const shortfall = hasEnoughCredits ? 0 : cost.creditCost - userCredits;
+
+    res.json({
+      valid: hasEnoughCredits,
+      currentCredits: userCredits,
+      requiredCredits: cost.creditCost,
+      shortfall,
+      filingType,
+      message: hasEnoughCredits
+        ? `You have enough credits for this filing (${userCredits} available, ${cost.creditCost} required)`
+        : `You need ${shortfall} more credits for this filing (${userCredits} available, ${cost.creditCost} required)`
+    });
+  } catch (error) {
+    console.error('Error validating credits:', error);
+    res.status(500).json({ error: 'Failed to validate credits' });
+  }
+});
+
 // Get user's credit transaction history
 router.get('/transactions', async (req, res) => {
   try {

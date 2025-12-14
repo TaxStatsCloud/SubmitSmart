@@ -24,6 +24,7 @@ import { FilingSubmissionWarning } from "@/components/filing/FilingSubmissionWar
 import { DocumentSelector } from "@/components/filings/DocumentSelector";
 import { PriorYearComparisonTable } from "@/components/ct600/PriorYearComparisonTable";
 import { CT600BoxSummary } from "@/components/ct600/CT600BoxGuidance";
+import { CreditBalanceCheck } from "@/components/billing/CreditBalanceCheck";
 
 // Company validation result interface
 interface CompanyValidationResult {
@@ -456,6 +457,14 @@ export default function CT600Filing() {
           <span className={`text-xs ${currentStep >= 4 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Review</span>
           <span className={`text-xs ${currentStep >= 5 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Submit</span>
         </div>
+      </div>
+
+      {/* Credit Balance Check */}
+      <div className="mb-6">
+        <CreditBalanceCheck
+          filingType="ct600"
+          filingTypeName="Corporation Tax"
+        />
       </div>
 
       {/* Pre-fill Notification */}

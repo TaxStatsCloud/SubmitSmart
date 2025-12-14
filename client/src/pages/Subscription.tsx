@@ -1,13 +1,15 @@
 import { useStripe, Elements, PaymentElement, useElements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Check, Crown, Star, Zap, Shield } from 'lucide-react';
+import { Check, Crown, Star, Zap, Shield, Loader2, CreditCard } from 'lucide-react';
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 // Make sure to call `loadStripe` outside of a component's render to avoid
 // recreating the `Stripe` object on every render.
@@ -149,19 +151,47 @@ const SubscribeForm = ({ selectedPlan }: { selectedPlan: any }) => {
 export default function Subscription() {
   const [selectedPlan, setSelectedPlan] = useState(pricingPlans[1]); // Default to Professional
   const [clientSecret, setClientSecret] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  // Fetch current user credits
+  const { data: creditsData } = useQuery({
+    queryKey: ['/api/billing/credits'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/billing/credits');
+      return res.json();
+    },
+    enabled: !!user
+  });
+
+  // Fetch filing costs to show users what credits can be used for
+  const { data: filingCostsData } = useQuery({
+    queryKey: ['/api/billing/filing-costs'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/billing/filing-costs');
+      return res.json();
+    }
+  });
 
   const handleSelectPlan = async (plan: any) => {
     setSelectedPlan(plan);
-    setLoading(true);
-    
+    setPaymentLoading(true);
+
     try {
-      const response = await apiRequest("POST", "/api/create-payment-intent", { 
-        amount: plan.price,
+      // Create payment intent with the correct billing endpoint
+      // Use a generic amount-based payment since packages are hardcoded on frontend
+      const response = await apiRequest("POST", "/api/billing/create-payment-intent", {
+        packageId: 1, // Default package ID - will use the price from frontend
+        amount: Math.round(plan.price * 100), // Convert to pence
         credits: plan.credits,
         planId: plan.id
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to create payment intent');
+      }
+
       const data = await response.json();
       setClientSecret(data.clientSecret);
     } catch (error) {
@@ -171,28 +201,45 @@ export default function Subscription() {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setPaymentLoading(false);
     }
   };
-
-  if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-950">
       <div className="container mx-auto px-6 py-12 max-w-7xl">
+        {/* Current Credits Banner - show when user is logged in */}
+        {user && creditsData && (
+          <div className="max-w-3xl mx-auto mb-8">
+            <Card className="bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0">
+              <CardContent className="py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-white/20 p-2 rounded-lg">
+                      <CreditCard className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm opacity-90">Your Current Balance</p>
+                      <p className="text-2xl font-bold">{creditsData.credits} Credits</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm opacity-90">Credits never expire</p>
+                    <p className="text-sm opacity-75">Use for any filing type</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         <div className="text-center mb-16">
           <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 text-sm font-bold mb-6">
             <Zap className="h-4 w-4 mr-2" />
             AI-Powered Corporate Compliance
           </div>
           <h1 className="text-5xl font-bold text-neutral-900 dark:text-neutral-100 mb-6">
-            Choose Your Plan
+            {user ? 'Buy More Credits' : 'Choose Your Plan'}
           </h1>
           <p className="text-xl text-neutral-800 dark:text-neutral-200 mb-8 max-w-2xl mx-auto font-medium">
             Professional-grade UK compliance automation with enterprise-level security and support
@@ -200,7 +247,7 @@ export default function Subscription() {
           <Alert className="max-w-3xl mx-auto mb-12 border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950">
             <Shield className="h-5 w-5 text-amber-600 dark:text-amber-400" />
             <AlertDescription className="text-amber-900 dark:text-amber-100 font-medium">
-              <strong className="font-bold">April 2027 Mandate:</strong> All UK companies must use software for filing. 
+              <strong className="font-bold">April 2027 Mandate:</strong> All UK companies must use software for filing.
               Join 10,000+ companies already using our platform - no long-term contracts required.
             </AlertDescription>
           </Alert>
@@ -251,15 +298,25 @@ export default function Subscription() {
                   ))}
                 </ul>
                 
-                <Button 
+                <Button
                   onClick={() => handleSelectPlan(plan)}
                   variant={selectedPlan.id === plan.id ? "default" : "outline"}
                   className={`w-full py-3 text-base font-bold transition-all border-2 ${
                     plan.popular ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white' : ''
                   }`}
                   size="lg"
+                  disabled={paymentLoading && selectedPlan.id === plan.id}
                 >
-                  {selectedPlan.id === plan.id ? 'Selected' : 'Get Started'}
+                  {paymentLoading && selectedPlan.id === plan.id ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : selectedPlan.id === plan.id && clientSecret ? (
+                    'Selected - Complete Payment Below'
+                  ) : (
+                    'Get Started'
+                  )}
                 </Button>
               </CardContent>
             </Card>

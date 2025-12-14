@@ -14,6 +14,75 @@ class EmailService {
     console.log('📧 EmailService: SendGrid API initialized');
   }
 
+  /**
+   * Send password reset email
+   */
+  async sendPasswordResetEmail(params: {
+    to: string;
+    userName: string;
+    resetToken: string;
+    resetUrl: string;
+  }): Promise<boolean> {
+    try {
+      await this.mailService.send({
+        to: params.to,
+        from: 'support@promptsubmissions.com',
+        subject: 'Reset Your Password - PromptSubmissions',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px 20px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px;">Password Reset Request</h1>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">PromptSubmissions</p>
+            </div>
+
+            <div style="padding: 30px 20px;">
+              <h2 style="color: #333; margin-bottom: 20px;">Hello ${params.userName},</h2>
+
+              <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+                We received a request to reset the password for your PromptSubmissions account.
+                If you didn't make this request, you can safely ignore this email.
+              </p>
+
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${params.resetUrl}"
+                   style="background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                  Reset Your Password
+                </a>
+              </div>
+
+              <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;">
+                <p style="color: #856404; margin: 0; font-size: 14px;">
+                  <strong>Important:</strong> This link will expire in 1 hour for security reasons.
+                  If you need a new link, please request another password reset.
+                </p>
+              </div>
+
+              <p style="color: #666; line-height: 1.6; font-size: 14px;">
+                If the button above doesn't work, copy and paste this link into your browser:
+                <br>
+                <a href="${params.resetUrl}" style="color: #667eea; word-break: break-all;">${params.resetUrl}</a>
+              </p>
+            </div>
+
+            <div style="background: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #e9ecef;">
+              <p style="color: #666; margin: 0; font-size: 14px;">
+                PromptSubmissions - AI-Powered UK Corporate Compliance
+              </p>
+              <p style="color: #999; margin: 10px 0 0 0; font-size: 12px;">
+                If you didn't request this reset, please contact support@promptsubmissions.com
+              </p>
+            </div>
+          </div>
+        `,
+      });
+      console.log(`✅ Password reset email sent to ${params.to}`);
+      return true;
+    } catch (error) {
+      console.error('❌ Error sending password reset email:', error);
+      return false;
+    }
+  }
+
   async sendWelcomeEmail(to: string, userName: string): Promise<boolean> {
     try {
       await this.mailService.send({
