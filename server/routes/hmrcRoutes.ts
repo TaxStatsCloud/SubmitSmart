@@ -149,6 +149,49 @@ router.post('/ct600/validate-period', async (req, res) => {
   }
 });
 
+/**
+ * Search companies by name
+ * Returns list of matching companies from Companies House
+ */
+router.get('/ct600/search-companies', async (req, res) => {
+  try {
+    const { q, limit } = req.query;
+
+    if (!q || typeof q !== 'string' || q.length < 2) {
+      return res.status(400).json({
+        message: 'Search query must be at least 2 characters'
+      });
+    }
+
+    const { companiesHouseService } = await import('../services/companiesHouseService');
+    const results = await companiesHouseService.searchCompanies(q, Number(limit) || 10);
+
+    // Transform results for easier consumption
+    const companies = results.items?.map((item: any) => ({
+      companyNumber: item.company_number,
+      companyName: item.title,
+      companyStatus: item.company_status,
+      companyType: item.company_type,
+      incorporationDate: item.date_of_creation,
+      address: item.address_snippet,
+      matchedPreviousCompanyName: item.matched_previous_company_name
+    })) || [];
+
+    res.json({
+      success: true,
+      query: q,
+      totalResults: results.total_results || 0,
+      companies
+    });
+  } catch (error: any) {
+    console.error('[CT600] Company search error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to search companies'
+    });
+  }
+});
+
 // ============================================================================
 // CT600 SUBMISSION ENDPOINTS (Existing)
 // ============================================================================
@@ -337,6 +380,154 @@ router.post('/ct600/compute-and-submit', async (req, res) => {
     });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+// ============================================================================
+// FILING STATUS TRACKING ENDPOINTS
+// ============================================================================
+
+/**
+ * Get all filings for the current user
+ */
+router.get('/filings', async (req: any, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const { filingStatusService } = await import('../services/filingStatusService');
+    const filings = await filingStatusService.getUserFilings(userId);
+
+    res.json({
+      success: true,
+      filings
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/**
+ * Get a specific filing by ID
+ */
+router.get('/filings/:id', async (req: any, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const filingId = parseInt(req.params.id);
+    if (isNaN(filingId)) {
+      return res.status(400).json({ message: 'Invalid filing ID' });
+    }
+
+    const { filingStatusService } = await import('../services/filingStatusService');
+    const filing = await filingStatusService.getFilingById(filingId, userId);
+
+    if (!filing) {
+      return res.status(404).json({ message: 'Filing not found' });
+    }
+
+    res.json({
+      success: true,
+      filing
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/**
+ * Poll HMRC for filing status update
+ */
+router.post('/filings/:id/poll', async (req: any, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const filingId = parseInt(req.params.id);
+    if (isNaN(filingId)) {
+      return res.status(400).json({ message: 'Invalid filing ID' });
+    }
+
+    const { filingStatusService } = await import('../services/filingStatusService');
+    const filing = await filingStatusService.getFilingById(filingId, userId);
+
+    if (!filing) {
+      return res.status(404).json({ message: 'Filing not found' });
+    }
+
+    const correlationId = filing.data?.correlationId;
+    if (!correlationId) {
+      return res.status(400).json({ message: 'Filing has no correlation ID - not yet submitted to HMRC' });
+    }
+
+    const pollResult = await filingStatusService.pollAndUpdateStatus(filingId, correlationId);
+
+    res.json({
+      success: true,
+      ...pollResult
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ============================================================================
+// PDF EXPORT ENDPOINT
+// ============================================================================
+
+/**
+ * Generate PDF summary of CT600 submission
+ */
+router.post('/ct600/export-pdf', async (req, res) => {
+  try {
+    const { ct600Data } = req.body;
+
+    if (!ct600Data) {
+      return res.status(400).json({ message: 'CT600 data is required' });
+    }
+
+    const { ct600PdfService } = await import('../services/ct600PdfService');
+    const pdfBuffer = await ct600PdfService.generateCT600Pdf({
+      companyName: ct600Data.companyName,
+      companyNumber: ct600Data.companyNumber,
+      utr: ct600Data.utr,
+      accountingPeriodStart: ct600Data.accountingPeriodStart,
+      accountingPeriodEnd: ct600Data.accountingPeriodEnd,
+      turnover: ct600Data.turnover || 0,
+      costOfSales: ct600Data.costOfSales || 0,
+      operatingExpenses: ct600Data.operatingExpenses || 0,
+      tradingProfit: ct600Data.tradingProfit || 0,
+      interestReceived: ct600Data.interestReceived,
+      dividendsReceived: ct600Data.dividendsReceived,
+      propertyIncome: ct600Data.propertyIncome,
+      depreciationAddBack: ct600Data.depreciationAddBack,
+      capitalAllowances: ct600Data.capitalAllowances,
+      lossesBroughtForward: ct600Data.lossesBroughtForward,
+      charitableDonations: ct600Data.charitableDonations,
+      profitsBeforeReliefs: ct600Data.profitsBeforeReliefs || 0,
+      totalProfitsChargeable: ct600Data.totalProfitsChargeable || 0,
+      corporationTaxRate: ct600Data.corporationTaxRate || 19,
+      corporationTaxDue: ct600Data.corporationTaxDue || 0,
+      marginalRelief: ct600Data.marginalRelief,
+      paymentDueDate: ct600Data.paymentDueDate,
+      filingDueDate: ct600Data.filingDueDate,
+      submissionDate: ct600Data.submissionDate,
+      correlationId: ct600Data.correlationId
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=CT600-${ct600Data.companyNumber}-${ct600Data.accountingPeriodEnd}.pdf`);
+    res.send(pdfBuffer);
+  } catch (error: any) {
+    console.error('[CT600] PDF export error:', error);
+    res.status(500).json({ message: error.message || 'Failed to generate PDF' });
   }
 });
 

@@ -34,6 +34,7 @@ import DocumentLibrary from "@/pages/DocumentLibrary";
 import ConfirmationStatement from "@/pages/ConfirmationStatement";
 import AnnualAccounts from "@/pages/AnnualAccounts";
 import CT600Filing from "@/pages/CT600Filing";
+import FilingStatusDashboard from "@/pages/FilingStatusDashboard";
 import AnnualAccountsWizard from "@/pages/AnnualAccountsWizard";
 import ConfirmationStatementWizard from "@/pages/ConfirmationStatementWizard";
 import AdminDashboard from "@/pages/AdminDashboard";
@@ -120,6 +121,7 @@ function Router() {
         <Route path="/filings/confirmation-statements" component={ConfirmationStatement} />
         <Route path="/filings/annual-accounts" component={AnnualAccounts} />
         <Route path="/filings/corporation-tax" component={CT600Filing} />
+        <Route path="/filings/status" component={FilingStatusDashboard} />
         <Route path="/filings/review" component={FilingReview} />
         
         {/* Filing Wizards */}

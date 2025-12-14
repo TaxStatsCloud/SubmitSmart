@@ -126,6 +126,8 @@ export default function CT600Filing() {
   const [companyValidation, setCompanyValidation] = useState<CompanyValidationResult | null>(null);
   const [isValidatingCompany, setIsValidatingCompany] = useState(false);
   const [companyLookupComplete, setCompanyLookupComplete] = useState(false);
+  const [utrValidation, setUtrValidation] = useState<{ valid: boolean; message: string } | null>(null);
+  const [isValidatingUtr, setIsValidatingUtr] = useState(false);
 
   const form = useForm<CT600FormData>({
     resolver: zodResolver(ct600Schema),
@@ -323,6 +325,65 @@ export default function CT600Filing() {
     }
   }, [validateCompanyMutation]);
 
+  // UTR validation mutation
+  const validateUtrMutation = useMutation({
+    mutationFn: async (utr: string) => {
+      const response = await apiRequest('POST', '/api/hmrc/ct600/validate-utr', { utr });
+      return response.json();
+    },
+    onSuccess: (data: { valid: boolean; message: string }) => {
+      setUtrValidation(data);
+      setIsValidatingUtr(false);
+    },
+    onError: () => {
+      setIsValidatingUtr(false);
+      setUtrValidation({ valid: false, message: 'Unable to validate UTR' });
+    },
+  });
+
+  // Handler for UTR validation
+  const handleUtrValidation = useCallback((utr: string) => {
+    const cleanUtr = utr.replace(/[\s-]/g, '');
+    if (cleanUtr.length === 10) {
+      setIsValidatingUtr(true);
+      validateUtrMutation.mutate(cleanUtr);
+    } else if (cleanUtr.length > 0) {
+      setUtrValidation({ valid: false, message: 'UTR must be exactly 10 digits' });
+    } else {
+      setUtrValidation(null);
+    }
+  }, [validateUtrMutation]);
+
+  // Check if submission should be blocked
+  const isSubmissionBlocked = useCallback(() => {
+    // Block if company validation shows ineligible
+    if (companyLookupComplete && companyValidation && !companyValidation.isEligible) {
+      // Allow submission for dissolved companies (final returns)
+      if (companyValidation.companyStatus === 'dissolved') {
+        return false;
+      }
+      return true;
+    }
+    // Block if UTR is invalid
+    if (utrValidation && !utrValidation.valid) {
+      return true;
+    }
+    return false;
+  }, [companyLookupComplete, companyValidation, utrValidation]);
+
+  // Get submission block reason
+  const getSubmissionBlockReason = useCallback(() => {
+    if (companyLookupComplete && companyValidation && !companyValidation.isEligible) {
+      if (companyValidation.companyStatus !== 'dissolved') {
+        return `Company is not eligible for CT600 filing: ${companyValidation.eligibilityReasons[0] || 'Unknown reason'}`;
+      }
+    }
+    if (utrValidation && !utrValidation.valid) {
+      return `UTR validation failed: ${utrValidation.message}`;
+    }
+    return null;
+  }, [companyLookupComplete, companyValidation, utrValidation]);
+
   const onComputeTax = async () => {
     const isValid = await form.trigger();
     if (isValid) {
@@ -331,6 +392,16 @@ export default function CT600Filing() {
   };
 
   const onSubmitToHMRC = () => {
+    // Check if submission should be blocked
+    if (isSubmissionBlocked()) {
+      const reason = getSubmissionBlockReason();
+      toast({
+        title: "Submission Blocked",
+        description: reason || "Cannot submit CT600 at this time",
+        variant: "destructive",
+      });
+      return;
+    }
     setShowSubmissionWarning(true);
   };
 
@@ -569,16 +640,43 @@ export default function CT600Filing() {
                         <FormItem>
                           <FormLabel className="flex items-center gap-2">
                             Unique Taxpayer Reference (UTR) *
-                            <FieldHint 
+                            <FieldHint
                               description="Your 10-digit UTR is HMRC's unique identifier for your company's tax affairs. Find it on Corporation Tax letters, your HMRC online account, or payslips."
                               example="1234567890 (exactly 10 digits)"
                               type="help"
                             />
                           </FormLabel>
-                          <FormControl>
-                            <Input placeholder="1234567890" {...field} data-testid="input-utr" />
-                          </FormControl>
-                          <FormDescription>10-digit reference from HMRC</FormDescription>
+                          <div className="flex gap-2">
+                            <FormControl>
+                              <Input
+                                placeholder="1234567890"
+                                {...field}
+                                data-testid="input-utr"
+                                className="flex-1"
+                                onBlur={(e) => {
+                                  field.onBlur();
+                                  handleUtrValidation(e.target.value);
+                                }}
+                              />
+                            </FormControl>
+                            {isValidatingUtr && <Loader2 className="h-4 w-4 animate-spin mt-2" />}
+                            {utrValidation && !isValidatingUtr && (
+                              utrValidation.valid ? (
+                                <CheckCircle className="h-4 w-4 text-green-600 mt-2" />
+                              ) : (
+                                <XCircle className="h-4 w-4 text-red-600 mt-2" />
+                              )
+                            )}
+                          </div>
+                          <FormDescription>
+                            {utrValidation ? (
+                              <span className={utrValidation.valid ? "text-green-600" : "text-red-600"}>
+                                {utrValidation.message}
+                              </span>
+                            ) : (
+                              "10-digit reference from HMRC"
+                            )}
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -1416,14 +1514,15 @@ export default function CT600Filing() {
                 >
                   <ArrowLeft className="mr-2 h-4 w-4" /> Back
                 </Button>
-                <Button 
-                  type="button" 
+                <Button
+                  type="button"
                   onClick={onSubmitToHMRC}
-                  disabled={submitToHMRCMutation.isPending}
+                  disabled={submitToHMRCMutation.isPending || isSubmissionBlocked()}
                   data-testid="button-submit-hmrc"
+                  title={isSubmissionBlocked() ? getSubmissionBlockReason() || "Submission blocked" : "Submit to HMRC"}
                 >
-                  {submitToHMRCMutation.isPending ? "Submitting..." : "Submit to HMRC"}
-                  <Send className="ml-2 h-4 w-4" />
+                  {submitToHMRCMutation.isPending ? "Submitting..." : isSubmissionBlocked() ? "Submission Blocked" : "Submit to HMRC"}
+                  {isSubmissionBlocked() ? <XCircle className="ml-2 h-4 w-4" /> : <Send className="ml-2 h-4 w-4" />}
                 </Button>
               </div>
             </Card>

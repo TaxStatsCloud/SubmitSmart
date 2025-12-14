@@ -67,71 +67,115 @@ class CompaniesHouseService {
     }
   }
 
-  private async makeRequest(path: string): Promise<any> {
+  /**
+   * Sleep utility for retry delays
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Make HTTP request with retry logic and exponential backoff
+   */
+  private async makeRequest(path: string, retries: number = 3): Promise<any> {
     if (this.apiKey === 'disabled') {
       throw new Error('Companies House API is disabled - API key not provided');
     }
-    
-    return new Promise((resolve, reject) => {
-      const options = {
-        hostname: 'api.company-information.service.gov.uk',
-        port: 443,
-        path,
-        method: 'GET',
-        headers: {
-          'Authorization': `Basic ${Buffer.from(this.apiKey + ':').toString('base64')}`,
-          'Accept': 'application/json',
-          'User-Agent': 'PromptSubmissions/1.0'
-        }
-      };
 
-      const req = https.request(options, (res) => {
-        let data = '';
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
-        
-        res.on('end', () => {
-          try {
-            const parsed = JSON.parse(data);
-            if (res.statusCode === 200) {
-              resolve(parsed);
-            } else {
+    const makeAttempt = (): Promise<any> => {
+      return new Promise((resolve, reject) => {
+        const options = {
+          hostname: 'api.company-information.service.gov.uk',
+          port: 443,
+          path,
+          method: 'GET',
+          headers: {
+            'Authorization': `Basic ${Buffer.from(this.apiKey + ':').toString('base64')}`,
+            'Accept': 'application/json',
+            'User-Agent': 'PromptSubmissions/1.0'
+          }
+        };
+
+        const req = https.request(options, (res) => {
+          let data = '';
+          res.on('data', (chunk) => {
+            data += chunk;
+          });
+
+          res.on('end', () => {
+            try {
+              const parsed = JSON.parse(data);
+              if (res.statusCode === 200) {
+                resolve(parsed);
+              } else {
+                reject({
+                  status: res.statusCode,
+                  error: parsed,
+                  message: parsed.error || 'Unknown error',
+                  retryable: res.statusCode === 429 || res.statusCode === 503 || res.statusCode === 502
+                });
+              }
+            } catch (error) {
               reject({
                 status: res.statusCode,
-                error: parsed,
-                message: parsed.error || 'Unknown error'
+                error: 'Invalid JSON response',
+                message: data,
+                retryable: false
               });
             }
-          } catch (error) {
-            reject({
-              status: res.statusCode,
-              error: 'Invalid JSON response',
-              message: data
-            });
-          }
+          });
         });
-      });
 
-      req.on('error', (error) => {
-        reject({
-          status: 0,
-          error: 'Connection error',
-          message: error.message
+        req.on('error', (error) => {
+          reject({
+            status: 0,
+            error: 'Connection error',
+            message: error.message,
+            retryable: true // Network errors are retryable
+          });
         });
-      });
 
-      req.setTimeout(10000, () => {
-        req.destroy();
-        reject({
-          status: 0,
-          error: 'Request timeout',
-          message: 'Request timed out after 10 seconds'
+        req.setTimeout(15000, () => {
+          req.destroy();
+          reject({
+            status: 0,
+            error: 'Request timeout',
+            message: 'Request timed out after 15 seconds',
+            retryable: true // Timeouts are retryable
+          });
         });
-      });
 
-      req.end();
-    });
+        req.end();
+      });
+    };
+
+    // Attempt with exponential backoff retry
+    let lastError: any;
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        return await makeAttempt();
+      } catch (error: any) {
+        lastError = error;
+
+        // Don't retry non-retryable errors (404, 400, etc.)
+        if (!error.retryable) {
+          throw error;
+        }
+
+        // Don't retry if we've exhausted all attempts
+        if (attempt === retries) {
+          console.error(`[Companies House] All ${retries + 1} attempts failed for ${path}`);
+          throw error;
+        }
+
+        // Exponential backoff: 1s, 2s, 4s
+        const delay = Math.pow(2, attempt) * 1000;
+        console.log(`[Companies House] Attempt ${attempt + 1} failed, retrying in ${delay}ms...`);
+        await this.sleep(delay);
+      }
+    }
+
+    throw lastError;
   }
 
   async getCompanyInfo(companyNumber: string): Promise<CompanyInfo> {
