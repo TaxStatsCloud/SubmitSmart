@@ -1,10 +1,8 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
+import pg from "pg";
+import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "@shared/schema";
 
-// Configure WebSocket for Neon database connection
-neonConfig.webSocketConstructor = ws;
+const { Pool } = pg;
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
@@ -12,8 +10,23 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Create database connection pool
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+// Create database connection pool using standard pg (TCP)
+export const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL?.includes("railway.internal")
+    ? false
+    : process.env.NODE_ENV === "production"
+    ? { rejectUnauthorized: false }
+    : false,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
+});
+
+// Test connection on startup
+pool.query("SELECT 1")
+  .then(() => console.log("Database connected successfully"))
+  .catch((err) => console.error("Database connection failed:", err.message));
 
 // Initialize Drizzle ORM with our schema
 export const db = drizzle(pool, { schema });
@@ -31,7 +44,7 @@ export async function executeQuery(query: string, params: any[] = []) {
 
 export async function executeTransaction<T>(callback: () => Promise<T>): Promise<T> {
   const client = await pool.connect();
-  
+
   try {
     await client.query('BEGIN');
     const result = await callback();

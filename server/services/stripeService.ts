@@ -8,14 +8,19 @@ import Stripe from 'stripe';
 import { storage } from '../storage';
 import { CreditPackage } from '@shared/schema';
 
-// Initialize Stripe with API key
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('Missing required environment variable: STRIPE_SECRET_KEY');
+// Lazy-initialize Stripe to avoid crashing at startup if key is missing
+let _stripe: Stripe | null = null;
+function getStripe(): Stripe {
+  if (!_stripe) {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error('Missing required environment variable: STRIPE_SECRET_KEY');
+    }
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2023-10-16',
+    });
+  }
+  return _stripe;
 }
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2023-10-16', // Specify API version
-});
 
 /**
  * Create a payment intent for purchasing credits
@@ -60,7 +65,7 @@ export async function createCreditPackagePaymentIntent(
   }
   
   // Create a payment intent with Stripe
-  const paymentIntent = await stripe.paymentIntents.create({
+  const paymentIntent = await getStripe().paymentIntents.create({
     amount: finalPrice, // Apply volume discount if applicable
     currency: 'gbp',
     description: `Credit Package: ${creditPackage.name} (${creditPackage.creditAmount} credits)${discountApplied > 0 ? ` - ${discountApplied}% Enterprise discount` : ''}`,
@@ -113,7 +118,7 @@ export async function createFilingPaymentIntent(
   }
   
   // Create a payment intent with Stripe
-  const paymentIntent = await stripe.paymentIntents.create({
+  const paymentIntent = await getStripe().paymentIntents.create({
     amount: filingCost.actualCost, // Cost is already in pence/cents
     currency: 'gbp',
     description: `Filing Fee: ${filingType} for ${company.name}`,
@@ -142,7 +147,7 @@ export async function handleSuccessfulPayment(
   paymentIntentId: string
 ): Promise<void> {
   // Retrieve the payment intent to verify it's real and get metadata
-  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+  const paymentIntent = await getStripe().paymentIntents.retrieve(paymentIntentId);
   
   if (paymentIntent.status !== 'succeeded') {
     throw new Error(`Payment ${paymentIntentId} has not succeeded`);

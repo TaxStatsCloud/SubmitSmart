@@ -1,17 +1,19 @@
 import { MailService } from '@sendgrid/mail';
 
 class EmailService {
-  private mailService: MailService;
+  private mailService: MailService | null = null;
 
-  constructor() {
-    this.mailService = new MailService();
-    
-    if (!process.env.SENDGRID_API_KEY) {
-      throw new Error("SENDGRID_API_KEY environment variable must be set");
+  private getMailService(): MailService {
+    if (!this.mailService) {
+      const apiKey = process.env.SENDGRID_API_KEY;
+      if (!apiKey) {
+        throw new Error("SENDGRID_API_KEY environment variable must be set");
+      }
+      this.mailService = new MailService();
+      this.mailService.setApiKey(apiKey);
+      console.log('EmailService: SendGrid API initialized');
     }
-    
-    this.mailService.setApiKey(process.env.SENDGRID_API_KEY);
-    console.log('📧 EmailService: SendGrid API initialized');
+    return this.mailService;
   }
 
   /**
@@ -24,7 +26,7 @@ class EmailService {
     resetUrl: string;
   }): Promise<boolean> {
     try {
-      await this.mailService.send({
+      await this.getMailService().send({
         to: params.to,
         from: 'support@promptsubmissions.com',
         subject: 'Reset Your Password - PromptSubmissions',
@@ -85,7 +87,7 @@ class EmailService {
 
   async sendWelcomeEmail(to: string, userName: string): Promise<boolean> {
     try {
-      await this.mailService.send({
+      await this.getMailService().send({
         to,
         from: 'support@promptsubmissions.com',
         subject: 'Welcome to PromptSubmissions - Your AI-Powered Compliance Platform',
@@ -152,7 +154,7 @@ class EmailService {
 
   async sendFilingConfirmation(to: string, filingType: string, companyName: string): Promise<boolean> {
     try {
-      await this.mailService.send({
+      await this.getMailService().send({
         to,
         from: 'support@promptsubmissions.com',
         subject: `${filingType} Filing Completed - ${companyName}`,
@@ -196,7 +198,7 @@ class EmailService {
 
   async sendPaymentConfirmation(to: string, amount: number, credits: number): Promise<boolean> {
     try {
-      await this.mailService.send({
+      await this.getMailService().send({
         to,
         from: 'support@promptsubmissions.com',
         subject: `Payment Confirmation - ${credits} Credits Added`,
@@ -248,7 +250,7 @@ class EmailService {
     html?: string;
   }): Promise<boolean> {
     try {
-      await this.mailService.send({
+      await this.getMailService().send({
         to: params.to,
         from: 'support@promptsubmissions.com',
         subject: params.subject,
@@ -272,7 +274,7 @@ class EmailService {
   ): Promise<boolean> {
     try {
       // Send notification to support team
-      await this.mailService.send({
+      await this.getMailService().send({
         to: 'support@promptsubmissions.com',
         from: 'support@promptsubmissions.com',
         replyTo: formData.email,
@@ -331,7 +333,7 @@ class EmailService {
       });
 
       // Send confirmation to user
-      await this.mailService.send({
+      await this.getMailService().send({
         to: formData.email,
         from: 'support@promptsubmissions.com',
         subject: 'We received your message - PromptSubmissions',
@@ -407,7 +409,7 @@ class EmailService {
     correlationId: string;
   }): Promise<boolean> {
     try {
-      await this.mailService.send({
+      await this.getMailService().send({
         to: params.to,
         from: 'support@promptsubmissions.com',
         subject: `CT600 Submitted - ${params.companyName} (${params.companyNumber})`,
@@ -523,7 +525,7 @@ class EmailService {
       const colors = statusColors[params.status] || statusColors.pending;
       const statusLabel = params.status.charAt(0).toUpperCase() + params.status.slice(1);
 
-      await this.mailService.send({
+      await this.getMailService().send({
         to: params.to,
         from: 'support@promptsubmissions.com',
         subject: `CT600 ${statusLabel} - ${params.companyName} (${params.companyNumber})`,
