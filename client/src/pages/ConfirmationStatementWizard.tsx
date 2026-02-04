@@ -23,6 +23,7 @@ import { HelpPanel } from "@/components/wizard/HelpPanel";
 import { ValidationGuidance } from "@/components/wizard/ValidationGuidance";
 import { FilingSubmissionWarning } from "@/components/filing/FilingSubmissionWarning";
 import { DocumentSelector } from "@/components/filings/DocumentSelector";
+import { CreditBalanceCheck } from "@/components/billing/CreditBalanceCheck";
 import { FILING_COSTS } from "@shared/filingCosts";
 
 // Shareholder schema
@@ -264,6 +265,14 @@ export default function ConfirmationStatementWizard() {
           <span className={`text-xs ${currentStep >= 4 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Documents</span>
           <span className={`text-xs ${currentStep >= 5 ? 'text-primary font-medium' : 'text-muted-foreground'}`}>Submit</span>
         </div>
+      </div>
+
+      {/* Credit Balance Check */}
+      <div className="mb-6">
+        <CreditBalanceCheck
+          filingType="confirmation_statement"
+          filingTypeName="Confirmation Statement"
+        />
       </div>
 
       {/* Filing Deadline Alert */}

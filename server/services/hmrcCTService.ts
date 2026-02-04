@@ -715,30 +715,130 @@ export class HMRCCTService {
   /**
    * Validate CT600 data before submission
    */
-  validateCT600Data(data: any): { valid: boolean; errors: string[] } {
+  validateCT600Data(data: any): { valid: boolean; errors: string[]; warnings: string[] } {
     const errors: string[] = [];
+    const warnings: string[] = [];
 
+    // Required fields
     if (!data.companyName) errors.push('Company name is required');
     if (!data.companyNumber) errors.push('Company registration number is required');
     if (!data.accountingPeriodStart) errors.push('Accounting period start date is required');
     if (!data.accountingPeriodEnd) errors.push('Accounting period end date is required');
-    
+
+    // Company number format validation
+    if (data.companyNumber) {
+      const cleanNumber = data.companyNumber.replace(/\s/g, '');
+      if (!/^[A-Z]{0,2}\d{6,8}$/i.test(cleanNumber)) {
+        errors.push('Company number format invalid. Expected 8 digits or 2 letters + 6 digits (e.g., 12345678 or SC123456)');
+      }
+    }
+
+    // UTR validation
+    if (data.utr) {
+      const cleanUTR = data.utr.replace(/[\s-]/g, '');
+      if (!/^\d{10}$/.test(cleanUTR)) {
+        errors.push('UTR must be exactly 10 digits');
+      }
+    }
+
     // Validate financial data (amounts should be in pounds)
-    if (data.turnover && data.turnover < 0) errors.push('Turnover cannot be negative');
-    if (data.profit && data.profit < 0) errors.push('Profit cannot be negative');
-    if (data.taxableProfit && data.taxableProfit < 0) errors.push('Taxable profit cannot be negative');
-    if (data.corporationTaxDue && data.corporationTaxDue < 0) errors.push('Corporation tax due cannot be negative');
+    if (data.turnover !== undefined && data.turnover < 0) errors.push('Turnover cannot be negative');
+    if (data.profit !== undefined && data.profit < 0) errors.push('Profit cannot be negative');
+    if (data.taxableProfit !== undefined && data.taxableProfit < 0) errors.push('Taxable profit cannot be negative');
+    if (data.corporationTaxDue !== undefined && data.corporationTaxDue < 0) errors.push('Corporation tax due cannot be negative');
 
     // Validate dates
-    const startDate = new Date(data.accountingPeriodStart);
-    const endDate = new Date(data.accountingPeriodEnd);
-    if (endDate <= startDate) {
-      errors.push('Accounting period end date must be after start date');
+    if (data.accountingPeriodStart && data.accountingPeriodEnd) {
+      const startDate = new Date(data.accountingPeriodStart);
+      const endDate = new Date(data.accountingPeriodEnd);
+
+      if (isNaN(startDate.getTime())) {
+        errors.push('Invalid accounting period start date format');
+      }
+      if (isNaN(endDate.getTime())) {
+        errors.push('Invalid accounting period end date format');
+      }
+
+      if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+        if (endDate <= startDate) {
+          errors.push('Accounting period end date must be after start date');
+        }
+
+        // Check period doesn't exceed 12 months
+        const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+        if (daysDiff > 366) {
+          errors.push('Accounting period cannot exceed 12 months (366 days)');
+        }
+
+        // Check period isn't in the future
+        if (endDate > new Date()) {
+          errors.push('Accounting period cannot end in the future');
+        }
+
+        // Warning for late filing
+        const filingDeadline = new Date(endDate);
+        filingDeadline.setFullYear(filingDeadline.getFullYear() + 1);
+        if (new Date() > filingDeadline) {
+          warnings.push('CT600 filing deadline has passed. Late filing penalties may apply (£100 minimum)');
+        }
+
+        // Warning for payment deadline
+        const paymentDeadline = new Date(endDate);
+        paymentDeadline.setMonth(paymentDeadline.getMonth() + 9);
+        paymentDeadline.setDate(paymentDeadline.getDate() + 1);
+        if (new Date() > paymentDeadline) {
+          warnings.push('Corporation tax payment deadline has passed. Interest and penalties may apply');
+        }
+      }
+    }
+
+    // Sanity checks on financial data
+    if (data.turnover !== undefined && data.taxableProfit !== undefined) {
+      if (data.taxableProfit > data.turnover) {
+        warnings.push('Taxable profit exceeds turnover. Please verify your figures.');
+      }
+    }
+
+    // Check for common issues
+    if (data.depreciationAddBack && data.depreciationAddBack > 0 && (!data.capitalAllowances || data.capitalAllowances === 0)) {
+      warnings.push('Depreciation added back but no capital allowances claimed. Most businesses can claim capital allowances.');
     }
 
     return {
       valid: errors.length === 0,
-      errors
+      errors,
+      warnings
+    };
+  }
+
+  /**
+   * Parse HMRC error responses into user-friendly messages
+   */
+  parseHMRCError(errorCode: string, errorText: string): {
+    userMessage: string;
+    technicalDetails: string;
+    suggestedAction: string;
+  } {
+    // Common HMRC error codes and their meanings
+    const errorMappings: Record<string, { message: string; action: string }> = {
+      '1001': { message: 'Invalid authentication credentials', action: 'Check your HMRC Gateway credentials' },
+      '1046': { message: 'Company UTR not found', action: 'Verify the UTR matches HMRC records' },
+      '2001': { message: 'XML schema validation failed', action: 'Contact support - technical issue with submission format' },
+      '3001': { message: 'Invalid company registration number', action: 'Verify company number matches Companies House records' },
+      '3002': { message: 'Company not registered for Corporation Tax', action: 'Register with HMRC for Corporation Tax before filing' },
+      '3003': { message: 'Accounting period already filed', action: 'Check if CT600 for this period was already submitted' },
+      '3004': { message: 'Accounting period invalid', action: 'Verify accounting period dates are correct' },
+      '4001': { message: 'IRmark validation failed', action: 'Contact support - technical issue with digital signature' },
+      '5001': { message: 'iXBRL document invalid', action: 'Check iXBRL accounts for formatting errors' },
+      'DEFAULT': { message: 'Submission rejected by HMRC', action: 'Review error details and retry' }
+    };
+
+    const mapping = errorMappings[errorCode] || errorMappings['DEFAULT'];
+
+    return {
+      userMessage: mapping.message,
+      technicalDetails: `Error ${errorCode}: ${errorText}`,
+      suggestedAction: mapping.action
     };
   }
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -11,12 +11,12 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Calculator, FileText, CheckCircle, AlertTriangle, Send, ArrowLeft, ArrowRight, Building2, TrendingUp, BarChart3, Download, FileCheck } from "lucide-react";
+import { Calculator, FileText, CheckCircle, AlertTriangle, Send, ArrowLeft, ArrowRight, Building2, TrendingUp, BarChart3, Download, FileCheck, Search, Loader2, XCircle, Info } from "lucide-react";
 import { FieldHint, InlineHint } from "@/components/wizard/FieldHint";
 import { HelpPanel } from "@/components/wizard/HelpPanel";
 import { ValidationGuidance } from "@/components/wizard/ValidationGuidance";
@@ -24,6 +24,36 @@ import { FilingSubmissionWarning } from "@/components/filing/FilingSubmissionWar
 import { DocumentSelector } from "@/components/filings/DocumentSelector";
 import { PriorYearComparisonTable } from "@/components/ct600/PriorYearComparisonTable";
 import { CT600BoxSummary } from "@/components/ct600/CT600BoxGuidance";
+import { CreditBalanceCheck } from "@/components/billing/CreditBalanceCheck";
+
+// Company validation result interface
+interface CompanyValidationResult {
+  isEligible: boolean;
+  companyStatus: string;
+  eligibilityReasons: string[];
+  warnings: string[];
+  companyDetails: {
+    companyName: string;
+    companyNumber: string;
+    registeredAddress: string;
+    incorporationDate: string;
+    companyType: string;
+    sicCodes: string[];
+  } | null;
+  accountsInfo: {
+    accountingReferenceDate: string | null;
+    lastAccountsFiled: string | null;
+    nextAccountsDue: string | null;
+  } | null;
+  filingDeadlines: {
+    ct600Deadline: string | null;
+    paymentDeadline: string | null;
+  } | null;
+  suggestedAccountingPeriod: {
+    start: string;
+    end: string;
+  } | null;
+}
 
 // CT600 Form Schema with Comparative Period Support and Activity Detection
 const ct600Schema = z.object({
@@ -94,6 +124,11 @@ export default function CT600Filing() {
   const [prefillApplied, setPrefillApplied] = useState(false);
   const [showSubmissionWarning, setShowSubmissionWarning] = useState(false);
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<number[]>([]);
+  const [companyValidation, setCompanyValidation] = useState<CompanyValidationResult | null>(null);
+  const [isValidatingCompany, setIsValidatingCompany] = useState(false);
+  const [companyLookupComplete, setCompanyLookupComplete] = useState(false);
+  const [utrValidation, setUtrValidation] = useState<{ valid: boolean; message: string } | null>(null);
+  const [isValidatingUtr, setIsValidatingUtr] = useState(false);
 
   const form = useForm<CT600FormData>({
     resolver: zodResolver(ct600Schema),
@@ -231,6 +266,125 @@ export default function CT600Filing() {
     },
   });
 
+  // Company validation mutation - validates against Companies House
+  const validateCompanyMutation = useMutation({
+    mutationFn: async (companyNumber: string) => {
+      const response = await apiRequest('POST', '/api/hmrc/ct600/validate-company', {
+        companyNumber
+      });
+      return response.json();
+    },
+    onSuccess: (data: CompanyValidationResult & { success?: boolean }) => {
+      setCompanyValidation(data);
+      setCompanyLookupComplete(true);
+      setIsValidatingCompany(false);
+
+      if (data.companyDetails) {
+        // Auto-fill company name if found
+        form.setValue('companyName', data.companyDetails.companyName);
+
+        // Auto-fill accounting period if suggested
+        if (data.suggestedAccountingPeriod) {
+          form.setValue('accountingPeriodStart', data.suggestedAccountingPeriod.start);
+          form.setValue('accountingPeriodEnd', data.suggestedAccountingPeriod.end);
+        }
+
+        // Show success toast
+        toast({
+          title: data.isEligible ? "Company Verified" : "Company Found",
+          description: data.isEligible
+            ? `${data.companyDetails.companyName} is eligible for CT600 filing`
+            : `${data.companyDetails.companyName} found. ${data.eligibilityReasons[0] || 'Please review warnings.'}`,
+          variant: data.isEligible ? "default" : "destructive",
+        });
+      } else {
+        toast({
+          title: "Company Not Found",
+          description: "Please check the company number and try again",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error: any) => {
+      setIsValidatingCompany(false);
+      setCompanyLookupComplete(true);
+      toast({
+        title: "Validation Failed",
+        description: error.message || "Unable to validate company",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handler for company number lookup
+  const handleCompanyLookup = useCallback((companyNumber: string) => {
+    const cleanNumber = companyNumber.trim();
+    if (cleanNumber.length >= 6) {
+      setIsValidatingCompany(true);
+      setCompanyLookupComplete(false);
+      validateCompanyMutation.mutate(cleanNumber);
+    }
+  }, [validateCompanyMutation]);
+
+  // UTR validation mutation
+  const validateUtrMutation = useMutation({
+    mutationFn: async (utr: string) => {
+      const response = await apiRequest('POST', '/api/hmrc/ct600/validate-utr', { utr });
+      return response.json();
+    },
+    onSuccess: (data: { valid: boolean; message: string }) => {
+      setUtrValidation(data);
+      setIsValidatingUtr(false);
+    },
+    onError: () => {
+      setIsValidatingUtr(false);
+      setUtrValidation({ valid: false, message: 'Unable to validate UTR' });
+    },
+  });
+
+  // Handler for UTR validation
+  const handleUtrValidation = useCallback((utr: string) => {
+    const cleanUtr = utr.replace(/[\s-]/g, '');
+    if (cleanUtr.length === 10) {
+      setIsValidatingUtr(true);
+      validateUtrMutation.mutate(cleanUtr);
+    } else if (cleanUtr.length > 0) {
+      setUtrValidation({ valid: false, message: 'UTR must be exactly 10 digits' });
+    } else {
+      setUtrValidation(null);
+    }
+  }, [validateUtrMutation]);
+
+  // Check if submission should be blocked
+  const isSubmissionBlocked = useCallback(() => {
+    // Block if company validation shows ineligible
+    if (companyLookupComplete && companyValidation && !companyValidation.isEligible) {
+      // Allow submission for dissolved companies (final returns)
+      if (companyValidation.companyStatus === 'dissolved') {
+        return false;
+      }
+      return true;
+    }
+    // Block if UTR is invalid
+    if (utrValidation && !utrValidation.valid) {
+      return true;
+    }
+    return false;
+  }, [companyLookupComplete, companyValidation, utrValidation]);
+
+  // Get submission block reason
+  const getSubmissionBlockReason = useCallback(() => {
+    if (companyLookupComplete && companyValidation && !companyValidation.isEligible) {
+      if (companyValidation.companyStatus !== 'dissolved') {
+        return `Company is not eligible for CT600 filing: ${companyValidation.eligibilityReasons[0] || 'Unknown reason'}`;
+      }
+    }
+    if (utrValidation && !utrValidation.valid) {
+      return `UTR validation failed: ${utrValidation.message}`;
+    }
+    return null;
+  }, [companyLookupComplete, companyValidation, utrValidation]);
+
   const onComputeTax = async () => {
     const isValid = await form.trigger();
     if (isValid) {
@@ -239,6 +393,16 @@ export default function CT600Filing() {
   };
 
   const onSubmitToHMRC = () => {
+    // Check if submission should be blocked
+    if (isSubmissionBlocked()) {
+      const reason = getSubmissionBlockReason();
+      toast({
+        title: "Submission Blocked",
+        description: reason || "Cannot submit CT600 at this time",
+        variant: "destructive",
+      });
+      return;
+    }
     setShowSubmissionWarning(true);
   };
 
@@ -295,6 +459,14 @@ export default function CT600Filing() {
         </div>
       </div>
 
+      {/* Credit Balance Check */}
+      <div className="mb-6">
+        <CreditBalanceCheck
+          filingType="ct600"
+          filingTypeName="Corporation Tax"
+        />
+      </div>
+
       {/* Pre-fill Notification */}
       {prefillApplied && prefillData?.sourceFilingDate && (
         <Alert className="mb-6 border-blue-200 bg-blue-50 dark:bg-blue-950">
@@ -303,6 +475,76 @@ export default function CT600Filing() {
             <strong>Data imported from Annual Accounts</strong> - Form pre-populated with data from your filing on {new Date(prefillData.sourceFilingDate).toLocaleDateString('en-GB')}. All fields are editable - please review and update as needed.
           </AlertDescription>
         </Alert>
+      )}
+
+      {/* Company Validation Status */}
+      {companyLookupComplete && companyValidation && (
+        <div className="mb-6 space-y-3">
+          {/* Eligibility Status */}
+          <Alert className={companyValidation.isEligible
+            ? "border-green-500 bg-green-50 dark:bg-green-950"
+            : "border-red-500 bg-red-50 dark:bg-red-950"
+          }>
+            {companyValidation.isEligible ? (
+              <CheckCircle className="h-4 w-4 text-green-600" />
+            ) : (
+              <XCircle className="h-4 w-4 text-red-600" />
+            )}
+            <AlertTitle className={companyValidation.isEligible ? "text-green-900 dark:text-green-100" : "text-red-900 dark:text-red-100"}>
+              {companyValidation.isEligible ? "Company Eligible for CT600" : "Eligibility Issue Detected"}
+            </AlertTitle>
+            <AlertDescription className={companyValidation.isEligible ? "text-green-800 dark:text-green-200" : "text-red-800 dark:text-red-200"}>
+              {companyValidation.companyDetails && (
+                <div className="mt-2 space-y-1">
+                  <p><strong>Company:</strong> {companyValidation.companyDetails.companyName}</p>
+                  <p><strong>Status:</strong> <Badge variant={companyValidation.companyStatus === 'active' ? 'default' : 'destructive'}>{companyValidation.companyStatus}</Badge></p>
+                  {companyValidation.accountsInfo?.accountingReferenceDate && (
+                    <p><strong>Accounting Reference Date:</strong> {companyValidation.accountsInfo.accountingReferenceDate}</p>
+                  )}
+                  {companyValidation.filingDeadlines?.ct600Deadline && (
+                    <p><strong>CT600 Deadline:</strong> {new Date(companyValidation.filingDeadlines.ct600Deadline).toLocaleDateString('en-GB')}</p>
+                  )}
+                  {companyValidation.filingDeadlines?.paymentDeadline && (
+                    <p><strong>Payment Deadline:</strong> {new Date(companyValidation.filingDeadlines.paymentDeadline).toLocaleDateString('en-GB')}</p>
+                  )}
+                </div>
+              )}
+              {!companyValidation.isEligible && companyValidation.eligibilityReasons.length > 0 && (
+                <ul className="mt-2 list-disc list-inside">
+                  {companyValidation.eligibilityReasons.map((reason, idx) => (
+                    <li key={idx}>{reason}</li>
+                  ))}
+                </ul>
+              )}
+            </AlertDescription>
+          </Alert>
+
+          {/* Warnings */}
+          {companyValidation.warnings && companyValidation.warnings.length > 0 && (
+            <Alert className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950">
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertTitle className="text-yellow-900 dark:text-yellow-100">Important Notices</AlertTitle>
+              <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+                <ul className="mt-1 list-disc list-inside">
+                  {companyValidation.warnings.map((warning, idx) => (
+                    <li key={idx}>{warning}</li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Suggested Accounting Period */}
+          {companyValidation.suggestedAccountingPeriod && (
+            <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950">
+              <Info className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-900 dark:text-blue-100">
+                <strong>Suggested Accounting Period:</strong> {new Date(companyValidation.suggestedAccountingPeriod.start).toLocaleDateString('en-GB')} to {new Date(companyValidation.suggestedAccountingPeriod.end).toLocaleDateString('en-GB')}
+                {" "}(auto-filled below)
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
       )}
 
       <Form {...form}>
@@ -347,10 +589,54 @@ export default function CT600Filing() {
                       name="companyNumber"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Companies House Number *</FormLabel>
-                          <FormControl>
-                            <Input placeholder="12345678" {...field} data-testid="input-company-number" />
-                          </FormControl>
+                          <FormLabel className="flex items-center gap-2">
+                            Companies House Number *
+                            <FieldHint
+                              description="Enter your 8-character company number from Companies House. We'll verify your company and pre-fill details automatically."
+                              example="12345678 or SC123456 (Scottish companies)"
+                              type="help"
+                            />
+                          </FormLabel>
+                          <div className="flex gap-2">
+                            <FormControl>
+                              <Input
+                                placeholder="12345678"
+                                {...field}
+                                data-testid="input-company-number"
+                                className="flex-1"
+                                onBlur={(e) => {
+                                  field.onBlur();
+                                  if (e.target.value.length >= 6) {
+                                    handleCompanyLookup(e.target.value);
+                                  }
+                                }}
+                              />
+                            </FormControl>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              disabled={isValidatingCompany || field.value.length < 6}
+                              onClick={() => handleCompanyLookup(field.value)}
+                              title="Look up company"
+                            >
+                              {isValidatingCompany ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Search className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                          <FormDescription>
+                            {companyLookupComplete && companyValidation?.companyDetails ? (
+                              <span className="flex items-center gap-1 text-green-600">
+                                <CheckCircle className="h-3 w-3" />
+                                Verified: {companyValidation.companyDetails.companyType}
+                              </span>
+                            ) : (
+                              "Enter company number and click search to verify"
+                            )}
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -363,16 +649,43 @@ export default function CT600Filing() {
                         <FormItem>
                           <FormLabel className="flex items-center gap-2">
                             Unique Taxpayer Reference (UTR) *
-                            <FieldHint 
+                            <FieldHint
                               description="Your 10-digit UTR is HMRC's unique identifier for your company's tax affairs. Find it on Corporation Tax letters, your HMRC online account, or payslips."
                               example="1234567890 (exactly 10 digits)"
                               type="help"
                             />
                           </FormLabel>
-                          <FormControl>
-                            <Input placeholder="1234567890" {...field} data-testid="input-utr" />
-                          </FormControl>
-                          <FormDescription>10-digit reference from HMRC</FormDescription>
+                          <div className="flex gap-2">
+                            <FormControl>
+                              <Input
+                                placeholder="1234567890"
+                                {...field}
+                                data-testid="input-utr"
+                                className="flex-1"
+                                onBlur={(e) => {
+                                  field.onBlur();
+                                  handleUtrValidation(e.target.value);
+                                }}
+                              />
+                            </FormControl>
+                            {isValidatingUtr && <Loader2 className="h-4 w-4 animate-spin mt-2" />}
+                            {utrValidation && !isValidatingUtr && (
+                              utrValidation.valid ? (
+                                <CheckCircle className="h-4 w-4 text-green-600 mt-2" />
+                              ) : (
+                                <XCircle className="h-4 w-4 text-red-600 mt-2" />
+                              )
+                            )}
+                          </div>
+                          <FormDescription>
+                            {utrValidation ? (
+                              <span className={utrValidation.valid ? "text-green-600" : "text-red-600"}>
+                                {utrValidation.message}
+                              </span>
+                            ) : (
+                              "10-digit reference from HMRC"
+                            )}
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -1210,14 +1523,15 @@ export default function CT600Filing() {
                 >
                   <ArrowLeft className="mr-2 h-4 w-4" /> Back
                 </Button>
-                <Button 
-                  type="button" 
+                <Button
+                  type="button"
                   onClick={onSubmitToHMRC}
-                  disabled={submitToHMRCMutation.isPending}
+                  disabled={submitToHMRCMutation.isPending || isSubmissionBlocked()}
                   data-testid="button-submit-hmrc"
+                  title={isSubmissionBlocked() ? getSubmissionBlockReason() || "Submission blocked" : "Submit to HMRC"}
                 >
-                  {submitToHMRCMutation.isPending ? "Submitting..." : "Submit to HMRC"}
-                  <Send className="ml-2 h-4 w-4" />
+                  {submitToHMRCMutation.isPending ? "Submitting..." : isSubmissionBlocked() ? "Submission Blocked" : "Submit to HMRC"}
+                  {isSubmissionBlocked() ? <XCircle className="ml-2 h-4 w-4" /> : <Send className="ml-2 h-4 w-4" />}
                 </Button>
               </div>
             </Card>

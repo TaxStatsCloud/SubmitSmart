@@ -18,6 +18,8 @@ import Credits from "@/pages/Credits";
 import CreditTransactions from "@/pages/CreditTransactions";
 import AppLayout from "@/components/layout/AppLayout";
 import Login from "@/pages/Login";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import Subscription from "@/pages/Subscription";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { AiAssistantProvider } from "@/contexts/AiAssistantContext";
@@ -34,6 +36,7 @@ import DocumentLibrary from "@/pages/DocumentLibrary";
 import ConfirmationStatement from "@/pages/ConfirmationStatement";
 import AnnualAccounts from "@/pages/AnnualAccounts";
 import CT600Filing from "@/pages/CT600Filing";
+import FilingStatusDashboard from "@/pages/FilingStatusDashboard";
 import AnnualAccountsWizard from "@/pages/AnnualAccountsWizard";
 import ConfirmationStatementWizard from "@/pages/ConfirmationStatementWizard";
 import AdminDashboard from "@/pages/AdminDashboard";
@@ -77,6 +80,9 @@ function Router() {
       <Switch>
         <Route path="/" component={Landing} />
         <Route path="/auth" component={AuthPage} />
+        <Route path="/login" component={Login} />
+        <Route path="/forgot-password" component={ForgotPassword} />
+        <Route path="/reset-password" component={ResetPassword} />
         <Route path="/terms" component={Terms} />
         <Route path="/privacy" component={Privacy} />
         <Route path="/disclaimer" component={Disclaimer} />
@@ -120,6 +126,7 @@ function Router() {
         <Route path="/filings/confirmation-statements" component={ConfirmationStatement} />
         <Route path="/filings/annual-accounts" component={AnnualAccounts} />
         <Route path="/filings/corporation-tax" component={CT600Filing} />
+        <Route path="/filings/status" component={FilingStatusDashboard} />
         <Route path="/filings/review" component={FilingReview} />
         
         {/* Filing Wizards */}

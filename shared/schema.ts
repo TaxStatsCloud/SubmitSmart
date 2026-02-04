@@ -32,6 +32,9 @@ export const users = pgTable("users", {
   companyId: integer("company_id").references(() => companies.id),
   subscriptionTierId: integer("subscription_tier_id").references(() => subscriptionTiers.id),
   credits: integer("credits").notNull().default(50),
+  // Password reset fields
+  passwordResetToken: varchar("password_reset_token"),
+  passwordResetExpires: timestamp("password_reset_expires"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
