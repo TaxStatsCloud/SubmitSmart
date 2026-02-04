@@ -6,6 +6,7 @@ import connectPgSimple from "connect-pg-simple";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
+import { pool } from "./db";
 import { User as SelectUser } from "@shared/schema";
 import { emailService } from "./services/emailService";
 
@@ -41,8 +42,8 @@ export function setupAuth(app: Express) {
   const PostgresSessionStore = connectPgSimple(session);
 
   const sessionStore = new PostgresSessionStore({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: false, // Table created via migration
+    pool: pool,
+    createTableIfMissing: true,
     ttl: 7 * 24 * 60 * 60, // 1 week in seconds
   });
 

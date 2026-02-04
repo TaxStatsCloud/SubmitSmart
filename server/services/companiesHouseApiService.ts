@@ -46,17 +46,20 @@ interface CompaniesHouseProfile {
 }
 
 export class CompaniesHouseApiService {
-  private apiKey: string;
+  private _apiKey: string | null = null;
   private baseUrl = 'https://api.company-information.service.gov.uk';
 
-  constructor() {
-    const apiKey = process.env.COMPANIES_HOUSE_API_KEY;
-    if (!apiKey) {
-      throw new Error('COMPANIES_HOUSE_API_KEY environment variable is required');
+  private get apiKey(): string {
+    if (!this._apiKey) {
+      const apiKey = process.env.COMPANIES_HOUSE_API_KEY;
+      if (!apiKey) {
+        throw new Error('COMPANIES_HOUSE_API_KEY environment variable is required');
+      }
+      // Companies House requires Basic authentication with API key as username and blank password
+      // Format: Basic base64(apiKey:)
+      this._apiKey = `Basic ${Buffer.from(`${apiKey}:`).toString('base64')}`;
     }
-    // Companies House requires Basic authentication with API key as username and blank password
-    // Format: Basic base64(apiKey:)
-    this.apiKey = `Basic ${Buffer.from(`${apiKey}:`).toString('base64')}`;
+    return this._apiKey;
   }
 
   /**
